@@ -1,12 +1,14 @@
 @import 'tailwindcss';
 
-@custom-variant dark (@media (prefers-color-scheme: dark));
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme {
-	--font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+	--font-sans: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 	--font-mono: ui-monospace, 'Cascadia Code', 'JetBrains Mono', Menlo, monospace;
 }
 
+@font-face { font-family: Manrope; src: url('/fonts/manrope-regular.ttf'); font-weight: 400; font-display: swap; }
+@font-face { font-family: Manrope; src: url('/fonts/manrope-bold.ttf'); font-weight: 600 800; font-display: swap; }
 @layer base {
 	body {
 		@apply bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100;
@@ -25,7 +27,8 @@
 			disabled:cursor-not-allowed disabled:opacity-50;
 	}
 	.btn-primary {
-		@apply bg-teal-700 text-white hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500;
+		background: var(--accent); color: var(--accent-text);
+		&:hover { filter: brightness(1.08); }
 	}
 	.btn-ghost {
 		@apply border border-zinc-300 bg-white hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800;

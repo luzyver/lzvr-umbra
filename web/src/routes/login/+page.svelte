@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Logo from '#lib/Logo.svelte';
 	import { goto } from '$app/navigation';
 	import { post, get, errMsg, type Me } from '#lib/api.ts';
 	import { session } from '#lib/session.svelte.ts';
@@ -26,12 +27,9 @@
 
 <svelte:head><title>Masuk · Umbra</title></svelte:head>
 
-<div class="flex min-h-screen items-center justify-center px-4">
-	<form class="card w-full max-w-sm space-y-4" onsubmit={submit}>
-		<div class="flex items-center gap-2">
-			<img src="/favicon.svg" alt="" class="h-8 w-8" />
-			<h1 class="text-lg font-semibold">Umbra</h1>
-		</div>
+<div class="login-screen">
+	<form class="card login-card space-y-4" onsubmit={submit}>
+		<Logo/><div class="login-intro"><h1>Ruang privatmu menanti.</h1><p>Masuk untuk mengelola jaringan pribadimu.</p></div>
 		<div>
 			<label class="label" for="u">Nama pengguna</label>
 			<input id="u" class="input" bind:value={username} autocomplete="username" required />

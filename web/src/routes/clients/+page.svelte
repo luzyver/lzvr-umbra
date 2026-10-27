@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	onMount(() => { if (new URL(location.href).searchParams.get('new') === '1') openNew(); });
 	import { get, post, put, del, errMsg, type Client, type Defaults } from '#lib/api.ts';
 	import { splitList, date } from '#lib/format.ts';
 	import { session } from '#lib/session.svelte.ts';
@@ -77,14 +79,23 @@
 		e.preventDefault();
 		busy = true;
 		formError = '';
-		// Kolom kosong = pakai bawaan server (dikirim sebagai daftar kosong / 0).
-		const body: Record<string, unknown> = {
-			name: f.name.trim(),
-			allowed_ips: splitList(f.allowed_ips),
-			dns: splitList(f.dns),
-			mtu: Number(f.mtu) || 0,
-			keepalive: Number(f.keepalive) || 0
+		// Kolom kosong = pakai bawaan server. Server menyimpan apa adanya, jadi kolom kosong
+		// diisi nilai bawaan (atau tidak dikirim bila bawaan belum termuat) agar tidak tersimpan kosong.
+		const body: Record<string, unknown> = { name: f.name.trim() };
+		const list = (key: 'allowed_ips' | 'dns') => {
+			const v = splitList(f[key]);
+			if (v.length) body[key] = v;
+			else if (defaults) body[key] = defaults[key];
 		};
+		const num = (key: 'mtu' | 'keepalive') => {
+			const v = Number(f[key]);
+			if (v) body[key] = v;
+			else if (defaults) body[key] = defaults[key];
+		};
+		list('allowed_ips');
+		list('dns');
+		num('mtu');
+		num('keepalive');
 		if (session.me?.adguard) body.adblock = f.adblock;
 		try {
 			if (editing) {
@@ -150,9 +161,9 @@
 
 <svelte:head><title>Klien · Umbra</title></svelte:head>
 
-<div class="mb-4 flex flex-wrap items-center gap-3">
-	<h1 class="text-xl font-semibold">Klien</h1>
-	<input class="input ml-auto w-56" placeholder="Cari nama / IP" bind:value={q} />
+<div class="page-heading flex-wrap">
+	<div><div class="overline">YOUR DEVICES</div><h1>Perangkat</h1><p>Atur akses dan profil koneksi perangkatmu.</p></div>
+	<input class="input ml-auto w-56" aria-label="Cari perangkat" placeholder="Cari nama / IP" bind:value={q} />
 	<button class="btn-primary" onclick={openNew}>+ Tambah klien</button>
 </div>
 
@@ -166,7 +177,7 @@
 		<button class="btn-primary mt-3" onclick={openNew}>Tambah klien pertama</button>
 	</div>
 {:else}
-	<div class="card overflow-x-auto p-0">
+	<div class="card client-management overflow-x-auto p-0">
 		<table class="w-full text-sm">
 			<thead class="text-left text-xs text-zinc-500">
 				<tr class="border-b border-zinc-200 dark:border-zinc-800">

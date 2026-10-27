@@ -17,7 +17,7 @@
 	{disabled}
 	onclick={() => onchange(!checked)}
 	class="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition disabled:opacity-50 {checked
-		? 'bg-teal-600'
+		? 'toggle-active'
 		: 'bg-zinc-300 dark:bg-zinc-700'}"
 >
 	<span

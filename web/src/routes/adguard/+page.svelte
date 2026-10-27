@@ -72,8 +72,8 @@
 
 <svelte:head><title>AdGuard · Umbra</title></svelte:head>
 
-<div class="mb-4 flex items-center gap-3">
-	<h1 class="text-xl font-semibold">AdGuard</h1>
+<div class="page-heading">
+	<div><div class="overline">NETWORK PROTECTION</div><h1>AdGuard</h1><p>Kendalikan perlindungan DNS jaringanmu.</p></div>
 	{#if st?.configured}
 		<button class="btn-ghost ml-auto" disabled={busy} onclick={load}>Muat ulang</button>
 		<button class="btn-primary" disabled={busy || !st.reachable} onclick={sync}>Sinkronkan klien</button>

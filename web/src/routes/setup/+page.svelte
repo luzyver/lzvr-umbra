@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Logo from '#lib/Logo.svelte';
 	import { goto } from '$app/navigation';
 	import {
 		get,
@@ -127,9 +128,9 @@
 
 <svelte:head><title>Setup · Umbra</title></svelte:head>
 
-<div class="mx-auto max-w-2xl px-4 py-10">
+<div class="mx-auto max-w-2xl px-4 pt-24 pb-10">
 	<div class="mb-6 flex items-center gap-2">
-		<img src="/favicon.svg" alt="" class="h-8 w-8" />
+		<Logo wordmark={false}/>
 		<h1 class="text-xl font-semibold">Setup Umbra</h1>
 	</div>
 

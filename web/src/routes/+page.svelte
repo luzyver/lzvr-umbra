@@ -1,140 +1,69 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
-	import { get, type Status } from '#lib/api.ts';
+	import { get, type Status, type ServerConfig } from '#lib/api.ts';
 	import { bytes, rate, ago } from '#lib/format.ts';
 
+	import Icon from '#lib/Icon.svelte';
+	import Logo from '#lib/Logo.svelte';
+	import TrafficChart from '#lib/TrafficChart.svelte';
+	import { sampleTraffic, appendSample, type TrafficSample } from '#lib/traffic.ts';
+	let server = $state<ServerConfig|null>(null);
+	let serverError = $state('');
+	get<ServerConfig>('/server').then(s => server=s).catch(() => serverError='Konfigurasi server belum tersedia.');
+	let samples = $state<TrafficSample[]>([]);
+	let previous: Status|null = null;
+	let error = $state('');
+	let q = $state('');
+	let filter = $state('all');
 	let status = $state<Status | null>(null);
 	let live = $state(false);
-	// Kecepatan per klien dihitung dari selisih dua event berturut-turut.
-	let rates = $state<Record<number, { rx: number; tx: number }>>({});
-	let prev: { t: number; c: Record<number, { rx: number; tx: number }> } | null = null;
 
 	function update(s: Status) {
 		const t = new Date(s.time).getTime();
-		const cur: Record<number, { rx: number; tx: number }> = {};
-		const next: Record<number, { rx: number; tx: number }> = {};
-		for (const c of s.clients) {
-			cur[c.id] = { rx: c.rx_bytes, tx: c.tx_bytes };
-			const p = prev?.c[c.id];
-			const dt = prev ? (t - prev.t) / 1000 : 0;
-			next[c.id] =
-				p && dt > 0
-					? { rx: Math.max(0, (c.rx_bytes - p.rx) / dt), tx: Math.max(0, (c.tx_bytes - p.tx) / dt) }
-					: { rx: 0, tx: 0 };
-		}
-		prev = { t, c: cur };
-		rates = next;
+        if (!Number.isFinite(t) || (status && t <= Date.parse(status.time))) return;
+        const sample = sampleTraffic(previous,s);
+        if (sample) samples = appendSample(samples,sample);
+        if (!previous) samples = [];
+        previous = s;
+        error = '';
 		status = s;
 	}
 
-	get<Status>('/status').then(update).catch(() => {});
+	get<Status>('/status').then(update).catch(() => error='Status jaringan belum dapat dimuat.');
 
 	const es = new EventSource('/api/events');
 	es.addEventListener('status', (e) => {
-		live = true;
 		try {
 			update(JSON.parse((e as MessageEvent).data));
+			live = true;
 		} catch {
 			/* abaikan event rusak */
 		}
 	});
-	es.onerror = () => (live = false);
+	es.onerror = () => { live = false; previous = null; };
 	onDestroy(() => es.close());
 
 	// Diurutkan: online dulu, lalu yang terakhir handshake paling baru.
 	const clients = $derived(
-		[...(status?.clients ?? [])].sort(
+		[...(status?.clients ?? [])].filter(c => (!q || `${c.name} ${c.address}`.toLowerCase().includes(q.toLowerCase())) && (filter === 'all' || (filter === 'online' ? c.online && c.enabled : !c.online || !c.enabled))).sort(
 			(a, b) =>
 				Number(b.online) - Number(a.online) ||
 				(b.last_handshake ? Date.parse(b.last_handshake) : 0) - (a.last_handshake ? Date.parse(a.last_handshake) : 0)
 		)
 	);
-	const totalRate = $derived(
-		Object.values(rates).reduce((s, r) => ({ rx: s.rx + r.rx, tx: s.tx + r.tx }), { rx: 0, tx: 0 })
-	);
+	const totalRate = $derived(samples.at(-1) ?? { rx: 0, tx: 0 });
+
 </script>
 
-<svelte:head><title>Dasbor · Umbra</title></svelte:head>
-
-<div class="mb-4 flex items-center justify-between">
-	<h1 class="text-xl font-semibold">Dasbor</h1>
-	<span class="flex items-center gap-2 text-xs text-zinc-500">
-		<span class="h-2 w-2 rounded-full {live ? 'bg-teal-500' : 'bg-zinc-400'}"></span>
-		{live ? 'langsung' : 'menyambung…'}
-	</span>
+<svelte:head><title>Ringkasan · Umbra</title></svelte:head>
+<div class="page-heading"><div><div class="overline">YOUR PRIVATE NETWORK</div><h1>Jaringan dalam kendalimu.</h1><p>Satu ruang untuk semua koneksi pribadimu.</p></div><a class="btn-primary" href="/clients?new=1"><Icon name="plus" size={16}/>Tambah perangkat</a></div>
+<div class="health-strip" class:pending={!live} class:error={!!(error || status?.error)} role="status"><Icon name="shield" size={16}/><strong>{error || status?.error || (live ? (status?.initialized ? 'Jaringan siap digunakan' : 'Jaringan belum diinisialisasi') : 'Menghubungkan pembaruan langsung…')}</strong><span class="health-caption">{status?.interface ?? 'WireGuard'} · Private network</span><span class="health-indicator"><i class="status-dot"></i>{live ? 'LIVE' : 'TERPUTUS'}</span></div>
+<div class="metric-grid">
+ <div class="card metric-card"><div class="metric-label">Perangkat online<Icon name="laptop" size={17}/></div><div class="metric-value">{status?.online ?? '—'}<small>/ {status?.total ?? '—'}</small></div><div class="metric-meta"><strong>{live ? 'Status langsung' : 'Status terakhir'}</strong><span>perangkat terhubung</span></div></div>
+ {#each [{key:'rx_bytes' as const,dir:'rx' as const,label:'Data masuk'},{key:'tx_bytes' as const,dir:'tx' as const,label:'Data keluar'}] as m}
+ <div class="card metric-card"><div class="metric-label">{m.label}<Icon name="arrow" size={17}/></div><div class="metric-value">{status ? bytes(status[m.key]).split(' ')[0] : '—'}<small>{status ? bytes(status[m.key]).split(' ')[1] : ''}</small></div><div class="metric-meta" class:purple={m.dir === 'tx'}><strong>{live && samples.length ? rate(totalRate[m.dir]) : '—'}</strong><span>melalui server</span></div></div>
+ {/each}
 </div>
-
-{#if status?.error}
-	<div class="card mb-4 border-red-300 text-sm text-red-700 dark:border-red-800 dark:text-red-300">
-		{status.error}
-	</div>
-{/if}
-
-<div class="mb-6 grid gap-4 sm:grid-cols-3">
-	<div class="card">
-		<p class="hint">Klien online</p>
-		<p class="mt-1 text-2xl font-semibold tabular-nums">
-			{status?.online ?? '–'}<span class="text-base font-normal text-zinc-500"> / {status?.total ?? '–'}</span>
-		</p>
-	</div>
-	<div class="card">
-		<p class="hint">Diterima server</p>
-		<p class="mt-1 text-2xl font-semibold tabular-nums">{status ? bytes(status.rx_bytes) : '–'}</p>
-		<p class="hint tabular-nums">{rate(totalRate.rx)}</p>
-	</div>
-	<div class="card">
-		<p class="hint">Dikirim server</p>
-		<p class="mt-1 text-2xl font-semibold tabular-nums">{status ? bytes(status.tx_bytes) : '–'}</p>
-		<p class="hint tabular-nums">{rate(totalRate.tx)}</p>
-	</div>
-</div>
-
-<div class="card overflow-x-auto p-0">
-	{#if !status}
-		<p class="p-6 text-sm text-zinc-500">Memuat…</p>
-	{:else if clients.length === 0}
-		<p class="p-6 text-sm text-zinc-500">
-			Belum ada klien. <a class="text-teal-700 underline dark:text-teal-400" href="/clients">Tambah klien</a>
-		</p>
-	{:else}
-		<table class="w-full text-sm">
-			<thead class="text-left text-xs text-zinc-500">
-				<tr class="border-b border-zinc-200 dark:border-zinc-800">
-					<th class="px-4 py-2 font-medium">Klien</th>
-					<th class="px-4 py-2 font-medium">Status</th>
-					<th class="px-4 py-2 font-medium">Handshake terakhir</th>
-					<th class="px-4 py-2 font-medium">Dari</th>
-					<th class="px-4 py-2 text-right font-medium">Unduh / unggah</th>
-				</tr>
-			</thead>
-			<tbody>
-				{#each clients as c (c.id)}
-					<tr class="border-b border-zinc-100 last:border-0 dark:border-zinc-800/60">
-						<td class="px-4 py-2">
-							<div class="font-medium">{c.name}</div>
-							<div class="font-mono text-xs text-zinc-500">{c.address}</div>
-						</td>
-						<td class="px-4 py-2">
-							{#if !c.enabled}
-								<span class="badge bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">nonaktif</span>
-							{:else if c.online}
-								<span class="badge bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-200">online</span>
-							{:else}
-								<span class="badge bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">offline</span>
-							{/if}
-						</td>
-						<td class="px-4 py-2 text-zinc-600 dark:text-zinc-400">{ago(c.last_handshake)}</td>
-						<td class="px-4 py-2 font-mono text-xs text-zinc-500">{c.endpoint || '–'}</td>
-						<td class="px-4 py-2 text-right tabular-nums">
-							<!-- dari sisi server: rx = data dari klien (unggah klien) -->
-							<div>↓ {bytes(c.tx_bytes)} · ↑ {bytes(c.rx_bytes)}</div>
-							{#if c.online}
-								<div class="text-xs text-zinc-500">↓ {rate(rates[c.id]?.tx ?? 0)} · ↑ {rate(rates[c.id]?.rx ?? 0)}</div>
-							{/if}
-						</td>
-					</tr>
-				{/each}
-			</tbody>
-		</table>
-	{/if}
-</div>
+<div class="middle-grid"><section class="card traffic-card"><TrafficChart {samples} {live}/></section><section class="card gateway-card"><div class="panel-heading"><h2>Gateway pribadi</h2><Icon name="server" size={17}/></div><div class="gateway-visual" aria-hidden="true"><div class="orbit"></div><div class="orbit two"></div><div class="orbit three"></div><div class="gateway-box"><Logo wordmark={false}/></div></div><div class="gateway-name">WireGuard <span>{server?.interface ?? '—'}</span></div>{#if serverError}<p class="hint px-5 py-3">{serverError}</p>{:else}<dl class="gateway-data"><div><dt>Endpoint</dt><dd>{server?.endpoint_host || '—'}</dd></div><div><dt>Port</dt><dd>{server?.endpoint_port ?? '—'}</dd></div><div><dt>Jaringan</dt><dd>{server?.address ?? '—'}</dd></div></dl>{/if}</section></div>
+<section class="card table-panel"><div class="panel-heading"><div><h2>Perangkatmu</h2><p>Semua koneksi, dalam satu pandangan.</p></div><a class="text-link" href="/clients">Kelola perangkat <Icon name="arrow" size={14}/></a></div><div class="table-toolbar"><div class="filter-tabs" aria-label="Filter status">{#each [{v:'all',l:'Semua'},{v:'online',l:'Online'},{v:'offline',l:'Offline'}] as tab}<button class:selected={filter===tab.v} aria-pressed={filter===tab.v} onclick={() => filter=tab.v}>{tab.l}</button>{/each}</div><label class="device-search"><Icon name="search" size={14}/><input aria-label="Cari perangkat" placeholder="Cari nama atau alamat IP…" bind:value={q}/></label></div>
+ {#if !status}<div class="empty-state">{error || 'Memuat perangkat…'}</div>{:else if !clients.length}<div class="empty-state">{status.total ? 'Tidak ada perangkat yang sesuai.' : 'Jaringanmu siap untuk perangkat pertama.'}{#if !status.total} <a href="/clients?new=1">Tambah perangkat</a>{/if}</div>{:else}<div class="overflow-x-auto"><table class="data-table"><thead><tr><th>Perangkat</th><th>Status</th><th class="desktop-column">Handshake</th><th class="desktop-column">Unduh / unggah</th></tr></thead><tbody>{#each clients as c (c.id)}<tr><td><div class="device-cell"><span class="device-icon"><Icon name="laptop" size={16}/></span><div><strong>{c.name}</strong><small class="table-mono">{c.address}</small></div></div></td><td><span class="online-status" class:off={!c.online || !c.enabled}><i class="status-dot"></i>{!c.enabled ? 'Nonaktif' : c.online ? 'Online' : 'Offline'}</span></td><td class="desktop-column table-muted">{ago(c.last_handshake)}</td><td class="desktop-column table-mono">↓ {bytes(c.tx_bytes)} · ↑ {bytes(c.rx_bytes)}</td></tr>{/each}</tbody></table></div>{/if}<div class="table-end"><span>{clients.length} dari {status?.total ?? '—'} perangkat</span><span>{live ? 'Diperbarui secara langsung' : 'Menampilkan data terakhir'}</span></div></section>
