@@ -38,6 +38,13 @@ net.ipv6.conf.all.forwarding = 1
 SYSCTL
 sysctl -q -p /etc/sysctl.d/90-umbra.conf
 
+if command -v ufw >/dev/null && ufw status 2>/dev/null | grep -q '^Status: active'; then
+	# Tabel nftables panel tidak bisa mengalahkan DROP milik UFW, jadi izinkan lewat UFW juga.
+	say "UFW aktif: mengizinkan forward dari wg0 dan port UDP ${UMBRA_WG_PORT:-51820}"
+	ufw route allow in on wg0 >/dev/null
+	ufw allow "${UMBRA_WG_PORT:-51820}/udp" >/dev/null
+fi
+
 say "Membuat user sistem umbra"
 id umbra >/dev/null 2>&1 || useradd --system --no-create-home --home-dir /var/lib/umbra --shell /usr/sbin/nologin umbra
 
