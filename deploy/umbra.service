@@ -1,0 +1,41 @@
+[Unit]
+Description=Umbra - pengelola WireGuard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=umbra
+Group=umbra
+EnvironmentFile=-/etc/umbra/umbra.env
+ExecStart=/usr/local/bin/umbra
+Restart=on-failure
+RestartSec=3
+
+# Hanya hak mengatur jaringan (WireGuard via netlink + nftables), bukan root penuh.
+AmbientCapabilities=CAP_NET_ADMIN
+CapabilityBoundingSet=CAP_NET_ADMIN
+NoNewPrivileges=true
+
+StateDirectory=umbra
+StateDirectoryMode=0700
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+SystemCallArchitectures=native
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

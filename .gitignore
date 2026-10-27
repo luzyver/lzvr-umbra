@@ -1,0 +1,11 @@
+# data dev & binary
+/data/
+/umbra
+/umbra.exe
+/dist/
+
+# frontend
+web/node_modules/
+web/.svelte-kit/
+internal/ui/dist/*
+!internal/ui/dist/.keep
