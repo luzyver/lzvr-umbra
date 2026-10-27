@@ -8,7 +8,7 @@ import (
 )
 
 type Config struct {
-	Listen       string // alamat HTTP panel, mis. 127.0.0.1:8080
+	Listen       string // alamat HTTP panel, mis. 127.0.0.1:8967
 	DataDir      string // tempat database, token setup, cadangan
 	Dev          bool   // mode pengembangan: cookie tanpa Secure, WG palsu bila bukan Linux
 	FakeWG       bool   // pakai backend WireGuard tiruan (untuk dev di Windows/macOS)
@@ -31,7 +31,7 @@ func Load() Config {
 	}
 
 	return Config{
-		Listen:       env("UMBRA_LISTEN", "127.0.0.1:8080"),
+		Listen:       env("UMBRA_LISTEN", "127.0.0.1:8967"),
 		DataDir:      env("UMBRA_DATA_DIR", dataDir),
 		Dev:          dev,
 		FakeWG:       fake,

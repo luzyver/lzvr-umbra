@@ -56,10 +56,10 @@ sudo sh install.sh
 Installer akan memasang nftables (wireguard-tools tidak perlu), memuat modul WireGuard, menyalakan IP forwarding,
 membuat user `umbra`, memasang service, lalu menampilkan **token setup**.
 
-Panel bawaannya hanya mendengar di `127.0.0.1:8080`. Cara membukanya:
+Panel bawaannya hanya mendengar di `127.0.0.1:8967`. Cara membukanya:
 
-- **SSH tunnel** (paling mudah): `ssh -L 8080:127.0.0.1:8080 user@server`, lalu buka `http://localhost:8080`.
-- **Nginx + HTTPS**: proxy ke `127.0.0.1:8080`, set `UMBRA_TRUST_PROXY=true`. Untuk SSE tambahkan
+- **SSH tunnel** (paling mudah): `ssh -L 8967:127.0.0.1:8967 user@server`, lalu buka `http://localhost:8967`.
+- **Nginx + HTTPS**: proxy ke `127.0.0.1:8967`, set `UMBRA_TRUST_PROXY=true`. Untuk SSE tambahkan
   `proxy_buffering off;` pada `location /api/events`.
 
 Jangan lupa membuka port UDP WireGuard (bawaan 51820) di firewall penyedia VPS.
@@ -68,7 +68,7 @@ Jangan lupa membuka port UDP WireGuard (bawaan 51820) di firewall penyedia VPS.
 
 | Variabel | Bawaan | Arti |
 |---|---|---|
-| `UMBRA_LISTEN` | `127.0.0.1:8080` | alamat web panel |
+| `UMBRA_LISTEN` | `127.0.0.1:8967` | alamat web panel |
 | `UMBRA_DATA_DIR` | `/var/lib/umbra` | database, token setup, `wg0.conf` cadangan |
 | `UMBRA_SECURE_COOKIE` | `true` | cookie hanya lewat HTTPS (localhost tetap bisa) |
 | `UMBRA_TRUST_PROXY` | `false` | percayai `X-Real-IP` dari nginx |
@@ -92,7 +92,7 @@ Panel mendaftarkan setiap klien di AdGuard dengan nama `Nama [wg#id]` dan mengat
 ```sh
 # terminal 1: backend dengan WireGuard & firewall tiruan
 UMBRA_DEV=1 UMBRA_FAKE_WG=1 UMBRA_FAKE_FIREWALL=1 go run ./cmd/umbra
-# terminal 2: frontend dengan hot reload (proxy /api ke :8080)
+# terminal 2: frontend dengan hot reload (proxy /api ke :8967)
 cd web && npm run dev
 ```
 

@@ -14,7 +14,7 @@ export default defineConfig({
 		})
 	],
 	server: {
-		// npm run dev: API diteruskan ke backend Go (UMBRA_DEV=1 UMBRA_LISTEN=127.0.0.1:8080)
-		proxy: { '/api': { target: 'http://127.0.0.1:8080', changeOrigin: false } }
+		// npm run dev: API diteruskan ke backend Go (UMBRA_DEV=1 UMBRA_LISTEN=127.0.0.1:8967)
+		proxy: { '/api': { target: 'http://127.0.0.1:8967', changeOrigin: false } }
 	}
 });

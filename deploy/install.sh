@@ -68,10 +68,10 @@ systemctl is-active --quiet umbra || { journalctl -u umbra -n 30 --no-pager; die
 LISTEN="$(sed -n 's/^UMBRA_LISTEN=//p' /etc/umbra/umbra.env | tail -n1)"
 TOKEN_FILE=/var/lib/umbra/setup-token
 echo
-say "Selesai. Panel berjalan di http://${LISTEN:-127.0.0.1:8080}"
+say "Selesai. Panel berjalan di http://${LISTEN:-127.0.0.1:8967}"
 if [ -f "$TOKEN_FILE" ]; then
 	echo "    Token setup (dipakai sekali untuk membuat admin):"
 	echo "    $(cat "$TOKEN_FILE")"
 fi
-echo "    Dari laptop: ssh -L 8080:${LISTEN:-127.0.0.1:8080} user@server  lalu buka http://localhost:8080"
+echo "    Dari laptop: ssh -L 8967:${LISTEN:-127.0.0.1:8967} user@server  lalu buka http://localhost:8967"
 echo "    Jangan lupa buka port UDP WireGuard (bawaan 51820) di firewall penyedia VPS."
