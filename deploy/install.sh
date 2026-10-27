@@ -15,14 +15,15 @@ die() { printf '\033[1;31mGagal:\033[0m %s\n' "$*" >&2; exit 1; }
 [ -f "$BIN_SRC" ] || die "binary tidak ditemukan: $BIN_SRC (build dulu: lihat README)"
 command -v systemctl >/dev/null || die "butuh systemd"
 
-say "Memasang paket (nftables, wireguard-tools)"
+# WireGuard diatur langsung lewat netlink/wgctrl, jadi wireguard-tools tidak perlu.
+say "Memasang paket (nftables)"
 if command -v apt-get >/dev/null; then
 	DEBIAN_FRONTEND=noninteractive apt-get update -qq
-	DEBIAN_FRONTEND=noninteractive apt-get install -y -qq nftables wireguard-tools
+	DEBIAN_FRONTEND=noninteractive apt-get install -y -qq nftables
 elif command -v dnf >/dev/null; then
-	dnf install -y -q nftables wireguard-tools
+	dnf install -y -q nftables
 elif command -v apk >/dev/null; then
-	apk add -q nftables wireguard-tools
+	apk add -q nftables
 else
 	command -v nft >/dev/null || die "pasang paket nftables secara manual lalu ulangi"
 fi

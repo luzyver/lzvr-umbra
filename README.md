@@ -26,15 +26,34 @@ GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o dep
 
 Untuk VPS ARM ganti `GOARCH=arm64`.
 
+### Build otomatis (GitHub Actions)
+
+Tiap push ke `master`, workflow `.github/workflows/release.yml` membuild frontend + binary (amd64 dan arm64)
+dan menerbitkannya ke rilis `latest` sebagai `umbra-linux-<arch>.tar.gz` (+ `.sha256`). Server kecil
+(RAM 1 GB) tidak perlu build sendiri.
+
 ## Pasang di server
 
-Salin folder `deploy/` (berisi binary `umbra`) ke server, lalu:
+Cara termudah: pakai build dari CI. Karena repo privat, buat token GitHub fine-grained (hanya repo ini,
+izin **Contents: Read-only**), simpan di server, lalu jalankan `update.sh`:
+
+```sh
+sudo install -d -m 0750 /etc/umbra
+sudo sh -c 'umask 077; cat > /etc/umbra/github-token'   # tempel token, lalu Ctrl+D
+curl -fsSL -H "Authorization: Bearer $(sudo cat /etc/umbra/github-token)" \
+  -H "Accept: application/vnd.github.raw" \
+  https://api.github.com/repos/luzyver/lzvr-umbra/contents/deploy/update.sh | sudo sh
+```
+
+Perintah yang sama dipakai untuk update. Kalau sudah ada salinannya: `sudo sh update.sh`.
+
+Atau manual: salin folder `deploy/` (berisi binary `umbra` hasil build) ke server, lalu:
 
 ```sh
 sudo sh install.sh
 ```
 
-Installer akan memasang nftables + wireguard-tools, memuat modul WireGuard, menyalakan IP forwarding,
+Installer akan memasang nftables (wireguard-tools tidak perlu), memuat modul WireGuard, menyalakan IP forwarding,
 membuat user `umbra`, memasang service, lalu menampilkan **token setup**.
 
 Panel bawaannya hanya mendengar di `127.0.0.1:8080`. Cara membukanya:
