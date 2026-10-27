@@ -21,12 +21,14 @@
 	let error = $state('');
 
 	$effect.pre(() => {
-		f = { ...server };
+		// Susun di variabel lokal: membaca `f` di sini membuat efek memicu dirinya sendiri tanpa henti.
+		const next = { ...server };
 		// Isi otomatis dari hasil cek sistem saat setup pertama.
 		if (!server.initialized && check) {
-			if (!f.endpoint_host && check.public_ip) f.endpoint_host = check.public_ip;
-			if (!f.out_interface && check.default_iface) f.out_interface = check.default_iface;
+			if (!next.endpoint_host && check.public_ip) next.endpoint_host = check.public_ip;
+			if (!next.out_interface && check.default_iface) next.out_interface = check.default_iface;
 		}
+		f = next;
 	});
 
 	async function submit(e: SubmitEvent) {

@@ -34,35 +34,124 @@ dan menerbitkannya ke rilis `latest` sebagai `umbra-linux-<arch>.tar.gz` (+ `.sh
 
 ## Pasang di server
 
-Cara termudah: pakai build dari CI. Karena repo privat, buat token GitHub fine-grained (hanya repo ini,
-izin **Contents: Read-only**), simpan di server, lalu jalankan `update.sh`:
+Server **tidak perlu** source code, Go, atau Node. Yang dipasang hanya binary hasil CI. Setelah terpasang,
+Umbra hanya memakai:
 
-```sh
-sudo install -d -m 0750 /etc/umbra
-sudo sh -c 'umask 077; cat > /etc/umbra/github-token'   # tempel token, lalu Ctrl+D
-curl -fsSL -H "Authorization: Bearer $(sudo cat /etc/umbra/github-token)" \
-  -H "Accept: application/vnd.github.raw" \
-  https://api.github.com/repos/luzyver/lzvr-umbra/contents/deploy/update.sh | sudo sh
-```
+| Lokasi | Isi |
+|---|---|
+| `/usr/local/bin/umbra` | program |
+| `/etc/systemd/system/umbra.service` | service systemd |
+| `/etc/umbra/umbra.env` | pengaturan |
+| `/var/lib/umbra` | database, token setup, `wg0.conf` cadangan |
 
-Perintah yang sama dipakai untuk update. Kalau sudah ada salinannya: `sudo sh update.sh`.
+Syarat: Linux dengan systemd, kernel 5.6+ (modul WireGuard bawaan), akses root, port UDP 51820 terbuka
+di firewall penyedia VPS. Kalau ada WireGuard lain yang memakai `wg0` atau port 51820, matikan dulu.
 
-Atau manual: salin folder `deploy/` (berisi binary `umbra` hasil build) ke server, lalu:
+### Cara 1: pakai token GitHub (disarankan, sekalian untuk update)
 
-```sh
-sudo sh install.sh
-```
+Repo ini privat, jadi server butuh token untuk mengunduh rilis.
 
-Installer akan memasang nftables (wireguard-tools tidak perlu), memuat modul WireGuard, menyalakan IP forwarding,
-membuat user `umbra`, memasang service, lalu menampilkan **token setup**.
+1. Di GitHub buat token **fine-grained**: Settings → Developer settings → Fine-grained tokens.
+   Repository access: hanya `luzyver/lzvr-umbra`. Permissions: **Contents: Read-only**.
+2. Simpan token di server:
 
-Panel bawaannya hanya mendengar di `127.0.0.1:8967`. Cara membukanya:
+   ```sh
+   sudo install -d -m 0750 /etc/umbra
+   sudo sh -c 'umask 077; cat > /etc/umbra/github-token'   # tempel token, Enter, lalu Ctrl+D
+   ```
+
+3. Unduh dan jalankan `update.sh`. Skrip ini mengambil rilis `latest`, mengecek sha256, lalu menjalankan
+   `install.sh`:
+
+   ```sh
+   curl -fsSL -H "Authorization: Bearer $(sudo cat /etc/umbra/github-token)" \
+     -H "Accept: application/vnd.github.raw" \
+     https://api.github.com/repos/luzyver/lzvr-umbra/contents/deploy/update.sh | sudo sh
+   ```
+
+**Update** nanti: jalankan perintah langkah 3 lagi. Pengaturan dan data tidak ditimpa.
+
+### Cara 2: manual (tanpa token di server)
+
+1. Di komputer sendiri unduh `umbra-linux-amd64.tar.gz` dan `.sha256` dari rilis `latest`
+   (pakai `umbra-linux-arm64` untuk VPS ARM), misalnya:
+
+   ```sh
+   gh release download latest -R luzyver/lzvr-umbra -p 'umbra-linux-amd64.tar.gz*'
+   ```
+
+2. Salin kedua file ke server (mis. `scp`), lalu di server:
+
+   ```sh
+   sha256sum -c umbra-linux-amd64.tar.gz.sha256
+   tar -xzf umbra-linux-amd64.tar.gz
+   sudo sh umbra-linux-amd64/install.sh umbra-linux-amd64/umbra
+   ```
+
+3. File unduhan dan folder hasil ekstrak boleh dihapus setelahnya.
+
+### Yang dilakukan installer
+
+Memasang nftables (wireguard-tools tidak perlu), memuat modul WireGuard, menyalakan IP forwarding,
+mengizinkan `wg0` dan port 51820/udp di UFW bila UFW aktif, membuat user `umbra`, memasang service,
+lalu menampilkan **token setup**. Aman dijalankan ulang. Token setup juga ada di `/var/lib/umbra/setup-token`.
+
+### Membuka panel
+
+Panel bawaannya hanya mendengar di `127.0.0.1:8967`. Pilih salah satu:
 
 - **SSH tunnel** (paling mudah): `ssh -L 8967:127.0.0.1:8967 user@server`, lalu buka `http://localhost:8967`.
-- **Nginx + HTTPS**: proxy ke `127.0.0.1:8967`, set `UMBRA_TRUST_PROXY=true`. Untuk SSE tambahkan
-  `proxy_buffering off;` pada `location /api/events`.
+- **Nginx + HTTPS** (domain sendiri): set `UMBRA_TRUST_PROXY=true` di `/etc/umbra/umbra.env`,
+  `sudo systemctl restart umbra`, lalu pakai contoh berikut (sertifikat dari certbot):
 
-Jangan lupa membuka port UDP WireGuard (bawaan 51820) di firewall penyedia VPS.
+  ```nginx
+  server {
+      server_name vpn.example.com;
+
+      # opsional: hanya dari klien VPN
+      # allow 10.8.0.0/24;
+      # deny all;
+
+      location /api/events {            # SSE, jangan di-buffer
+          proxy_pass http://127.0.0.1:8967;
+          proxy_http_version 1.1;
+          proxy_set_header Connection "";
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-Proto $scheme;
+          proxy_buffering off;
+          proxy_read_timeout 1h;
+      }
+
+      location / {
+          proxy_pass http://127.0.0.1:8967;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-Proto $scheme;
+      }
+
+      listen 443 ssl;
+      ssl_certificate     /etc/letsencrypt/live/vpn.example.com/fullchain.pem;
+      ssl_certificate_key /etc/letsencrypt/live/vpn.example.com/privkey.pem;
+  }
+  ```
+
+### Setup pertama
+
+Buka panel, masukkan token setup, buat akun admin, lalu isi wizard: endpoint publik
+(mis. `vpn.example.com:51820`), interface internet server (cek dengan `ip route get 1.1.1.1`),
+subnet VPN (mis. `10.8.0.1/24`), dan DNS klien. Setelah itu tambah klien dan scan QR-nya.
+
+### Cek dan uninstall
+
+```sh
+systemctl status umbra
+journalctl -u umbra -f
+```
+
+Uninstall: `sudo systemctl disable --now umbra`, lalu hapus `/usr/local/bin/umbra`,
+`/etc/systemd/system/umbra.service`, `/etc/umbra`, `/var/lib/umbra`, `/etc/sysctl.d/90-umbra.conf`,
+`/etc/modules-load.d/umbra.conf`, dan `sudo nft delete table inet umbra`.
 
 ## Pengaturan (`/etc/umbra/umbra.env`)
 
