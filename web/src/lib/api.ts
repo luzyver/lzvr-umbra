@@ -195,3 +195,20 @@ export type Activity = {
 };
 
 export type ActivityPage = { items: Activity[]; more: boolean };
+
+// Koneksi live klien dari tabel conntrack kernel.
+export type Conn = {
+	proto: string;
+	src_ip: string;
+	src_port: number;
+	dst_ip: string;
+	dst_port: number;
+	sent: number;
+	received: number;
+	packets: number;
+	state?: string;
+	started?: string;
+	expires: number;
+};
+
+export type ConnList = { conns: Conn[]; accounting: boolean; unsupported?: string };

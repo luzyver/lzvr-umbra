@@ -188,9 +188,20 @@ Semuanya bisa dari menu **AdGuard** di panel:
 
 Panel mendaftarkan setiap klien di AdGuard dengan nama `Nama [wg#id]` dan mengatur blokir iklan per klien.
 
-### Log aktivitas
+### Aktivitas jaringan & log sesi
 
-Menu **Aktivitas** menampilkan kapan perangkat terhubung, terputus, dan berganti IP publik (mis. pindah
+Menu **Aktivitas** → tab **Aktivitas jaringan** (pilih perangkat) menampilkan apa yang dibuka perangkat itu:
+
+- **Koneksi saat ini** — dibaca dari tabel koneksi kernel (conntrack): IP/domain tujuan, layanan
+  (HTTPS, DNS, SSH, …), status, dan data terkirim/diterima per koneksi. Bisa disegarkan otomatis tiap 5 detik.
+  Hitungan byte butuh `net.netfilter.nf_conntrack_acct=1` (dipasang otomatis oleh `install.sh`).
+- **Situs yang dibuka (riwayat DNS)** — log query AdGuard untuk IP perangkat: domain apa saja, diblokir atau
+  tidak, plus daftar domain tersering. Butuh AdGuard aktif dan perangkat memakai DNS AdGuard (opsi blokir iklan).
+
+Hanya metadata yang terlihat (domain, IP, port, jumlah data); isi halaman tidak bisa dilihat karena HTTPS
+terenkripsi.
+
+Tab **Sesi VPN** menampilkan kapan perangkat terhubung, terputus, dan berganti IP publik (mis. pindah
 dari Wi-Fi ke data seluler), lengkap dengan endpoint, durasi sesi, dan trafik sesi. WireGuard tidak punya
 login/logout, jadi panel mengecek handshake tiap ±15 detik: perangkat dianggap terputus bila tidak
 handshake selama 3 menit. Log tersimpan di database dan otomatis dihapus setelah 90 hari; bisa disaring

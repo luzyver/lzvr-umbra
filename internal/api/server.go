@@ -99,6 +99,7 @@ func (s *Server) Handler(ui http.Handler, scriptHashes []string) http.Handler {
 	priv("DELETE /api/clients/{id}", s.handleDeleteClient)
 	priv("GET /api/clients/{id}/config", s.handleClientConfig)
 	priv("GET /api/clients/{id}/qr.png", s.handleClientQR)
+	priv("GET /api/clients/{id}/connections", s.handleClientConnections)
 
 	priv("GET /api/status", s.handleStatus)
 	priv("GET /api/events", s.handleEvents)

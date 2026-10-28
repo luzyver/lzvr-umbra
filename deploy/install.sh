@@ -41,14 +41,18 @@ fi
 
 say "Memuat modul kernel WireGuard"
 modprobe wireguard 2>/dev/null || die "modul wireguard tidak ada di kernel ini (butuh kernel 5.6+)"
-echo wireguard > /etc/modules-load.d/umbra.conf
+modprobe nf_conntrack 2>/dev/null || true
+printf 'wireguard\nnf_conntrack\n' > /etc/modules-load.d/umbra.conf
 
 say "Mengaktifkan IP forwarding"
 cat > /etc/sysctl.d/90-umbra.conf <<'SYSCTL'
 net.ipv4.ip_forward = 1
 net.ipv6.conf.all.forwarding = 1
+# Hitung byte & waktu mulai per koneksi untuk halaman Aktivitas jaringan.
+net.netfilter.nf_conntrack_acct = 1
+net.netfilter.nf_conntrack_timestamp = 1
 SYSCTL
-sysctl -q -p /etc/sysctl.d/90-umbra.conf
+sysctl -q -e -p /etc/sysctl.d/90-umbra.conf
 
 if command -v ufw >/dev/null && ufw status 2>/dev/null | grep -q '^Status: active'; then
 	# Tabel nftables panel tidak bisa mengalahkan DROP milik UFW, jadi izinkan lewat UFW juga.
