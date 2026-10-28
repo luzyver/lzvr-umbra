@@ -21,6 +21,7 @@
 	const nav = [
 		{ href: '/', label: 'Ringkasan', icon: 'overview' },
 		{ href: '/clients', label: 'Perangkat', icon: 'laptop' },
+		{ href: '/activity', label: 'Aktivitas', icon: 'activity' },
 		{ href: '/adguard', label: 'AdGuard', icon: 'shield' },
 		{ href: '/settings', label: 'Pengaturan', icon: 'settings' }
 	];

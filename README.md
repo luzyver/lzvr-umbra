@@ -88,13 +88,17 @@ Repo ini privat, jadi server butuh token untuk mengunduh rilis.
    sudo sh umbra-linux-amd64/install.sh umbra-linux-amd64/umbra
    ```
 
+   Tambahkan `--with-adguard` (mis. `install.sh --with-adguard umbra-linux-amd64/umbra`) supaya
+   AdGuard Home ikut dipasang otomatis begitu server WireGuard selesai diatur di panel.
+
 3. File unduhan dan folder hasil ekstrak boleh dihapus setelahnya.
 
 ### Yang dilakukan installer
 
 Memasang nftables (wireguard-tools tidak perlu), memuat modul WireGuard, menyalakan IP forwarding,
 mengizinkan `wg0` dan port 51820/udp di UFW bila UFW aktif, membuat user `umbra`, memasang service,
-lalu menampilkan **token setup**. Aman dijalankan ulang. Token setup juga ada di `/var/lib/umbra/setup-token`.
+memasang helper root kecil (`umbra-helper.path`/`.service`) yang dipakai panel untuk memasang dan mencopot
+AdGuard Home, lalu menampilkan **token setup**. Aman dijalankan ulang. Token setup juga ada di `/var/lib/umbra/setup-token`.
 
 ### Membuka panel
 
@@ -161,20 +165,36 @@ Uninstall: `sudo systemctl disable --now umbra`, lalu hapus `/usr/local/bin/umbr
 | `UMBRA_DATA_DIR` | `/var/lib/umbra` | database, token setup, `wg0.conf` cadangan |
 | `UMBRA_SECURE_COOKIE` | `true` | cookie hanya lewat HTTPS (localhost tetap bisa) |
 | `UMBRA_TRUST_PROXY` | `false` | percayai `X-Real-IP` dari nginx |
-| `UMBRA_ADGUARD_URL` | kosong | mis. `http://127.0.0.1:3000`; kosong = AdGuard mati |
-| `UMBRA_ADGUARD_USER` / `UMBRA_ADGUARD_PASS` | kosong | login AdGuard Home |
+| `UMBRA_ADGUARD_URL` | kosong | cadangan bila koneksi AdGuard belum disimpan dari panel |
+| `UMBRA_ADGUARD_USER` / `UMBRA_ADGUARD_PASS` | kosong | login AdGuard Home (cadangan, sama seperti di atas) |
+| `UMBRA_ADGUARD_AUTOINSTALL` | `false` | pasang AdGuard otomatis setelah WireGuard diatur (diisi `install.sh --with-adguard`) |
 
 Setelah mengubah: `sudo systemctl restart umbra`.
 
 ### AdGuard Home
 
-Pasang AdGuard Home terpisah, lalu atur supaya:
+Semuanya bisa dari menu **AdGuard** di panel:
 
-- DNS hanya mendengar di IP server VPN, mis. `10.8.0.1:53` (jangan `0.0.0.0`, supaya tidak jadi open resolver);
-- web UI di `127.0.0.1:3000`;
-- isi `UMBRA_ADGUARD_*`, dan di Pengaturan panel ubah DNS bawaan klien ke `10.8.0.1`.
+- **Pasang otomatis**: tekan *Pasang AdGuard* (atau pakai `install.sh --with-adguard`). Panel mengunduh
+  AdGuard Home, menjalankan setup awal, membuat akun admin, lalu mengatur DNS supaya hanya mendengar di
+  IP server VPN (mis. `10.8.0.1:53`, bukan `0.0.0.0`, supaya tidak jadi open resolver), web UI di
+  `127.0.0.1:3000`, dan DNS bawaan klien diubah ke IP itu.
+- **Sudah punya AdGuard**: isi alamat web dan akun admin di panel. Koneksi disimpan di database dan
+  langsung berlaku tanpa restart; nilai `UMBRA_ADGUARD_*` di `umbra.env` hanya cadangan.
+- **Pengaturan**: tab Ringkasan (proteksi, statistik, safe browsing, kontrol orang tua, safe search),
+  Filter (blocklist, allowlist, aturan sendiri), DNS (upstream, bootstrap), Layanan (blokir
+  YouTube/TikTok/dll.), Klien (aturan khusus per klien), Log (query log), dan Koneksi.
+- **Copot**: di tab Koneksi, untuk AdGuard yang dipasang panel. DNS klien dikembalikan ke DNS bawaan server.
 
 Panel mendaftarkan setiap klien di AdGuard dengan nama `Nama [wg#id]` dan mengatur blokir iklan per klien.
+
+### Log aktivitas
+
+Menu **Aktivitas** menampilkan kapan perangkat terhubung, terputus, dan berganti IP publik (mis. pindah
+dari Wi-Fi ke data seluler), lengkap dengan endpoint, durasi sesi, dan trafik sesi. WireGuard tidak punya
+login/logout, jadi panel mengecek handshake tiap ±15 detik: perangkat dianggap terputus bila tidak
+handshake selama 3 menit. Log tersimpan di database dan otomatis dihapus setelah 90 hari; bisa disaring
+per perangkat/jenis kejadian dan dihapus manual.
 
 ## Pengembangan (Windows/macOS juga bisa)
 
@@ -194,4 +214,3 @@ Catatan SvelteKit 3: alias `$lib` sudah tidak ada; pakai `#lib/...` (diatur di `
 - 2FA (TOTP) untuk login admin
 - fallback `wireguard-go` untuk kernel tanpa modul WireGuard
 - impor dari `wg0.conf` / database wireguard-ui lama
-- pemasangan AdGuard Home otomatis dari installer

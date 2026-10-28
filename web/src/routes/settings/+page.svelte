@@ -115,7 +115,7 @@
 				<div>
 					<label class="label" for="d-dns">DNS</label>
 					<input id="d-dns" class="input font-mono" bind:value={d.dns} placeholder="10.8.0.1" />
-					<p class="hint">Isi IP server WireGuard bila memakai AdGuard.</p>
+					<p class="hint">Terisi otomatis saat AdGuard dipasang dari panel; isi manual IP server WireGuard bila AdGuard dipasang sendiri.</p>
 				</div>
 				<div>
 					<label class="label" for="d-aips">Allowed IPs</label>

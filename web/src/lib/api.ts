@@ -150,3 +150,48 @@ export type AdGuardStatus = {
 	};
 	error?: string;
 };
+
+export type AdGuardConn = {
+	url: string;
+	user: string;
+	has_password: boolean;
+	managed: boolean;
+	source: 'db' | 'env' | 'none';
+};
+
+export type AdGuardJob = {
+	action: string;
+	state: 'idle' | 'running' | 'done' | 'error';
+	message: string;
+	helper_available: boolean;
+	managed: boolean;
+	detected: boolean;
+};
+
+export type AdGuardSync = { synced: number; removed: number; warnings: string[] };
+
+// Pengaturan AdGuard per klien; field kosong berarti tidak diubah.
+export type AdGuardClientSettings = {
+	safebrowsing_enabled?: boolean;
+	parental_enabled?: boolean;
+	safe_search_enabled?: boolean;
+	use_global_blocked_services?: boolean;
+	blocked_services?: string[];
+	upstreams?: string[];
+};
+
+// Log aktivitas WireGuard (dicatat panel dari handshake peer).
+export type Activity = {
+	id: number;
+	client_id: number;
+	client_name: string;
+	kind: 'connect' | 'disconnect' | 'roam';
+	endpoint?: string;
+	detail?: string;
+	duration: number;
+	rx_bytes: number;
+	tx_bytes: number;
+	at: string;
+};
+
+export type ActivityPage = { items: Activity[]; more: boolean };

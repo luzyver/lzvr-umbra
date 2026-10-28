@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"regexp"
@@ -14,7 +15,7 @@ var agTagRe = regexp.MustCompile(`\[wg#(\d+)\]$`)
 // agReady memastikan AdGuard dikonfigurasi; bila tidak, balas 503.
 func (s *Server) agReady(w http.ResponseWriter) bool {
 	if !s.ag.Enabled() {
-		writeError(w, http.StatusServiceUnavailable, "AdGuard belum dihubungkan (atur UMBRA_ADGUARD_URL)")
+		writeError(w, http.StatusServiceUnavailable, adguard.ErrDisabled.Error())
 		return false
 	}
 	return true
@@ -82,23 +83,28 @@ func (s *Server) handleAdGuardSync(w http.ResponseWriter, r *http.Request) {
 	if !s.agReady(w) {
 		return
 	}
-	ctx := r.Context()
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
-	clients, err := s.st.ListClients(ctx)
-	if err != nil {
-		internalError(w, "baca klien", err)
-		return
-	}
-	existing, err := s.ag.ListClients(ctx)
+	synced, removed, warnings, err := s.agSyncAllLocked(r.Context())
 	if err != nil {
 		agError(w, "baca client AdGuard", err)
 		return
 	}
+	writeJSON(w, http.StatusOK, map[string]any{"synced": synced, "removed": removed, "warnings": warnings})
+}
+
+// agSyncAllLocked: pemanggil wajib memegang s.mu.
+func (s *Server) agSyncAllLocked(ctx context.Context) (synced, removed int, warnings []string, err error) {
+	clients, err := s.st.ListClients(ctx)
+	if err != nil {
+		return 0, 0, nil, err
+	}
+	existing, err := s.ag.ListClients(ctx)
+	if err != nil {
+		return 0, 0, nil, err
+	}
 	known := map[int64]bool{}
-	warnings := []string{}
-	synced, removed := 0, 0
+	warnings = []string{}
 	for _, c := range clients {
 		known[c.ID] = true
 		if err := s.ag.Upsert(ctx, c.ID, c.Name, c.Address, c.Adblock); err != nil {
@@ -122,5 +128,5 @@ func (s *Server) handleAdGuardSync(w http.ResponseWriter, r *http.Request) {
 		}
 		removed++
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"synced": synced, "removed": removed, "warnings": warnings})
+	return synced, removed, warnings, nil
 }

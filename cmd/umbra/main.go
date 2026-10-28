@@ -17,12 +17,17 @@ import (
 	"github.com/luzyver/lzvr-umbra/internal/auth"
 	"github.com/luzyver/lzvr-umbra/internal/config"
 	"github.com/luzyver/lzvr-umbra/internal/firewall"
+	"github.com/luzyver/lzvr-umbra/internal/helper"
 	"github.com/luzyver/lzvr-umbra/internal/store"
 	"github.com/luzyver/lzvr-umbra/internal/ui"
 	"github.com/luzyver/lzvr-umbra/internal/wg"
 )
 
 func main() {
+	// "umbra helper" dijalankan root oleh umbra-helper.service (pasang/lepas AdGuard).
+	if len(os.Args) > 1 && os.Args[1] == "helper" {
+		os.Exit(helper.Main())
+	}
 	if err := run(); err != nil {
 		slog.Error("umbra berhenti", "err", err)
 		os.Exit(1)
@@ -60,6 +65,7 @@ func run() error {
 
 	srv := api.New(cfg, st, backend, fw, ag, setupToken)
 	srv.Bootstrap(ctx)
+	go srv.RunActivityMonitor(ctx)
 
 	go func() {
 		t := time.NewTicker(time.Hour)

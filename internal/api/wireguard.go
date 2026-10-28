@@ -98,6 +98,7 @@ func (s *Server) writeBackup(srv store.ServerConfig, clients []store.Client) err
 // Bootstrap dijalankan saat start: memasang lagi interface, peer, dan firewall
 // dari database (kernel kosong setelah reboot). Kesalahan hanya dicatat.
 func (s *Server) Bootstrap(ctx context.Context) {
+	s.loadAdGuardConn(ctx)
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	srv, err := s.loadServer(ctx)
@@ -127,6 +128,7 @@ func (s *Server) Bootstrap(ctx context.Context) {
 		}
 	}
 	slog.Info("WireGuard aktif", "interface", srv.Interface)
+	s.maybeAutoInstallAdGuard()
 }
 
 // ---- cek sistem ----
@@ -280,6 +282,9 @@ func (s *Server) handlePutServer(w http.ResponseWriter, r *http.Request) {
 	// Profil klien memuat endpoint dan MTU server; bila berubah, klien harus unduh ulang.
 	profileChanged := old.Initialized && len(clients) > 0 &&
 		(old.EndpointHost != srv.EndpointHost || endpointOf(old) != endpointOf(srv))
+	if !old.Initialized {
+		s.maybeAutoInstallAdGuard()
+	}
 	srv.PrivateKey = ""
 	writeJSON(w, http.StatusOK, map[string]any{"server": srv, "profile_changed": profileChanged, "warnings": warnings})
 }

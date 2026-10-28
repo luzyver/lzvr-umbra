@@ -77,7 +77,21 @@ CREATE TABLE IF NOT EXISTS clients (
 	adblock       INTEGER NOT NULL DEFAULT 1,
 	created_at    INTEGER NOT NULL,
 	updated_at    INTEGER NOT NULL
-);`)
+);
+CREATE TABLE IF NOT EXISTS activity (
+	id          INTEGER PRIMARY KEY,
+	client_id   INTEGER NOT NULL,
+	client_name TEXT NOT NULL,
+	kind        TEXT NOT NULL,
+	endpoint    TEXT NOT NULL DEFAULT '',
+	detail      TEXT NOT NULL DEFAULT '',
+	duration    INTEGER NOT NULL DEFAULT 0,
+	rx_bytes    INTEGER NOT NULL DEFAULT 0,
+	tx_bytes    INTEGER NOT NULL DEFAULT 0,
+	at          INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS activity_client ON activity (client_id, id);
+CREATE INDEX IF NOT EXISTS activity_at ON activity (at);`)
 	return err
 }
 

@@ -11,6 +11,7 @@
   moon:'M20 15A9 9 0 0 1 9 4a9 9 0 1 0 11 11',
   logout:'M9 3H4v18h5 M9 12h12 M16 7l5 5-5 5',
   server:'M3 3h18v7H3z M3 14h18v7H3z M7 7h.01 M7 18h.01 M13 7h4 M13 18h4',
+  activity:'M3 12h4l3-8 4 16 3-8h4',
   menu:'M4 6h16 M4 12h16 M4 18h16', close:'M6 6l12 12 M6 18L18 6'
  };
 </script>

@@ -57,4 +57,14 @@ const (
 	KeyServer   = "server"
 	KeyDefaults = "client_defaults"
 	KeyFirewall = "firewall"
+	KeyAdGuard  = "adguard"
 )
+
+// AdGuardConn adalah koneksi ke AdGuard Home yang diatur dari panel.
+// Managed berarti AdGuard dipasang dan disiapkan oleh panel sendiri.
+type AdGuardConn struct {
+	URL     string `json:"url"`
+	User    string `json:"user"`
+	Pass    string `json:"pass"`
+	Managed bool   `json:"managed"`
+}

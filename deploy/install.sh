@@ -1,10 +1,21 @@
 #!/bin/sh
 # Installer Umbra. Jalankan sebagai root di server Linux:
-#   sh install.sh [path/ke/binary-umbra]
+#   sh install.sh [--with-adguard] [path/ke/binary-umbra]
+# --with-adguard: pasang AdGuard Home otomatis begitu WireGuard selesai diatur di panel.
 # Aman dijalankan ulang (untuk update binary).
 set -eu
 
-BIN_SRC="${1:-$(dirname "$0")/umbra}"
+WITH_ADGUARD=false
+BIN_SRC=""
+for arg in "$@"; do
+	case "$arg" in
+		--with-adguard) WITH_ADGUARD=true ;;
+		-*) printf 'Opsi tidak dikenal: %s
+' "$arg" >&2; exit 1 ;;
+		*) BIN_SRC="$arg" ;;
+	esac
+done
+BIN_SRC="${BIN_SRC:-$(dirname "$0")/umbra}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
 say() { printf '\033[1;36m==>\033[0m %s\n' "$*"; }
@@ -59,8 +70,39 @@ if [ ! -f /etc/umbra/umbra.env ]; then
 else
 	say "  /etc/umbra/umbra.env sudah ada, tidak ditimpa"
 fi
+if [ "$WITH_ADGUARD" = true ]; then
+	say "AdGuard Home akan dipasang otomatis setelah WireGuard diatur di panel"
+	sed -i '/^#* *UMBRA_ADGUARD_AUTOINSTALL=/d' /etc/umbra/umbra.env
+	echo "UMBRA_ADGUARD_AUTOINSTALL=true" >> /etc/umbra/umbra.env
+fi
+
+# Helper root kecil untuk memasang/mencopot AdGuard Home dari panel. Panel
+# (user umbra) menulis request.json; path unit menjalankan "umbra helper".
+say "Memasang helper AdGuard"
+install -d -m 0700 -o umbra -g umbra /var/lib/umbra /var/lib/umbra/helper
+cat > /etc/systemd/system/umbra-helper.path <<'UNIT'
+[Unit]
+Description=Umbra - pantau permintaan helper
+
+[Path]
+PathExists=/var/lib/umbra/helper/request.json
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+cat > /etc/systemd/system/umbra-helper.service <<'UNIT'
+[Unit]
+Description=Umbra - helper root (pasang/copot AdGuard Home)
+
+[Service]
+Type=oneshot
+User=root
+EnvironmentFile=-/etc/umbra/umbra.env
+ExecStart=/usr/local/bin/umbra helper
+UNIT
 
 systemctl daemon-reload
+systemctl enable --now umbra-helper.path
 systemctl enable --now umbra
 sleep 2
 systemctl is-active --quiet umbra || { journalctl -u umbra -n 30 --no-pager; die "service tidak mau jalan"; }

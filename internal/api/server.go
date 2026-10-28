@@ -47,6 +47,10 @@ type Server struct {
 
 	setupMu    sync.Mutex
 	setupToken string // kosong setelah admin pertama dibuat
+
+	// agJob: pekerjaan pasang/lepas AdGuard yang sedang/terakhir berjalan.
+	agJobMu sync.Mutex
+	agJob   agJob
 }
 
 func New(cfg config.Config, st *store.Store, backend wg.Backend, fw *firewall.Manager, ag *adguard.Client, setupToken string) *Server {
@@ -98,11 +102,25 @@ func (s *Server) Handler(ui http.Handler, scriptHashes []string) http.Handler {
 
 	priv("GET /api/status", s.handleStatus)
 	priv("GET /api/events", s.handleEvents)
+	priv("GET /api/activity", s.handleListActivity)
+	priv("DELETE /api/activity", s.handleClearActivity)
 
 	priv("GET /api/adguard/status", s.handleAdGuardStatus)
 	priv("POST /api/adguard/protection", s.handleAdGuardProtection)
 	priv("GET /api/adguard/stats", s.handleAdGuardStats)
 	priv("POST /api/adguard/sync", s.handleAdGuardSync)
+	priv("GET /api/adguard/connection", s.handleAdGuardGetConn)
+	priv("PUT /api/adguard/connection", s.handleAdGuardPutConn)
+	priv("DELETE /api/adguard/connection", s.handleAdGuardDeleteConn)
+	priv("POST /api/adguard/connection/test", s.handleAdGuardTestConn)
+	priv("GET /api/adguard/install", s.handleAdGuardJob)
+	priv("POST /api/adguard/install", s.handleAdGuardInstall)
+	priv("POST /api/adguard/uninstall", s.handleAdGuardUninstall)
+	priv("GET /api/adguard/clients/{id}", s.handleAdGuardGetClient)
+	priv("PUT /api/adguard/clients/{id}", s.handleAdGuardPutClient)
+	for _, rt := range agProxyRoutes {
+		priv(rt.method+" /api/adguard/ctl/"+rt.path, s.agProxy(rt.method, "/control/"+rt.path))
+	}
 
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "endpoint tidak ada")

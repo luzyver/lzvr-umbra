@@ -37,3 +37,15 @@ export function splitList(s: string): string[] {
 		.map((x) => x.trim())
 		.filter(Boolean);
 }
+
+// Durasi dalam detik -> "2 j 5 m", "45 d".
+export function duration(sec: number): string {
+	if (!sec || sec < 0) return '–';
+	const d = Math.floor(sec / 86400);
+	const h = Math.floor((sec % 86400) / 3600);
+	const m = Math.floor((sec % 3600) / 60);
+	if (d) return `${d} hr ${h} j`;
+	if (h) return `${h} j ${m} m`;
+	if (m) return `${m} m`;
+	return `${sec} d`;
+}

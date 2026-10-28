@@ -19,6 +19,9 @@ type Config struct {
 	AdGuardURL  string // mis. http://127.0.0.1:3000 (kosong = integrasi mati)
 	AdGuardUser string
 	AdGuardPass string
+	// AdGuardAutoInstall: pasang AdGuard Home otomatis setelah WireGuard diatur
+	// (diisi installer bila dijalankan dengan --with-adguard).
+	AdGuardAutoInstall bool
 }
 
 func Load() Config {
@@ -41,6 +44,8 @@ func Load() Config {
 		AdGuardURL:   env("UMBRA_ADGUARD_URL", ""),
 		AdGuardUser:  env("UMBRA_ADGUARD_USER", ""),
 		AdGuardPass:  env("UMBRA_ADGUARD_PASS", ""),
+
+		AdGuardAutoInstall: envBool("UMBRA_ADGUARD_AUTOINSTALL", false),
 	}
 }
 

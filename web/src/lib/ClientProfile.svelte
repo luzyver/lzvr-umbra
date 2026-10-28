@@ -35,4 +35,5 @@
 	{/if}
 	<p class="hint text-center">Pindai dengan aplikasi WireGuard di HP (Tambah tunnel → Pindai QR).</p>
 	<a class="btn-ghost" href="/api/clients/{client.id}/config" download>Unduh file .conf</a>
+	<a class="btn-ghost" href="/activity?client={client.id}">Log aktivitas</a>
 </div>
