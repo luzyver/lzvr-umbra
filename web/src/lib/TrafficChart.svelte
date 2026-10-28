@@ -20,7 +20,7 @@
   <span class="chart-peak">{rate(peak)}</span>
   <svg viewBox="0 0 500 130" preserveAspectRatio="none" role="img" aria-label="Grafik kecepatan data masuk dan keluar server selama 60 detik terakhir">
    <path d="M0 120H500" stroke="var(--border)" fill="none" vector-effect="non-scaling-stroke"/>
-   <path d={path('rx')} stroke="var(--text)" stroke-width="1.5" fill="none" vector-effect="non-scaling-stroke"/>
+   <path d={path('rx')} stroke="var(--chart-rx)" stroke-width="1.5" fill="none" vector-effect="non-scaling-stroke"/>
    <path d={path('tx')} stroke="var(--chart-tx)" stroke-width="1.5" fill="none" vector-effect="non-scaling-stroke"/>
   </svg>
  </div>

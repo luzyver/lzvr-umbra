@@ -5,6 +5,18 @@
 @theme {
 	--font-sans: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 	--font-mono: ui-monospace, 'Cascadia Code', 'JetBrains Mono', Menlo, monospace;
+	/* Abu-abu "zinc" diganti abu-abu hangat (ala Radix Sand) agar selaras dengan design.css. */
+	--color-zinc-50: #f9f9f8;
+	--color-zinc-100: #f1f0ef;
+	--color-zinc-200: #e2e1de;
+	--color-zinc-300: #cfceca;
+	--color-zinc-400: #a3a29b;
+	--color-zinc-500: #6f6d66;
+	--color-zinc-600: #63635e;
+	--color-zinc-700: #3e3e3a;
+	--color-zinc-800: #2f2f2c;
+	--color-zinc-900: #1c1c1a;
+	--color-zinc-950: #161615;
 }
 
 @font-face { font-family: Manrope; src: url('/fonts/manrope-regular.ttf'); font-weight: 400; font-display: swap; }
@@ -28,7 +40,7 @@
 	}
 	.btn-primary {
 		background: var(--accent); color: var(--accent-text);
-		&:hover { opacity: 0.88; }
+		&:hover { background: var(--accent-hover); }
 	}
 	.btn-ghost {
 		@apply border border-zinc-300 bg-white hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800;

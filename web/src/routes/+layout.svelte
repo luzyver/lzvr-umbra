@@ -107,6 +107,10 @@
 				{/each}
 			</nav>
 			<div class="sidebar-foot">
+				<div class="sidebar-links">
+					<a href="https://www.wireguard.com/quickstart/" target="_blank" rel="noopener noreferrer"><Icon name="book" size={14} />Dokumentasi<span class="ext"><Icon name="external" size={12} /></span></a>
+					<a href="https://github.com/luzyver/lzvr-umbra" target="_blank" rel="noopener noreferrer"><Icon name="github" size={14} />GitHub<span class="ext"><Icon name="external" size={12} /></span></a>
+				</div>
 				{#if session.me?.fake_wg}<span class="badge test-badge" title="UMBRA_FAKE_WG aktif, tidak ada perubahan ke sistem">Mode uji</span>{/if}
 				<div class="sidebar-user">
 					<span>{session.me?.username}</span>

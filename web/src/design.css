@@ -1,42 +1,64 @@
-/* Umbra: tampilan minimalis. Netral, satu warna aksen, garis tipis tanpa bayangan. */
+/* Umbra: tampilan minimalis, garis tipis tanpa bayangan.
+   Palet: abu-abu hangat seperti kertas buku (bukan hitam/putih murni) + satu aksen amber, cahaya di tepi gerhana.
+   Acuan skala Radix Sand/Amber; kontras teks ±14–15:1, bukan 19:1 yang menyilaukan.
+   Amber terang kurang kontras di latar terang, jadi fokus keyboard memakai --focus yang lebih gelap. */
 :root {
-	--bg: #fafafa;
-	--panel: #ffffff;
-	--panel-alt: #f4f4f5;
-	--border: #e4e4e7;
-	--text: #18181b;
-	--muted: #71717a;
-	--accent: #18181b;
-	--accent-text: #fafafa;
-	--green: #16a34a;
-	--chart-tx: #3b82f6;
-	--violet: var(--chart-tx);
+	--bg: #f9f9f8;
+	--sidebar: #f1f0ef;
+	--panel: #fdfdfc;
+	--panel-alt: #f1f0ef;
+	--border: #e2e1de;
+	--border-strong: #cfceca;
+	--text: #21201c;
+	--muted: #63635e;
+	--accent: #ffc53d;
+	--accent-hover: #ffba18;
+	--accent-text: #21201c;
+	--accent-soft: #fef3d6;
+	--accent-ink: #975a00;
+	--focus: #975a00;
+	--logo: #bf7a0b;
+	--green: #30a46c;
+	--chart-rx: #d97706;
+	--chart-tx: #0d9488;
 	color-scheme: light;
 }
 [data-theme='dark'] {
-	--bg: #09090b;
-	--panel: #111113;
-	--panel-alt: #1c1c1f;
-	--border: #27272a;
-	--text: #fafafa;
-	--muted: #a1a1aa;
-	--accent: #fafafa;
-	--accent-text: #18181b;
-	--green: #4ade80;
-	--chart-tx: #60a5fa;
+	--bg: #161615;
+	--sidebar: #111110;
+	--panel: #1c1c1a;
+	--panel-alt: #252523;
+	--border: #2f2f2c;
+	--border-strong: #3e3e3a;
+	--text: #e8e7e3;
+	--muted: #a3a29b;
+	--accent: #ffc53d;
+	--accent-hover: #ffd60a;
+	--accent-text: #21201c;
+	--accent-soft: #302008;
+	--accent-ink: #ffca16;
+	--focus: #ffc53d;
+	--logo: #ffc53d;
+	--green: #3dd68c;
+	--chart-rx: #c4851f;
+	--chart-tx: #22a693;
 	color-scheme: dark;
 }
 
 body { background: var(--bg); color: var(--text); font-size: 14px; }
-:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 input[type='checkbox'] { accent-color: var(--accent); }
+::selection { background: color-mix(in srgb, var(--accent) 28%, transparent); }
 
 .card { background: var(--panel); border-color: var(--border); box-shadow: none; }
-.input { background: var(--panel); border-color: var(--border); }
-.input:focus { border-color: var(--muted); box-shadow: 0 0 0 3px color-mix(in srgb, var(--text) 8%, transparent); }
-.btn-ghost { background: var(--panel); border-color: var(--border); }
+.input { background: var(--panel); border-color: var(--border-strong); }
+.input:focus { border-color: var(--focus); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent); }
+.btn-ghost { background: var(--panel); border-color: var(--border-strong); }
 .btn-ghost:hover { background: var(--panel-alt); }
 .hint { color: var(--muted); }
+.label { color: var(--text); }
+/* Teks abu-abu Tailwind di halaman ikut warna "muted" agar tetap terbaca di mode gelap. */
+[data-theme='dark'] .text-zinc-500 { color: var(--muted); }
 dialog { background: var(--panel); border-color: var(--border); box-shadow: 0 16px 48px #0000001f; }
 dialog::backdrop { background: #00000066; }
 
@@ -48,7 +70,7 @@ dialog::backdrop { background: #00000066; }
 
 /* Logo */
 .umbra-logo { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; letter-spacing: -0.2px; color: var(--text); }
-.umbra-mark { width: 20px; height: 20px; fill: var(--text); }
+.umbra-mark { width: 20px; height: 20px; fill: var(--logo); }
 
 /* Tombol ikon kecil (tema, keluar, menu) */
 .icon-btn { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 6px; color: var(--muted); }
@@ -56,14 +78,19 @@ dialog::backdrop { background: #00000066; }
 
 /* Kerangka aplikasi */
 .app-shell { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 100dvh; }
-.app-sidebar { position: sticky; top: 0; height: 100dvh; display: flex; flex-direction: column; gap: 20px; padding: 16px 12px; border-right: 1px solid var(--border); }
+.app-sidebar { position: sticky; top: 0; height: 100dvh; display: flex; flex-direction: column; gap: 20px; padding: 16px 12px; border-right: 1px solid var(--border); background: var(--sidebar); }
 .sidebar-top { display: flex; align-items: center; justify-content: space-between; padding: 4px 8px; }
 .main-nav { display: grid; gap: 2px; }
 .main-nav a { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 6px; color: var(--muted); font-size: 13.5px; font-weight: 500; }
-.main-nav a:hover, .main-nav a.active { background: var(--panel-alt); color: var(--text); }
+.main-nav a:hover { background: color-mix(in srgb, var(--text) 6%, transparent); color: var(--text); }
+.main-nav a.active { background: var(--accent-soft); color: var(--accent-ink); }
 .sidebar-foot { margin-top: auto; display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); }
 .sidebar-user { display: flex; align-items: center; gap: 2px; padding-left: 8px; }
 .sidebar-user span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 13px; }
+.sidebar-links { display: grid; gap: 1px; }
+.sidebar-links a { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; color: var(--muted); font-size: 12.5px; }
+.sidebar-links a:hover { background: color-mix(in srgb, var(--text) 6%, transparent); color: var(--text); }
+.sidebar-links .ext { display: inline-flex; margin-left: auto; opacity: .6; }
 .test-badge { justify-self: start; margin-left: 8px; border: 1px solid var(--border); color: var(--muted); }
 .mobile-menu { display: none; }
 .page-content { width: 100%; max-width: 1120px; margin: 0 auto; padding: 32px 40px 48px; }
@@ -123,7 +150,7 @@ dialog::backdrop { background: #00000066; }
 /* Grafik trafik */
 .chart-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-bottom: 16px; font-size: 13px; color: var(--muted); }
 .chart-head strong { color: var(--text); font-weight: 500; font-variant-numeric: tabular-nums; }
-.legend { display: inline-block; width: 8px; height: 2px; margin-right: 6px; vertical-align: middle; background: var(--text); }
+.legend { display: inline-block; width: 8px; height: 2px; margin-right: 6px; vertical-align: middle; background: var(--chart-rx); }
 .legend.tx { background: var(--chart-tx); }
 .traffic-chart { position: relative; height: 140px; }
 .traffic-chart svg { width: 100%; height: 100%; overflow: visible; }
