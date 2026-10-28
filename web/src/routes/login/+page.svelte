@@ -29,7 +29,8 @@
 
 <div class="login-screen">
 	<form class="card login-card space-y-4" onsubmit={submit}>
-		<Logo/><div class="login-intro"><h1>Ruang privatmu menanti.</h1><p>Masuk untuk mengelola jaringan pribadimu.</p></div>
+		<Logo/>
+		<h1>Masuk ke Umbra</h1>
 		<div>
 			<label class="label" for="u">Nama pengguna</label>
 			<input id="u" class="input" bind:value={username} autocomplete="username" required />

@@ -22,7 +22,7 @@
 <dialog
 	bind:this={dialog}
 	onclose={() => (open = false)}
-	class="m-auto w-full rounded-xl border border-zinc-200 bg-white p-0 text-zinc-900 shadow-xl backdrop:bg-black/40 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 {wide
+	class="m-auto w-full rounded-lg border border-zinc-200 bg-white p-0 text-zinc-900 backdrop:bg-black/40 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 {wide
 		? 'max-w-2xl'
 		: 'max-w-md'}"
 >

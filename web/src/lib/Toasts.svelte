@@ -1,20 +1,16 @@
 <script lang="ts">
 	import { toasts, dismiss } from './toast.svelte';
 
-	const style = {
-		ok: 'border-teal-600 bg-teal-50 text-teal-900 dark:bg-teal-950 dark:text-teal-100',
-		warn: 'border-amber-500 bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-100',
-		error: 'border-red-600 bg-red-50 text-red-900 dark:bg-red-950 dark:text-red-100'
-	};
+	const dot = { ok: 'bg-green-500', warn: 'bg-amber-500', error: 'bg-red-500' };
 </script>
 
 <div class="fixed right-4 bottom-4 z-50 flex w-80 flex-col gap-2" aria-live="polite">
 	{#each toasts as t (t.id)}
 		<button
-			class="rounded-lg border-l-4 px-4 py-3 text-left text-sm shadow-md {style[t.kind]}"
+			class="flex items-start gap-2.5 rounded-md border border-[var(--border)] bg-[var(--panel)] px-3.5 py-2.5 text-left text-sm text-[var(--text)] shadow-lg shadow-black/5"
 			onclick={() => dismiss(t.id)}
 		>
-			{t.text}
+			<i class="mt-1.5 size-1.5 shrink-0 rounded-full {dot[t.kind]}"></i>{t.text}
 		</button>
 	{/each}
 </div>

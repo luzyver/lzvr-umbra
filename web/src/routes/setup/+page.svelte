@@ -147,10 +147,10 @@
 			{#each steps as s, i (s)}
 				<li
 					class="rounded-full px-3 py-1 {i === step
-						? 'bg-teal-600 text-white'
+						? 'bg-[var(--accent)] text-[var(--accent-text)]'
 						: i < step
-							? 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-200'
-							: 'bg-zinc-200 text-zinc-500 dark:bg-zinc-800'}"
+							? 'bg-[var(--panel-alt)] text-[var(--text)]'
+							: 'text-[var(--muted)]'}"
 				>
 					{i + 1}. {s}
 				</li>

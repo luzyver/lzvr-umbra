@@ -9,6 +9,7 @@
   plus:'M12 5v14 M5 12h14', arrow:'M5 12h14 M13 6l6 6-6 6',
   sun:'M16 12a4 4 0 1 1-8 0 4 4 0 1 1 8 0 M12 2v2 M12 20v2 M2 12h2 M20 12h2 M5 5l1 1 M18 18l1 1 M5 19l1-1 M18 6l1-1',
   moon:'M20 15A9 9 0 0 1 9 4a9 9 0 1 0 11 11',
+  monitor:'M3 4h18v12H3z M8 20h8 M12 16v4',
   logout:'M9 3H4v18h5 M9 12h12 M16 7l5 5-5 5',
   server:'M3 3h18v7H3z M3 14h18v7H3z M7 7h.01 M7 18h.01 M13 7h4 M13 18h4',
   activity:'M3 12h4l3-8 4 16 3-8h4',

@@ -71,7 +71,7 @@
 <svelte:head><title>Aktivitas · Umbra</title></svelte:head>
 
 <div class="page-heading">
-	<div><div class="overline">ACTIVITY</div><h1>Aktivitas</h1><p>Situs yang dibuka tiap perangkat, dan kapan ia terhubung.</p></div>
+	<h1>Aktivitas</h1>
 	{#if tab === 'sessions'}
 		<button class="btn-ghost ml-auto" disabled={busy} onclick={() => load()}>Muat ulang</button>
 		<button class="btn-danger" disabled={busy || !items?.length} onclick={clear}>Hapus log</button>

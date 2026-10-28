@@ -72,7 +72,7 @@
 			{#if info.pending}
 				<span class="badge bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200">masa uji</span>
 			{:else if info.state.applied}
-				<span class="badge bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-200">aktif</span>
+				<span class="badge border border-[var(--border)] text-[var(--muted)]">aktif</span>
 			{:else}
 				<span class="badge bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">belum dipasang</span>
 			{/if}

@@ -103,7 +103,7 @@
 <svelte:head><title>AdGuard · Umbra</title></svelte:head>
 
 <div class="page-heading">
-	<div><div class="overline">NETWORK PROTECTION</div><h1>AdGuard</h1><p>Pasang, atur, dan pantau perlindungan DNS jaringanmu.</p></div>
+	<h1>AdGuard</h1>
 	{#if st?.configured && st.reachable && !running}
 		<button class="btn-ghost ml-auto" disabled={busy} onclick={load}>Muat ulang</button>
 		<button class="btn-primary" disabled={busy} onclick={sync}>Sinkron klien</button>

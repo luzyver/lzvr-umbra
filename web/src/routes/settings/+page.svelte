@@ -86,7 +86,7 @@
 
 <svelte:head><title>Pengaturan · Umbra</title></svelte:head>
 
-<div class="page-heading"><div><div class="overline">WORKSPACE SETTINGS</div><h1>Pengaturan</h1><p>Sesuaikan jaringan dengan kebutuhanmu.</p></div></div>
+<div class="page-heading"><h1>Pengaturan</h1></div>
 
 {#if error}
 	<div class="card text-sm text-red-600">{error}</div>

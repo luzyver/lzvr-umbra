@@ -161,10 +161,10 @@
 
 <svelte:head><title>Klien · Umbra</title></svelte:head>
 
-<div class="page-heading flex-wrap">
-	<div><div class="overline">YOUR DEVICES</div><h1>Perangkat</h1><p>Atur akses dan profil koneksi perangkatmu.</p></div>
-	<input class="input ml-auto w-56" aria-label="Cari perangkat" placeholder="Cari nama / IP" bind:value={q} />
-	<button class="btn-primary" onclick={openNew}>+ Tambah klien</button>
+<div class="page-heading">
+	<h1>Perangkat</h1>
+	<input class="input ml-auto w-56" aria-label="Cari perangkat" placeholder="Cari nama atau IP…" bind:value={q} />
+	<button class="btn-primary" onclick={openNew}>Tambah perangkat</button>
 </div>
 
 {#if error}
