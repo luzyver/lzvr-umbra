@@ -28,18 +28,24 @@
 <svelte:head><title>Masuk · Umbra</title></svelte:head>
 
 <div class="login-screen">
-	<form class="card login-card space-y-4" onsubmit={submit}>
-		<Logo/>
-		<h1>Masuk ke Umbra</h1>
-		<div>
-			<label class="label" for="u">Nama pengguna</label>
-			<input id="u" class="input" bind:value={username} autocomplete="username" required />
-		</div>
-		<div>
-			<label class="label" for="p">Kata sandi</label>
-			<input id="p" class="input" type="password" bind:value={password} autocomplete="current-password" required />
-		</div>
-		{#if error}<p class="text-sm text-red-600">{error}</p>{/if}
-		<button class="btn-primary w-full" disabled={busy}>{busy ? 'Masuk…' : 'Masuk'}</button>
-	</form>
+	<aside class="login-side">
+		<Logo />
+		<p>Semua perangkat di jaringan pribadimu, dalam satu papan.</p>
+		<small>WireGuard · AdGuard Home</small>
+	</aside>
+	<div class="login-main">
+		<form class="login-card space-y-4" onsubmit={submit}>
+			<h1>Masuk</h1>
+			<div>
+				<label class="label" for="u">Nama pengguna</label>
+				<input id="u" class="input" bind:value={username} autocomplete="username" required />
+			</div>
+			<div>
+				<label class="label" for="p">Kata sandi</label>
+				<input id="p" class="input" type="password" bind:value={password} autocomplete="current-password" required />
+			</div>
+			{#if error}<p class="text-sm text-[var(--red)]" role="alert">{error}</p>{/if}
+			<button class="btn-primary w-full" disabled={busy}>{busy ? 'Masuk…' : 'Masuk'}</button>
+		</form>
+	</div>
 </div>

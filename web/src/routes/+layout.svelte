@@ -13,11 +13,12 @@
 	let { children } = $props();
 
 	let ready = $state(false);
-	let menuOpen = $state(false);
 	let fatal = $state('');
 
 	const publicPaths = ['/login', '/setup'];
-	const nav = [
+	const docsUrl = 'https://www.wireguard.com/quickstart/';
+	const repoUrl = 'https://github.com/luzyver/lzvr-umbra';
+	const nav: { href: string; label: string; icon: string }[] = [
 		{ href: '/', label: 'Ringkasan', icon: 'overview' },
 		{ href: '/clients', label: 'Perangkat', icon: 'laptop' },
 		{ href: '/activity', label: 'Aktivitas', icon: 'activity' },
@@ -59,7 +60,6 @@
 		const p = page.url.pathname;
 		if (p === last) return;
 		last = p;
-		menuOpen = false;
 		// Halaman publik tidak perlu dicek ulang setiap pindah, cukup sekali di awal.
 		if (!ready || !publicPaths.includes(p)) guard(p);
 	});
@@ -73,6 +73,7 @@
 		}
 	}
 
+	const isActive = (href: string) => (href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(href));
 	const bare = $derived(publicPaths.includes(page.url.pathname) || !session.me);
 </script>
 
@@ -93,23 +94,19 @@
 	</div>
 {:else}
 	<div class="app-shell">
-		<aside class="app-sidebar" class:open={menuOpen}>
+		<aside class="app-sidebar">
 			<div class="sidebar-top">
 				<a href="/" aria-label="Umbra — ringkasan"><Logo /></a>
-				<button class="icon-btn mobile-menu" aria-label={menuOpen ? 'Tutup navigasi' : 'Buka navigasi'} aria-expanded={menuOpen} aria-controls="main-nav" onclick={() => (menuOpen = !menuOpen)}>
-					<Icon name={menuOpen ? 'close' : 'menu'} size={18} />
-				</button>
 			</div>
-			<nav id="main-nav" class="main-nav" aria-label="Navigasi utama">
+			<nav class="main-nav" aria-label="Navigasi utama">
 				{#each nav as n (n.href)}
-					{@const active = n.href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(n.href)}
-					<a href={n.href} class:active aria-current={active ? 'page' : undefined}><Icon name={n.icon} size={16} /><span>{n.label}</span></a>
+					<a href={n.href} class:active={isActive(n.href)} aria-current={isActive(n.href) ? 'page' : undefined}><Icon name={n.icon} size={16} /><span>{n.label}</span></a>
 				{/each}
 			</nav>
 			<div class="sidebar-foot">
 				<div class="sidebar-links">
-					<a href="https://www.wireguard.com/quickstart/" target="_blank" rel="noopener noreferrer"><Icon name="book" size={14} />Dokumentasi<span class="ext"><Icon name="external" size={12} /></span></a>
-					<a href="https://github.com/luzyver/lzvr-umbra" target="_blank" rel="noopener noreferrer"><Icon name="github" size={14} />GitHub<span class="ext"><Icon name="external" size={12} /></span></a>
+					<a href={docsUrl} target="_blank" rel="noopener noreferrer"><Icon name="book" size={14} />Dokumentasi<span class="ext"><Icon name="external" size={12} /></span></a>
+					<a href={repoUrl} target="_blank" rel="noopener noreferrer"><Icon name="github" size={14} />GitHub<span class="ext"><Icon name="external" size={12} /></span></a>
 				</div>
 				{#if session.me?.fake_wg}<span class="badge test-badge" title="UMBRA_FAKE_WG aktif, tidak ada perubahan ke sistem">Mode uji</span>{/if}
 				<div class="sidebar-user">
@@ -119,7 +116,20 @@
 				</div>
 			</div>
 		</aside>
+		<header class="mobile-bar">
+			<a href="/" aria-label="Umbra — ringkasan"><Logo /></a>
+			{#if session.me?.fake_wg}<span class="badge test-badge" title="UMBRA_FAKE_WG aktif, tidak ada perubahan ke sistem">Mode uji</span>{/if}
+			<a class="icon-btn" href={docsUrl} target="_blank" rel="noopener noreferrer" aria-label="Dokumentasi" title="Dokumentasi"><Icon name="book" size={17} /></a>
+			<a class="icon-btn" href={repoUrl} target="_blank" rel="noopener noreferrer" aria-label="GitHub" title="GitHub"><Icon name="github" size={17} /></a>
+			<ThemeToggle />
+			<button class="icon-btn" onclick={logout} aria-label="Keluar" title="Keluar"><Icon name="logout" size={17} /></button>
+		</header>
 		<main id="main-content" class="page-content">{@render children()}</main>
+		<nav class="tab-bar" aria-label="Navigasi utama">
+			{#each nav as n (n.href)}
+				<a href={n.href} class:active={isActive(n.href)} aria-current={isActive(n.href) ? 'page' : undefined}><Icon name={n.icon} size={20} /><span>{n.label}</span></a>
+			{/each}
+		</nav>
 	</div>
 {/if}
 <Toasts />

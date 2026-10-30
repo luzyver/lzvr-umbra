@@ -10,16 +10,15 @@
  }
 </script>
 <div class="chart-head">
- <span class="font-medium text-[var(--text)]">Trafik</span>
- <span class="status" class:online={live}><i class="status-dot"></i>{live ? 'Langsung' : 'Terputus'}</span>
- <span class="ml-auto"><i class="legend"></i>Masuk <strong>{live && latest ? rate(latest.rx) : '—'}</strong></span>
- <span><i class="legend tx"></i>Keluar <strong>{live && latest ? rate(latest.tx) : '—'}</strong></span>
+ <span class="font-semibold text-[var(--text)]">Kecepatan, 60 detik terakhir</span>
+ <span class="status ml-auto" class:online={live}><i class="status-dot"></i>{live ? 'Langsung' : 'Terputus'}</span>
 </div>
 {#if samples.length > 1}
  <div class="traffic-chart">
   <span class="chart-peak">{rate(peak)}</span>
   <svg viewBox="0 0 500 130" preserveAspectRatio="none" role="img" aria-label="Grafik kecepatan data masuk dan keluar server selama 60 detik terakhir">
    <path d="M0 120H500" stroke="var(--border)" fill="none" vector-effect="non-scaling-stroke"/>
+   <path d="{path('rx')} L500,120 L{500-((latest?.t ?? 0)-(samples[0]?.t ?? 0))/60000*500},120Z" style="fill: color-mix(in srgb, var(--chart-rx) 14%, transparent)"/>
    <path d={path('rx')} stroke="var(--chart-rx)" stroke-width="1.5" fill="none" vector-effect="non-scaling-stroke"/>
    <path d={path('tx')} stroke="var(--chart-tx)" stroke-width="1.5" fill="none" vector-effect="non-scaling-stroke"/>
   </svg>

@@ -5,18 +5,18 @@
 @theme {
 	--font-sans: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 	--font-mono: ui-monospace, 'Cascadia Code', 'JetBrains Mono', Menlo, monospace;
-	/* Abu-abu "zinc" diganti abu-abu hangat (ala Radix Sand) agar selaras dengan design.css. */
-	--color-zinc-50: #f9f9f8;
-	--color-zinc-100: #f1f0ef;
-	--color-zinc-200: #e2e1de;
-	--color-zinc-300: #cfceca;
-	--color-zinc-400: #a3a29b;
-	--color-zinc-500: #6f6d66;
-	--color-zinc-600: #63635e;
-	--color-zinc-700: #3e3e3a;
-	--color-zinc-800: #2f2f2c;
-	--color-zinc-900: #1c1c1a;
-	--color-zinc-950: #161615;
+	/* Abu-abu "zinc" diganti abu-abu linen hangat agar selaras dengan design.css. */
+	--color-zinc-50: #f5f3ee;
+	--color-zinc-100: #efece5;
+	--color-zinc-200: #e3dfd5;
+	--color-zinc-300: #cfc9bc;
+	--color-zinc-400: #a69e8c;
+	--color-zinc-500: #686256;
+	--color-zinc-600: #5a5449;
+	--color-zinc-700: #3d372e;
+	--color-zinc-800: #2c2822;
+	--color-zinc-900: #1b1916;
+	--color-zinc-950: #141210;
 }
 
 @font-face { font-family: Manrope; src: url('/fonts/manrope-regular.ttf'); font-weight: 400; font-display: swap; }
