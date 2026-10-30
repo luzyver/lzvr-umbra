@@ -12,6 +12,7 @@ type Config struct {
 	DataDir      string // tempat database, token setup, cadangan
 	Dev          bool   // mode pengembangan: cookie tanpa Secure, WG palsu bila bukan Linux
 	FakeWG       bool   // pakai backend WireGuard tiruan (untuk dev di Windows/macOS)
+	WGBackend    string // auto, kernel, atau userspace
 	FakeFirewall bool   // jangan jalankan nft sungguhan
 	SecureCookie bool
 	TrustProxy   bool // percayai X-Real-IP / X-Forwarded-For dari nginx
@@ -38,6 +39,7 @@ func Load() Config {
 		DataDir:      env("UMBRA_DATA_DIR", dataDir),
 		Dev:          dev,
 		FakeWG:       fake,
+		WGBackend:    env("UMBRA_WG_BACKEND", "auto"),
 		FakeFirewall: envBool("UMBRA_FAKE_FIREWALL", fake),
 		SecureCookie: envBool("UMBRA_SECURE_COOKIE", !dev),
 		TrustProxy:   envBool("UMBRA_TRUST_PROXY", false),

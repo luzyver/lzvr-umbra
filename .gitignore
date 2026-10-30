@@ -9,3 +9,14 @@ web/node_modules/
 web/.svelte-kit/
 internal/ui/dist/*
 !internal/ui/dist/.keep
+
+# catatan desain lokal (tidak ikut repo)
+/DESIGN.md
+/PRODUCT.md
+/.impeccable/
+
+# editor & OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

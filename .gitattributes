@@ -1,0 +1,5 @@
+# Skrip shell dan file deploy harus LF supaya jalan di server Linux.
+* text=auto eol=lf
+*.ttf binary
+*.png binary
+*.ico binary

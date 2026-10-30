@@ -19,10 +19,15 @@ NoNewPrivileges=true
 
 StateDirectory=umbra
 StateDirectoryMode=0700
+RuntimeDirectory=wireguard
+RuntimeDirectoryMode=0700
 ProtectSystem=strict
 ProtectHome=true
 PrivateTmp=true
 PrivateDevices=true
+# Hanya TUN host yang dibuka di /dev privat untuk wireguard-go.
+BindPaths=-/dev/net/tun
+DeviceAllow=/dev/net/tun rw
 ProtectKernelTunables=true
 ProtectKernelModules=true
 ProtectControlGroups=true

@@ -45,8 +45,11 @@ type Server struct {
 	// mu menjaga agar perubahan server/klien dan sinkronisasi ke kernel tidak saling tumpang.
 	mu sync.Mutex
 
-	setupMu    sync.Mutex
-	setupToken string // kosong setelah admin pertama dibuat
+	setupMu     sync.Mutex
+	setupToken  string // kosong setelah admin pertama dibuat
+	twoFactorMu sync.Mutex
+	loginSteps  map[string]loginStep
+	setupSteps  map[int64]setupStep
 
 	// agJob: pekerjaan pasang/lepas AdGuard yang sedang/terakhir berjalan.
 	agJobMu sync.Mutex
@@ -62,6 +65,8 @@ func New(cfg config.Config, st *store.Store, backend wg.Backend, fw *firewall.Ma
 		ag:         ag,
 		limiter:    auth.NewLimiter(5, 15*time.Minute),
 		setupToken: setupToken,
+		loginSteps: make(map[string]loginStep),
+		setupSteps: make(map[int64]setupStep),
 	}
 }
 
@@ -76,9 +81,14 @@ func (s *Server) Handler(ui http.Handler, scriptHashes []string) http.Handler {
 	pub("POST /api/setup/admin", s.handleSetupAdmin)
 
 	pub("POST /api/auth/login", s.handleLogin)
+	pub("POST /api/auth/verify", s.handleLoginVerify)
 	pub("POST /api/auth/logout", s.handleLogout)
 	priv("GET /api/auth/me", s.handleMe)
 	priv("POST /api/auth/password", s.handleChangePassword)
+	priv("GET /api/auth/totp", s.handleTOTPStatus)
+	priv("POST /api/auth/totp/start", s.handleTOTPStart)
+	priv("POST /api/auth/totp/enable", s.handleTOTPEnable)
+	priv("POST /api/auth/totp/disable", s.handleTOTPDisable)
 
 	priv("GET /api/system/check", s.handleSystemCheck)
 
@@ -94,6 +104,9 @@ func (s *Server) Handler(ui http.Handler, scriptHashes []string) http.Handler {
 
 	priv("GET /api/clients", s.handleListClients)
 	priv("POST /api/clients", s.handleCreateClient)
+	priv("POST /api/import/preview", s.handleImportPreview)
+	priv("POST /api/import/commit", s.handleImportCommit)
+	priv("POST /api/clients/{id}/regenerate-key", s.handleRegenerateClientKey)
 	priv("GET /api/clients/{id}", s.handleGetClient)
 	priv("PUT /api/clients/{id}", s.handleUpdateClient)
 	priv("DELETE /api/clients/{id}", s.handleDeleteClient)

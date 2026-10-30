@@ -101,6 +101,7 @@ export type FirewallInfo = {
 
 export type Client = {
 	id: number;
+	has_private_key: boolean;
 	name: string;
 	public_key: string;
 	address: string;
@@ -127,6 +128,7 @@ export type ClientStatus = {
 };
 
 export type Status = {
+	wg_backend: 'kernel' | 'userspace' | 'fake' | 'pending';
 	initialized: boolean;
 	interface: string;
 	online: number;

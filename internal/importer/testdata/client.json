@@ -1,0 +1,1 @@
+{"id":"abc","private_key":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=","public_key":"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=","preshared_key":"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC=","name":"Laptop","allocated_ips":["10.8.0.2/32"],"allowed_ips":["0.0.0.0/0"],"enabled":true,"created_at":"2025-01-01T00:00:00Z","updated_at":"2025-01-02T00:00:00Z"}

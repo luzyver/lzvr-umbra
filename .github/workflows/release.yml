@@ -15,7 +15,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # check, test frontend, go vet, dan go test harus lulus sebelum rilis dibuat.
+  test:
+    uses: ./.github/workflows/ci.yml
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -55,6 +60,8 @@ jobs:
           name=umbra-linux-${{ matrix.arch }}
           mkdir "$name"
           cp deploy/umbra deploy/install.sh deploy/update.sh deploy/umbra.service deploy/umbra.env "$name/"
+          cp LICENSE "$name/"
+          cp web/static/fonts/OFL-Manrope.txt "$name/LICENSE-Manrope.txt"
           tar -czf "$name.tar.gz" "$name"
           sha256sum "$name.tar.gz" > "$name.tar.gz.sha256"
 

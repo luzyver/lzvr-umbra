@@ -1,4 +1,4 @@
-// Package wg mengatur interface WireGuard. Perubahan langsung dikirim ke kernel
+// Package wg mengatur interface WireGuard. Perubahan langsung dikirim ke backend
 // (tanpa tombol "Apply Config"), lalu salinan wg0.conf ditulis sebagai cadangan.
 package wg
 
@@ -25,9 +25,13 @@ type PeerStat struct {
 }
 
 type Backend interface {
+	// Name mengembalikan backend aktif, atau pending bila belum siap.
+	Name() string
+	// Close melepaskan sumber daya milik proses.
+	Close() error
 	// EnsureInterface membuat interface bila belum ada, lalu memasang alamat, MTU, dan menyalakannya.
 	EnsureInterface(cfg store.ServerConfig) error
-	// Sync menyamakan daftar peer di kernel dengan daftar dari database.
+	// Sync menyamakan daftar peer dengan daftar dari database.
 	Sync(cfg store.ServerConfig, peers []Peer) error
 	Stats(iface string) ([]PeerStat, error)
 }

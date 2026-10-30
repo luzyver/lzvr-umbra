@@ -130,6 +130,19 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, "username atau password salah")
 		return
 	}
+	if a.TOTPSecret != "" {
+		token := auth.NewToken()
+		s.twoFactorMu.Lock()
+		for k, v := range s.loginSteps {
+			if time.Now().After(v.expires) || v.adminID == a.ID {
+				delete(s.loginSteps, k)
+			}
+		}
+		s.loginSteps[auth.HashToken(token)] = loginStep{adminID: a.ID, expires: time.Now().Add(5 * time.Minute)}
+		s.twoFactorMu.Unlock()
+		writeJSON(w, http.StatusOK, map[string]any{"requires_totp": true, "challenge": token})
+		return
+	}
 	s.limiter.Reset(ip)
 	if err := s.startSession(w, r, a.ID); err != nil {
 		internalError(w, "buat sesi", err)

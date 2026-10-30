@@ -223,6 +223,7 @@ func (s *Server) handleCreateClient(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c.PrivateKey, c.PublicKey = kp.Private, kp.Public
+	c.HasPrivateKey = true
 	if c.PresharedKey, err = wg.NewPresharedKey(); err != nil {
 		internalError(w, "buat preshared key", err)
 		return
@@ -305,6 +306,10 @@ func (s *Server) handleDeleteClient(w http.ResponseWriter, r *http.Request) {
 func (s *Server) clientProfile(w http.ResponseWriter, r *http.Request) (store.Client, string, bool) {
 	c, ok := s.clientOr404(w, r)
 	if !ok {
+		return c, "", false
+	}
+	if c.PrivateKey == "" {
+		writeError(w, http.StatusConflict, "kunci privat tidak tersedia; buat ulang kunci (perangkat harus memindai profil baru)")
 		return c, "", false
 	}
 	srv, err := s.loadServer(r.Context())

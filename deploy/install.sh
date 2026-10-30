@@ -40,9 +40,14 @@ else
 fi
 
 say "Memuat modul kernel WireGuard"
-modprobe wireguard 2>/dev/null || die "modul wireguard tidak ada di kernel ini (butuh kernel 5.6+)"
+if modprobe wireguard 2>/dev/null; then
+	printf 'wireguard\ntun\nnf_conntrack\n' > /etc/modules-load.d/umbra.conf
+else
+	say "Modul WireGuard tidak bisa dimuat. Umbra akan memakai wireguard-go userspace bila kernel tidak mendukung WireGuard (mode auto)."
+	printf 'tun\nnf_conntrack\n' > /etc/modules-load.d/umbra.conf
+fi
+modprobe tun 2>/dev/null || true
 modprobe nf_conntrack 2>/dev/null || true
-printf 'wireguard\nnf_conntrack\n' > /etc/modules-load.d/umbra.conf
 
 say "Mengaktifkan IP forwarding"
 cat > /etc/sysctl.d/90-umbra.conf <<'SYSCTL'

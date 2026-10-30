@@ -21,6 +21,7 @@ type clientStatus struct {
 }
 
 type statusReport struct {
+	WGBackend   string         `json:"wg_backend"`
 	Initialized bool           `json:"initialized"`
 	Interface   string         `json:"interface"`
 	Online      int            `json:"online"`
@@ -33,7 +34,7 @@ type statusReport struct {
 }
 
 func (s *Server) buildStatus(ctx context.Context) (statusReport, error) {
-	rep := statusReport{Clients: []clientStatus{}, Time: time.Now()}
+	rep := statusReport{WGBackend: s.wg.Name(), Clients: []clientStatus{}, Time: time.Now()}
 	srv, err := s.loadServer(ctx)
 	if err != nil {
 		return rep, err

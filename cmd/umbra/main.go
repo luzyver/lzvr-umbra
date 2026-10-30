@@ -49,9 +49,14 @@ func run() error {
 	if cfg.FakeWG {
 		slog.Warn("memakai WireGuard tiruan (UMBRA_FAKE_WG): tidak ada perubahan ke sistem")
 		backend = wg.NewFake()
-	} else if backend, err = wg.NewKernel(); err != nil {
+	} else if backend, err = wg.New(cfg.WGBackend); err != nil {
 		return err
 	}
+	defer func() {
+		if err := backend.Close(); err != nil {
+			slog.Error("tutup backend WireGuard", "err", err)
+		}
+	}()
 	fw := firewall.NewManager(cfg.FakeFirewall)
 	ag := adguard.New(cfg.AdGuardURL, cfg.AdGuardUser, cfg.AdGuardPass)
 

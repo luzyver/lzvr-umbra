@@ -44,7 +44,7 @@ func Check(ctx context.Context, listenPort int) Report {
 	if _, err := os.Stat("/sys/module/wireguard"); err == nil {
 		add("module", "Modul kernel WireGuard", "ok", "Sudah dimuat")
 	} else {
-		add("module", "Modul kernel WireGuard", "fail", "Belum dimuat. Jalankan installer atau: modprobe wireguard")
+		add("module", "Modul kernel WireGuard", "warn", "Modul tidak terdeteksi. Mode auto memakai wireguard-go userspace bila kernel tidak mendukung WireGuard; perlu /dev/net/tun dan CAP_NET_ADMIN. Mode kernel memerlukan dukungan kernel.")
 	}
 
 	if b, err := os.ReadFile("/proc/sys/net/ipv4/ip_forward"); err == nil && strings.TrimSpace(string(b)) == "1" {

@@ -31,26 +31,29 @@ type FirewallState struct {
 }
 
 type Client struct {
-	ID           int64     `json:"id"`
-	Name         string    `json:"name"`
-	PrivateKey   string    `json:"-"`
-	PublicKey    string    `json:"public_key"`
-	PresharedKey string    `json:"-"`
-	Address      string    `json:"address"` // IP tunggal, mis. 10.8.0.2
-	AllowedIPs   []string  `json:"allowed_ips"`
-	DNS          []string  `json:"dns"`
-	MTU          int       `json:"mtu"`
-	Keepalive    int       `json:"keepalive"`
-	Enabled      bool      `json:"enabled"`
-	Adblock      bool      `json:"adblock"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID            int64     `json:"id"`
+	Name          string    `json:"name"`
+	PrivateKey    string    `json:"-"`
+	HasPrivateKey bool      `json:"has_private_key"`
+	PublicKey     string    `json:"public_key"`
+	PresharedKey  string    `json:"-"`
+	Address       string    `json:"address"` // IP tunggal, mis. 10.8.0.2
+	AllowedIPs    []string  `json:"allowed_ips"`
+	DNS           []string  `json:"dns"`
+	MTU           int       `json:"mtu"`
+	Keepalive     int       `json:"keepalive"`
+	Enabled       bool      `json:"enabled"`
+	Adblock       bool      `json:"adblock"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }
 
 type Admin struct {
 	ID           int64
 	Username     string
 	PasswordHash string
+	TOTPSecret   string
+	LastTOTPStep int64
 }
 
 const (

@@ -19,6 +19,9 @@ type Kernel struct{}
 
 func NewKernel() (Backend, error) { return Kernel{}, nil }
 
+func (Kernel) Name() string { return "kernel" }
+func (Kernel) Close() error { return nil }
+
 func (Kernel) EnsureInterface(cfg store.ServerConfig) error {
 	link, err := netlink.LinkByName(cfg.Interface)
 	if err != nil {
@@ -29,12 +32,23 @@ func (Kernel) EnsureInterface(cfg store.ServerConfig) error {
 		la := netlink.NewLinkAttrs()
 		la.Name = cfg.Interface
 		if err := netlink.LinkAdd(&netlink.GenericLink{LinkAttrs: la, LinkType: "wireguard"}); err != nil {
+			if kernelSupportError(err) {
+				return fmt.Errorf("buat interface %s: %w: %w", cfg.Interface, ErrKernelUnsupported, err)
+			}
 			return fmt.Errorf("buat interface %s (modul wireguard sudah dimuat?): %w", cfg.Interface, err)
 		}
 		if link, err = netlink.LinkByName(cfg.Interface); err != nil {
 			return err
 		}
 	}
+	if link.Type() != "wireguard" {
+		return fmt.Errorf("interface %s sudah ada dengan tipe %s, bukan WireGuard kernel", cfg.Interface, link.Type())
+	}
+	return configureLink(link, cfg)
+}
+
+// configureLink dipakai untuk link kernel maupun TUN userspace.
+func configureLink(link netlink.Link, cfg store.ServerConfig) error {
 	if cfg.MTU > 0 {
 		if err := netlink.LinkSetMTU(link, cfg.MTU); err != nil {
 			return fmt.Errorf("set MTU: %w", err)

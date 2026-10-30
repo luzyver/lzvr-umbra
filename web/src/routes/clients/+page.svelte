@@ -8,6 +8,7 @@
 	import Modal from '#lib/Modal.svelte';
 	import Toggle from '#lib/Toggle.svelte';
 	import ClientProfile from '#lib/ClientProfile.svelte';
+	import ImportDevices from '#lib/ImportDevices.svelte';
 
 	type Result = { client: Client; profile_changed: boolean; warnings: string[] };
 
@@ -15,6 +16,7 @@
 	let defaults = $state<Defaults | null>(null);
 	let error = $state('');
 	let q = $state('');
+	let importOpen = $state(false);
 
 	async function load() {
 		try {
@@ -128,6 +130,14 @@
 		}
 	}
 
+	async function regenerate(c: Client) {
+		if (!confirm(`Buat kunci baru untuk ${c.name}? Profil lama tidak bisa dipakai lagi; perangkat harus memindai profil baru.`)) return;
+		try {
+			const r = await post<Result>(`/clients/${c.id}/regenerate-key`);
+			replace(r.client); warnAll(r.warnings); profile = r.client;
+		} catch (e) { toast(errMsg(e), 'error'); }
+	}
+
 	// ---- Hapus ----
 	let deleting = $state<Client | null>(null);
 	let deleteOpen = $state(false);
@@ -164,6 +174,7 @@
 <div class="page-heading">
 	<h1>Perangkat</h1>
 	<input class="input ml-auto w-56" aria-label="Cari perangkat" placeholder="Cari nama atau IP…" bind:value={q} />
+	<button class="btn-ghost" onclick={() => (importOpen = true)}>Impor</button>
 	<button class="btn-primary" onclick={openNew}>Tambah perangkat</button>
 </div>
 
@@ -173,8 +184,8 @@
 	<p class="text-sm text-zinc-500">Memuat…</p>
 {:else if clients.length === 0}
 	<div class="card text-center">
-		<p class="text-sm text-zinc-500">Belum ada klien.</p>
-		<button class="btn-primary mt-3" onclick={openNew}>Tambah klien pertama</button>
+		<p class="text-sm text-zinc-500">Belum ada perangkat.</p>
+		<button class="btn-primary mt-3" onclick={openNew}>Tambah perangkat pertama</button>
 	</div>
 {:else}
 	<div class="card client-management overflow-x-auto p-0">
@@ -192,7 +203,7 @@
 			<tbody>
 				{#each shown as c (c.id)}
 					<tr class="border-b border-zinc-100 last:border-0 dark:border-zinc-800/60">
-						<td class="px-4 py-2 font-medium">{c.name}</td>
+						<td class="px-4 py-2 font-medium">{c.name}{#if !c.has_private_key}<span class="block text-xs font-normal text-[var(--accent-ink)]">Kunci privat tidak tersedia</span>{/if}</td>
 						<td class="px-4 py-2 font-mono text-xs">{c.address}</td>
 						<td class="px-4 py-2">
 							<Toggle checked={c.enabled} label="Aktif" onchange={(v) => toggle(c, 'enabled', v)} />
@@ -205,7 +216,8 @@
 						<td class="px-4 py-2 text-xs text-zinc-500">{date(c.created_at)}</td>
 						<td class="px-4 py-2">
 							<div class="flex justify-end gap-1">
-								<button class="btn-ghost px-2 py-1 text-xs" onclick={() => (profile = c)}>QR / unduh</button>
+								{#if c.has_private_key}<button class="btn-ghost px-2 py-1 text-xs" onclick={() => (profile = c)}>QR / unduh</button>
+								{:else}<button class="btn-ghost px-2 py-1 text-xs" onclick={() => regenerate(c)}>Buat ulang kunci</button>{/if}
 								<button class="btn-ghost px-2 py-1 text-xs" onclick={() => openEdit(c)}>Ubah</button>
 								<button
 									class="btn-ghost px-2 py-1 text-xs text-red-600"
@@ -267,6 +279,7 @@
 		<button class="btn-primary" form="client-form" disabled={busy}>{busy ? 'Menyimpan…' : 'Simpan'}</button>
 	{/snippet}
 </Modal>
+<ImportDevices bind:open={importOpen} onimported={load} />
 
 <Modal bind:open={deleteOpen} title="Hapus klien">
 	<p class="text-sm">

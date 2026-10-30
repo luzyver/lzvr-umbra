@@ -1,12 +1,15 @@
 <script lang="ts">
-	import { get, put, post, errMsg, type Defaults, type ServerConfig } from '#lib/api.ts';
+	import { get, put, post, errMsg, type Defaults, type ServerConfig, type Status } from '#lib/api.ts';
 	import { splitList } from '#lib/format.ts';
 	import { toast, warnAll } from '#lib/toast.svelte.ts';
 	import ServerForm from '#lib/ServerForm.svelte';
 	import FirewallPanel from '#lib/FirewallPanel.svelte';
+	import TwoFactorSettings from '#lib/TwoFactorSettings.svelte';
 
 	let server = $state<ServerConfig | null>(null);
 	let error = $state('');
+	let wgBackend = $state<Status['wg_backend']>('pending');
+	const backendLabels = { kernel: 'Kernel', userspace: 'Userspace (wireguard-go)', fake: 'Tiruan', pending: 'Belum aktif' };
 
 	// Bawaan klien baru
 	let d = $state({ dns: '', allowed_ips: '', keepalive: '', mtu: '' });
@@ -29,8 +32,9 @@
 
 	async function load() {
 		try {
-			const [s, x] = await Promise.all([get<ServerConfig>('/server'), get<Defaults>('/defaults')]);
+			const [s, x, status] = await Promise.all([get<ServerConfig>('/server'), get<Defaults>('/defaults'), get<Status>('/status')]);
 			server = s;
+			wgBackend = status.wg_backend;
 			fillDefaults(x);
 		} catch (e) {
 			error = errMsg(e);
@@ -40,6 +44,7 @@
 
 	function serverSaved(s: ServerConfig, profileChanged: boolean) {
 		server = s;
+		get<Status>('/status').then((status) => { wgBackend = status.wg_backend; }).catch(() => {});
 		if (profileChanged) toast('Profil semua perangkat perlu diunduh ulang.', 'warn', 8000);
 	}
 
@@ -96,6 +101,7 @@
 	<div class="space-y-6">
 		<section class="card">
 			<h2 class="font-semibold">Server WireGuard</h2>
+			<p class="hint mt-1">Backend: {backendLabels[wgBackend]}</p>
 			<p class="hint mb-4 mt-1">
 				Perubahan langsung diterapkan. Mengubah alamat, port atau endpoint membuat profil di perangkat
 				perlu diunduh ulang.
@@ -141,6 +147,11 @@
 		<section class="card">
 			<h2 class="mb-4 font-semibold">Firewall & NAT</h2>
 			<FirewallPanel />
+		</section>
+
+		<section class="card">
+			<h2 class="font-semibold">Keamanan</h2>
+			<TwoFactorSettings />
 		</section>
 
 		<section class="card">

@@ -62,6 +62,15 @@ CREATE TABLE IF NOT EXISTS sessions (
 	admin_id   INTEGER NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
 	expires_at INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS totp_state (
+	admin_id INTEGER PRIMARY KEY REFERENCES admins(id) ON DELETE CASCADE,
+	last_step INTEGER NOT NULL DEFAULT -1
+);
+CREATE TABLE IF NOT EXISTS recovery_codes (
+	code_hash TEXT PRIMARY KEY,
+	admin_id INTEGER NOT NULL REFERENCES admins(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS recovery_codes_admin ON recovery_codes (admin_id);
 CREATE TABLE IF NOT EXISTS clients (
 	id            INTEGER PRIMARY KEY,
 	name          TEXT NOT NULL,
@@ -141,8 +150,8 @@ func (s *Store) CreateAdmin(ctx context.Context, username, hash string) (int64, 
 func (s *Store) AdminByUsername(ctx context.Context, username string) (Admin, error) {
 	var a Admin
 	err := s.db.QueryRowContext(ctx,
-		`SELECT id, username, password_hash FROM admins WHERE username = ?`, username).
-		Scan(&a.ID, &a.Username, &a.PasswordHash)
+		`SELECT a.id, a.username, a.password_hash, COALESCE(a.totp_secret, ''), COALESCE(t.last_step, -1) FROM admins a LEFT JOIN totp_state t ON t.admin_id = a.id WHERE a.username = ?`, username).
+		Scan(&a.ID, &a.Username, &a.PasswordHash, &a.TOTPSecret, &a.LastTOTPStep)
 	if errors.Is(err, sql.ErrNoRows) {
 		return a, ErrNotFound
 	}
@@ -152,8 +161,8 @@ func (s *Store) AdminByUsername(ctx context.Context, username string) (Admin, er
 func (s *Store) AdminByID(ctx context.Context, id int64) (Admin, error) {
 	var a Admin
 	err := s.db.QueryRowContext(ctx,
-		`SELECT id, username, password_hash FROM admins WHERE id = ?`, id).
-		Scan(&a.ID, &a.Username, &a.PasswordHash)
+		`SELECT a.id, a.username, a.password_hash, COALESCE(a.totp_secret, ''), COALESCE(t.last_step, -1) FROM admins a LEFT JOIN totp_state t ON t.admin_id = a.id WHERE a.id = ?`, id).
+		Scan(&a.ID, &a.Username, &a.PasswordHash, &a.TOTPSecret, &a.LastTOTPStep)
 	if errors.Is(err, sql.ErrNoRows) {
 		return a, ErrNotFound
 	}
@@ -221,6 +230,7 @@ func scanClient(row scanner) (Client, error) {
 	c.DNS = splitList(dns)
 	c.Enabled = enabled == 1
 	c.Adblock = adblock == 1
+	c.HasPrivateKey = c.PrivateKey != ""
 	c.CreatedAt = time.Unix(created, 0)
 	c.UpdatedAt = time.Unix(updated, 0)
 	return c, nil

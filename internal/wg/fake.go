@@ -18,6 +18,9 @@ type Fake struct {
 
 func NewFake() *Fake { return &Fake{peers: map[string]*PeerStat{}} }
 
+func (*Fake) Name() string { return "fake" }
+func (*Fake) Close() error { return nil }
+
 func (f *Fake) EnsureInterface(cfg store.ServerConfig) error {
 	slog.Info("fake wg: interface siap", "iface", cfg.Interface, "address", cfg.Address)
 	return nil

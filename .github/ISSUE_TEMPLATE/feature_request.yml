@@ -1,0 +1,18 @@
+name: Usulan fitur
+description: Ide untuk membuat Umbra lebih berguna
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Masalah yang ingin diselesaikan
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Usulan
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatif yang sudah dicoba

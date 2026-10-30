@@ -1,0 +1,31 @@
+name: Laporan bug
+description: Ada yang tidak berjalan semestinya
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Celah keamanan jangan dilaporkan di sini. Lihat [SECURITY.md](../blob/master/SECURITY.md).
+  - type: textarea
+    id: what
+    attributes:
+      label: Apa yang terjadi?
+      description: Langkah untuk mengulang, apa yang diharapkan, dan apa yang terjadi.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Versi / commit
+      description: Commit dari catatan rilis `latest` (mis. "Build otomatis dari abc1234").
+  - type: input
+    id: system
+    attributes:
+      label: Sistem server
+      placeholder: Ubuntu 24.04, amd64, kernel 6.8
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log
+      description: Keluaran `journalctl -u umbra -n 100`. Hapus kunci, token, dan IP publik dulu.
+      render: text
