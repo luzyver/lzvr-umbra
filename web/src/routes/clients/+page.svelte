@@ -1,8 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/state';
+	import { createLiveStatus } from '#lib/live-status.svelte.ts';
+	import DeviceList from '#lib/DeviceList.svelte';
+	import DeviceDetails from '#lib/DeviceDetails.svelte';
+	import Icon from '#lib/Icon.svelte';
 	onMount(() => { if (new URL(location.href).searchParams.get('new') === '1') openNew(); });
 	import { get, post, put, del, errMsg, type Client, type Defaults } from '#lib/api.ts';
-	import { splitList, date } from '#lib/format.ts';
+	import { splitList } from '#lib/format.ts';
 	import { session } from '#lib/session.svelte.ts';
 	import { toast, warnAll } from '#lib/toast.svelte.ts';
 	import Modal from '#lib/Modal.svelte';
@@ -15,10 +20,27 @@
 	let clients = $state<Client[] | null>(null);
 	let defaults = $state<Defaults | null>(null);
 	let error = $state('');
-	let q = $state('');
+	const feed = createLiveStatus();
+	let selected = $state<number | null>(null);
+	let detailOpen = $state(false);
+	const rows = $derived((clients ?? []).map(c => {
+		const telemetry = feed.status?.clients.find(s => s.id === c.id);
+		return { ...telemetry, ...c, online: telemetry?.enabled === c.enabled ? telemetry.online : undefined };
+	}));
+	const selectedRow = $derived(rows.find(c => c.id === selected) ?? null);
+	const selectedClient = $derived(clients?.find(c => c.id === selected) ?? null);
+	const now = $derived(feed.status ? Date.parse(feed.status.time) : Date.now());
+	let openedQuery = '';
+	$effect(() => {
+		const id = page.url.searchParams.get('device');
+		if (id && clients?.some(c => c.id === Number(id)) && openedQuery !== id) {
+			openedQuery = id; selected = Number(id); detailOpen = true;
+		}
+	});
 	let importOpen = $state(false);
 
 	async function load() {
+		error = '';
 		try {
 			const [c, d] = await Promise.all([get<Client[]>('/clients'), get<Defaults>('/defaults')]);
 			clients = c;
@@ -28,12 +50,6 @@
 		}
 	}
 	load();
-
-	const shown = $derived(
-		(clients ?? []).filter(
-			(c) => !q || c.name.toLowerCase().includes(q.toLowerCase()) || c.address.includes(q)
-		)
-	);
 
 	function replace(c: Client) {
 		if (!clients) return;
@@ -101,7 +117,7 @@
 		if (session.me?.adguard) body.adblock = f.adblock;
 		try {
 			if (editing) {
-				afterSave(await put<Result>(`/clients/${editing.id}`, body), 'Klien disimpan.');
+				afterSave(await put<Result>(`/clients/${editing.id}`, body), 'Perangkat disimpan.');
 				formOpen = false;
 			} else {
 				const r = await post<Result>('/clients', body);
@@ -134,7 +150,7 @@
 		if (!confirm(`Buat kunci baru untuk ${c.name}? Profil lama tidak bisa dipakai lagi; perangkat harus memindai profil baru.`)) return;
 		try {
 			const r = await post<Result>(`/clients/${c.id}/regenerate-key`);
-			replace(r.client); warnAll(r.warnings); profile = r.client;
+			replace(r.client); warnAll(r.warnings); detailOpen = false; profile = r.client;
 		} catch (e) { toast(errMsg(e), 'error'); }
 	}
 
@@ -169,75 +185,33 @@
 	});
 </script>
 
-<svelte:head><title>Klien · Umbra</title></svelte:head>
+<svelte:head><title>Perangkat · Umbra</title></svelte:head>
 
 <div class="page-heading">
 	<h1>Perangkat</h1>
-	<input class="input ml-auto w-56" aria-label="Cari perangkat" placeholder="Cari nama atau IP…" bind:value={q} />
-	<button class="btn-ghost" onclick={() => (importOpen = true)}>Impor</button>
-	<button class="btn-primary" onclick={openNew}>Tambah perangkat</button>
+	<div class="heading-actions"><button class="btn-ghost" onclick={() => (importOpen = true)}><Icon name="down" size={16} />Impor</button>
+	<button class="btn-primary" onclick={openNew}><Icon name="plus" size={16} />Tambah perangkat</button></div>
 </div>
 
 {#if error}
-	<div class="card text-sm text-red-600">{error}</div>
-{:else if !clients}
-	<p class="text-sm text-zinc-500">Memuat…</p>
-{:else if clients.length === 0}
-	<div class="card text-center">
-		<p class="text-sm text-zinc-500">Belum ada perangkat.</p>
-		<button class="btn-primary mt-3" onclick={openNew}>Tambah perangkat pertama</button>
-	</div>
-{:else}
-	<div class="card client-management overflow-x-auto p-0">
-		<table class="w-full text-sm">
-			<thead class="text-left text-xs text-zinc-500">
-				<tr class="border-b border-zinc-200 dark:border-zinc-800">
-					<th class="px-4 py-2 font-medium">Nama</th>
-					<th class="px-4 py-2 font-medium">Alamat</th>
-					<th class="px-4 py-2 font-medium">Aktif</th>
-					{#if session.me?.adguard}<th class="px-4 py-2 font-medium">Blokir iklan</th>{/if}
-					<th class="px-4 py-2 font-medium">Dibuat</th>
-					<th class="px-4 py-2"></th>
-				</tr>
-			</thead>
-			<tbody>
-				{#each shown as c (c.id)}
-					<tr class="border-b border-zinc-100 last:border-0 dark:border-zinc-800/60">
-						<td class="px-4 py-2 font-medium">{c.name}{#if !c.has_private_key}<span class="block text-xs font-normal text-[var(--accent-ink)]">Kunci privat tidak tersedia</span>{/if}</td>
-						<td class="px-4 py-2 font-mono text-xs">{c.address}</td>
-						<td class="px-4 py-2">
-							<Toggle checked={c.enabled} label="Aktif" onchange={(v) => toggle(c, 'enabled', v)} />
-						</td>
-						{#if session.me?.adguard}
-							<td class="px-4 py-2">
-								<Toggle checked={c.adblock} label="Blokir iklan" onchange={(v) => toggle(c, 'adblock', v)} />
-							</td>
-						{/if}
-						<td class="px-4 py-2 text-xs text-zinc-500">{date(c.created_at)}</td>
-						<td class="px-4 py-2">
-							<div class="flex justify-end gap-1">
-								{#if c.has_private_key}<button class="btn-ghost px-2 py-1 text-xs" onclick={() => (profile = c)}>QR / unduh</button>
-								{:else}<button class="btn-ghost px-2 py-1 text-xs" onclick={() => regenerate(c)}>Buat ulang kunci</button>{/if}
-								<button class="btn-ghost px-2 py-1 text-xs" onclick={() => openEdit(c)}>Ubah</button>
-								<button
-									class="btn-ghost px-2 py-1 text-xs text-red-600"
-									onclick={() => {
-										deleting = c;
-										deleteOpen = true;
-									}}>Hapus</button
-								>
-							</div>
-						</td>
-					</tr>
-				{:else}
-					<tr><td colspan="6" class="px-4 py-6 text-center text-zinc-500">Tidak ada yang cocok.</td></tr>
-				{/each}
-			</tbody>
-		</table>
-	</div>
+	<div class="inline-notice" role="alert">{error}<button class="text-action" onclick={load}>Coba lagi</button></div>
 {/if}
+{#if feed.error}<div class="inline-notice" role="status">{feed.error}</div>{/if}
+<DeviceList devices={rows} current={feed.current} loading={!clients && !error} unavailable={!clients && !!error} selected={detailOpen ? selected ?? undefined : undefined} {now} heading="Daftar perangkat" oncreate={openNew} onselect={id => { selected = id; detailOpen = true; }} />
 
-<Modal bind:open={formOpen} title={editing ? `Ubah ${editing.name}` : 'Tambah klien'}>
+<DeviceDetails bind:open={detailOpen} device={selectedRow} client={selectedClient} current={feed.current} {now}
+	onedit={c => { detailOpen = false; openEdit(c); }}
+	ondelete={c => { detailOpen = false; deleting = c; deleteOpen = true; }}
+	onregenerate={regenerate}>
+	{#snippet controls()}
+		{#if selectedClient}
+			<div><span>Akses VPN</span><Toggle checked={selectedClient.enabled} label="Akses VPN" onchange={v => selectedClient && toggle(selectedClient, 'enabled', v)} /></div>
+			{#if session.me?.adguard}<div><span>Blokir iklan</span><Toggle checked={selectedClient.adblock} label="Blokir iklan" onchange={v => selectedClient && toggle(selectedClient, 'adblock', v)} /></div>{/if}
+		{/if}
+	{/snippet}
+</DeviceDetails>
+
+<Modal bind:open={formOpen} title={editing ? `Ubah ${editing.name}` : 'Tambah perangkat'}>
 	<form id="client-form" class="space-y-4" onsubmit={save}>
 		<div>
 			<label class="label" for="c-name">Nama perangkat</label>
@@ -281,7 +255,7 @@
 </Modal>
 <ImportDevices bind:open={importOpen} onimported={load} />
 
-<Modal bind:open={deleteOpen} title="Hapus klien">
+<Modal bind:open={deleteOpen} title="Hapus perangkat">
 	<p class="text-sm">
 		Hapus <b>{deleting?.name}</b>? Perangkat ini langsung terputus dan profilnya tidak bisa dipakai lagi.
 	</p>
@@ -291,6 +265,6 @@
 	{/snippet}
 </Modal>
 
-<Modal bind:open={profileOpen} title={profile ? `Profil ${profile.name}` : 'Profil'}>
+<Modal drawer bind:open={profileOpen} title={profile ? `Profil ${profile.name}` : 'Profil'}>
 	{#if profile}<ClientProfile client={profile} />{/if}
 </Modal>

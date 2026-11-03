@@ -26,6 +26,17 @@ make vet     # go vet
 
 CI menjalankan hal yang sama di setiap pull request.
 
+Untuk memeriksa UI Ringkasan dan Perangkat, jalankan frontend dengan `npm run dev`, lalu dari root repo:
+
+```sh
+python web/tests/device-ui.py
+```
+
+Tes browser ini membutuhkan Python, Playwright, dan Chromium yang sudah terpasang. Semua permintaan API
+diganti dengan data uji, termasuk tambah, ubah, dan hapus perangkat. Backend tidak perlu dijalankan.
+Tes mencakup filter, panel detail, navigasi keyboard, status langsung/terputus, dan layar HP;
+tangkapan layar disimpan lokal di `.impeccable/review/`. Gunakan `--url` jika port frontend berbeda.
+
 ## Aturan cabang `master`
 
 > **Status: belum aktif.** [`.github/rulesets/master.json`](.github/rulesets/master.json) baru berupa

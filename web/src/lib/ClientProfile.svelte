@@ -2,7 +2,7 @@
 	// QR + tombol unduh profil klien. QR diambil sebagai blob karena endpoint butuh sesi.
 	import type { Client } from './api';
 
-	let { client }: { client: Client } = $props();
+	let { client, showActivity = true }: { client: Client; showActivity?: boolean } = $props();
 
 	let qr = $state('');
 	let failed = $state(false);
@@ -11,15 +11,21 @@
 		const id = client.id;
 		const stamp = client.updated_at;
 		let url = '';
+		let active = true;
+		const controller = new AbortController();
+		qr = '';
 		failed = false;
-		fetch(`/api/clients/${id}/qr.png?v=${encodeURIComponent(stamp)}`, { credentials: 'same-origin' })
+		fetch(`/api/clients/${id}/qr.png?v=${encodeURIComponent(stamp)}`, { credentials: 'same-origin', signal: controller.signal })
 			.then((r) => (r.ok ? r.blob() : Promise.reject()))
 			.then((b) => {
+				if (!active) return;
 				url = URL.createObjectURL(b);
 				qr = url;
 			})
-			.catch(() => (failed = true));
+			.catch(() => { if (active) failed = true; });
 		return () => {
+			active = false;
+			controller.abort();
 			if (url) URL.revokeObjectURL(url);
 		};
 	});
@@ -35,5 +41,5 @@
 	{/if}
 	<p class="hint text-center">Pindai dengan aplikasi WireGuard di HP (Tambah tunnel → Pindai QR).</p>
 	<a class="btn-ghost" href="/api/clients/{client.id}/config" download>Unduh file .conf</a>
-	<a class="btn-ghost" href="/activity?client={client.id}">Aktivitas jaringan</a>
+	{#if showActivity}<a class="btn-ghost" href="/activity?client={client.id}">Aktivitas jaringan</a>{/if}
 </div>

@@ -28,8 +28,11 @@ Umbra dirilis bergulir: setiap push ke `master` menerbitkan ulang rilis `latest`
 - `update.sh` tidak lagi mewajibkan token GitHub; token hanya dipakai bila ada (repo privat/fork).
 - Rilis `latest` baru diterbitkan setelah check dan semua test lulus; arsip rilis kini memuat `LICENSE`
   dan lisensi font Manrope.
-- Tampilan "papan kunci": rel gelap, palet linen dan kuningan, perangkat di Ringkasan sebagai label kunci
-  bernomor, tab bawah di HP, login dua kolom.
+- Ringkasan menampilkan status layanan, grafik trafik, dan daftar perangkat dengan filter status.
+  Detail koneksi, QR, dan pengaturan perangkat dibuka dalam panel samping; di HP, panel memenuhi layar.
+  Palet linen dan kuningan, rel gelap, serta navigasi bawah tetap digunakan.
+- Pembaruan yang terputus atau berhenti mengirim data ditampilkan sebagai status belum diketahui,
+  agar perangkat tidak keliru terlihat offline. Urutan perangkat tetap berdasarkan alamat IP.
 
 ## 2026-10-28
 
