@@ -1,22 +1,22 @@
-/* Umbra: linen hangat, rel gelap, aksen kuningan untuk tindakan dan pilihan aktif.
+/* Umbra: permukaan netral, rel gelap, aksen kuningan untuk tindakan dan pilihan aktif.
    Status memakai hijau; grafik memakai kuningan dan teal. */
 :root {
-	--bg: #f5f3ee;
-	--panel: #fcfbf8;
-	--panel-alt: #efece5;
-	--border: #e3dfd5;
-	--border-strong: #cfc9bc;
-	--text: #1f1c17;
-	--muted: #686256;
-	--rail: #1d1a15;
-	--rail-hover: #29251e;
-	--rail-border: #2f2a22;
-	--rail-text: #ece6d8;
-	--rail-muted: #a69e8c;
+	--bg: #f3f4f5;
+	--panel: #fafbfc;
+	--panel-alt: #eef0f2;
+	--border: #e0e3e7;
+	--border-strong: #c8cdd3;
+	--text: #202429;
+	--muted: #626a74;
+	--rail: #202327;
+	--rail-hover: #2c3035;
+	--rail-border: #363b41;
+	--rail-text: #eef0f2;
+	--rail-muted: #a5adb7;
 	--accent: #e8ad3a;
 	--accent-hover: #f0bb4f;
-	--accent-text: #1f1c17;
-	--accent-soft: #f6e6c2;
+	--accent-text: #202429;
+	--accent-soft: #f5ecd8;
 	--accent-ink: #855607;
 	--focus: #855607;
 	--green: #2f9e66;
@@ -27,21 +27,21 @@
 	color-scheme: light;
 }
 [data-theme='dark'] {
-	--bg: #141210;
-	--panel: #1b1916;
-	--panel-alt: #24211c;
-	--border: #2c2822;
-	--border-strong: #3d372e;
-	--text: #ebe6da;
-	--muted: #a39b8a;
-	--rail: #0e0d0b;
-	--rail-hover: #1d1a16;
-	--rail-border: #24211c;
-	--rail-text: #ebe6da;
-	--rail-muted: #968e7c;
+	--bg: #15181c;
+	--panel: #1d2126;
+	--panel-alt: #272c32;
+	--border: #31373f;
+	--border-strong: #464f59;
+	--text: #e7ebef;
+	--muted: #a6afb9;
+	--rail: #111417;
+	--rail-hover: #24292e;
+	--rail-border: #272c32;
+	--rail-text: #e7ebef;
+	--rail-muted: #a3adb7;
 	--accent: #f0b648;
 	--accent-hover: #f6c564;
-	--accent-text: #1f1c17;
+	--accent-text: #202429;
 	--accent-soft: #33260f;
 	--accent-ink: #f3c25e;
 	--focus: #f0b648;
@@ -86,8 +86,8 @@ dialog[open] { animation: rise 220ms var(--ease-out); }
 .toggle-active > span { background: var(--accent-text); }
 
 /* Logo */
-.umbra-logo { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; letter-spacing: -0.2px; color: inherit; }
-.umbra-mark { width: 20px; height: 20px; fill: var(--accent); }
+.umbra-logo { display: inline-flex; align-items: center; gap: 8px; font-size: 22px; font-weight: 700; letter-spacing: -0.3px; color: inherit; }
+.umbra-mark { width: 28px; height: 28px; fill: var(--accent); }
 
 /* Tombol ikon kecil (tema, keluar, menu) */
 .icon-btn { display: inline-grid; flex-shrink: 0; place-items: center; width: 36px; height: 36px; border-radius: 6px; color: var(--muted); }
@@ -95,13 +95,13 @@ dialog[open] { animation: rise 220ms var(--ease-out); }
 
 /* Kerangka aplikasi: rel gelap di kiri */
 .app-shell { display: grid; grid-template-columns: 224px minmax(0, 1fr); min-height: 100dvh; }
-.app-sidebar { position: sticky; top: 0; height: 100dvh; display: flex; flex-direction: column; gap: 24px; padding: 18px 12px 14px; background: var(--rail); color: var(--rail-text); }
+.app-sidebar { position: sticky; top: 0; height: 100dvh; display: flex; flex-direction: column; gap: 34px; padding: 28px 16px 18px; background: var(--rail); color: var(--rail-text); }
 .app-sidebar .icon-btn { color: var(--rail-muted); }
 .app-sidebar .icon-btn:hover { background: var(--rail-hover); color: var(--rail-text); }
 .app-sidebar :focus-visible, .mobile-bar :focus-visible, .tab-bar :focus-visible { outline-color: var(--accent); }
 .sidebar-top { display: flex; align-items: center; justify-content: space-between; padding: 2px 8px; }
 .main-nav { display: grid; gap: 2px; }
-.main-nav a { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 7px; color: var(--rail-muted); font-size: 13.5px; font-weight: 500; transition: background 120ms, color 120ms; }
+.main-nav a { position: relative; display: flex; align-items: center; gap: 12px; padding: 12px 10px; border-radius: 7px; color: var(--rail-muted); font-size: 13.5px; font-weight: 500; transition: background 120ms, color 120ms; }
 .main-nav a:hover { background: var(--rail-hover); color: var(--rail-text); }
 .main-nav a.active { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
 
@@ -114,7 +114,7 @@ dialog[open] { animation: rise 220ms var(--ease-out); }
 .sidebar-links a:hover { background: var(--rail-hover); color: var(--rail-text); }
 .sidebar-links .ext { display: inline-flex; margin-left: auto; opacity: .6; }
 .test-badge { justify-self: start; margin-left: 10px; border: 1px solid var(--rail-border); color: var(--rail-muted); }
-.page-content { min-width: 0; width: 100%; max-width: 1280px; margin: 0 auto; padding: 36px 40px 56px; }
+.page-content { min-width: 0; width: 100%; max-width: 1480px; margin: 0 auto; padding: 30px 32px 48px; }
 
 /* HP: bilah atas + tab bawah yang terjangkau jempol */
 .mobile-bar, .tab-bar { display: none; }
@@ -138,7 +138,7 @@ dialog[open] { animation: rise 220ms var(--ease-out); }
 
 /* Judul halaman */
 .page-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 28px; }
-.page-heading h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.2; }
+.page-heading h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.7px; line-height: 1.2; }
 .page-heading p { margin-top: 4px; font-size: 13px; color: var(--muted); }
 .section-title { font-size: 15px; font-weight: 700; letter-spacing: -0.2px; }
 .heading-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
@@ -194,12 +194,12 @@ dialog[open] { animation: rise 220ms var(--ease-out); }
 .count-label { margin-left: 6px; color: var(--muted); font-size: 13px; font-weight: 400; }
 .device-caption { margin-left: auto; font-size: 12px; color: var(--muted); }
 .device-surface { overflow: hidden; border: 1px solid var(--border); border-radius: 12px; background: var(--panel); }
-.device-toolbar { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+.device-toolbar { display: flex; flex-direction: row-reverse; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
 .device-filters { display: flex; gap: 2px; max-width: 100%; }
-.device-filters button { min-height: 34px; padding: 6px 12px; border-radius: 6px; font-size: 13px; color: var(--muted); }
+.device-filters button { min-height: 38px; padding: 6px 12px; border-radius: 6px; font-size: 13px; color: var(--muted); }
 .device-filters button:hover { background: var(--panel-alt); color: var(--text); }
 .device-filters button.selected { background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
-.device-search { position: relative; display: flex; align-items: center; width: 240px; max-width: 100%; }
+.device-search { margin-right: auto; position: relative; display: flex; align-items: center; width: 280px; max-width: 100%; }
 .device-search > svg { position: absolute; left: 11px; color: var(--muted); pointer-events: none; }
 .device-search .input { padding-left: 34px; font-size: 13px; }
 .device-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; table-layout: fixed; }
@@ -211,7 +211,9 @@ dialog[open] { animation: rise 220ms var(--ease-out); }
 .device-table th:last-child { width: 58px; }
 .device-table td { padding: 14px 20px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 .device-table tr:last-child td { border-bottom: 0; }
-.device-table tbody tr:hover, .device-table tr.selected { background: var(--panel-alt); }
+.device-table tbody tr:hover { background: var(--panel-alt); }
+.device-table tr.selected { background: var(--accent-soft); }
+.device-filters .filter-count { margin-left: 6px; font-size: 11px; font-variant-numeric: tabular-nums; }
 .device-open { display: flex; flex-direction: column; gap: 3px; max-width: 100%; text-align: left; }
 .device-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .device-open:hover .device-name { color: var(--accent-ink); text-decoration: underline; text-underline-offset: 3px; }

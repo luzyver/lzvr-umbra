@@ -1,0 +1,58 @@
+.overview-summary { display: flex; flex-wrap: wrap; align-items: stretch; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 20px; }
+.overview-summary .service-item { flex: 1 1 180px; padding: 17px 20px; gap: 10px; border-right: 1px solid var(--border); }
+.overview-summary .service-item > div { display: grid; gap: 5px; }
+.overview-summary .service-item > svg { color: var(--muted); }
+.overview-summary .service-item strong { font-size: 13px; }
+.overview-summary .status { font-size: 12px; }
+.summary-devices { flex: 1 1 160px; display: flex; align-items: center; gap: 12px; padding: 17px 20px; }
+.summary-devices > svg { color: var(--muted); }
+.summary-devices div { display: grid; gap: 4px; }
+.summary-devices span { color: var(--muted); font-size: 12px; }
+.summary-devices strong { font-size: 17px; font-weight: 650; }
+.summary-devices small { font-size: 13px; font-weight: 400; color: var(--muted); }
+.monitoring-grid { display: grid; grid-template-columns: minmax(0, 1fr) 270px; gap: 20px; align-items: stretch; }
+.monitoring-main { min-width: 0; padding: 24px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel); }
+.monitoring-rates { display: flex; gap: 40px; margin-bottom: 28px; }
+.monitoring-rates dt { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 12px; }
+.monitoring-rates dd { margin-top: 7px; font-size: 26px; font-weight: 650; letter-spacing: -.6px; line-height: 1.2; }
+.monitoring-rates dt svg { color: var(--chart-rx); }
+.monitoring-rates > div:last-child dt svg { color: var(--chart-tx); }
+.monitoring-main .traffic-chart, .monitoring-main .chart-empty { height: 190px; }
+.monitoring-main .chart-empty { text-align: center; }
+.monitoring-totals { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted); }
+.monitoring-totals strong { color: var(--text); font-weight: 500; margin-left: 5px; }
+.network-context { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; min-width: 0; }
+.network-context section { padding: 20px; }
+.network-context section + section { border-top: 1px solid var(--border); }
+.context-heading { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 18px; }
+.context-heading h2 { display: flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 650; }
+.context-heading a { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 6px; color: var(--muted); }
+.context-heading a:hover { color: var(--accent-ink); background: var(--panel-alt); }
+.context-facts { display: grid; gap: 13px; font-size: 12px; }
+.context-facts > div { display: flex; justify-content: space-between; gap: 12px; }
+.context-facts dt { color: var(--muted); flex-shrink: 0; }
+.context-facts dd { text-align: right; overflow-wrap: anywhere; min-width: 0; }
+.context-facts .context-endpoint { display: grid; gap: 6px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.context-endpoint dd { text-align: left; font-weight: 600; font-size: 13px; }
+.context-endpoint dd span { display: block; margin-top: 4px; color: var(--muted); font-weight: 400; font-size: 11px; }
+.context-message { color: var(--muted); font-size: 12px; line-height: 1.6; margin-bottom: 14px; overflow-wrap: anywhere; }
+@media (max-width: 1100px) {
+	.monitoring-grid { grid-template-columns: minmax(0, 1fr); }
+	.network-context { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	.network-context section + section { border-top: 0; border-left: 1px solid var(--border); }
+}
+@media (max-width: 767px) {
+	.overview-summary { margin-bottom: 16px; }
+	.overview-summary .service-item { flex-basis: 50%; width: auto; padding: 14px; }
+	.overview-summary .service-item + .service-item { border-right: 0; }
+	.summary-devices { border-top: 1px solid var(--border); flex-basis: 100%; padding: 12px 14px; }
+	.summary-devices div { display: flex; align-items: baseline; gap: 10px; }
+	.monitoring-grid { gap: 16px; }
+	.monitoring-main { padding: 18px 16px; }
+	.monitoring-rates { gap: 24px; margin-bottom: 24px; }
+	.monitoring-rates dd { font-size: 23px; }
+	.monitoring-main .traffic-chart, .monitoring-main .chart-empty { height: 150px; }
+	.network-context section { padding: 16px; }
+	.network-context { grid-template-columns: 1fr; }
+	.network-context section + section { border-left: 0; border-top: 1px solid var(--border); }
+}

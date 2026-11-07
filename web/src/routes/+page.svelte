@@ -8,6 +8,8 @@
 	import DeviceList from '#lib/DeviceList.svelte';
 	import DeviceDetails from '#lib/DeviceDetails.svelte';
 	import Icon from '#lib/Icon.svelte';
+	import OverviewContext from '#lib/OverviewContext.svelte';
+	import '#lib/overview.css';
 
 	const feed = createLiveStatus();
 	let server = $state<ServerConfig | null>(null);
@@ -38,21 +40,25 @@
 
 <div class="page-heading"><h1>Ringkasan</h1><a class="btn-primary ml-auto" href="/clients?new=1"><Icon name="plus" size={16} />Tambah perangkat</a></div>
 
-<div class="service-strip" aria-label="Status layanan">
-	<a href="/settings" class="service-item"><Icon name="server" size={16} /><strong>WireGuard</strong><span class="status" class:online={feed.current}><i class="status-dot"></i>{feed.error ? 'Perlu diperiksa' : feed.current ? 'Tersedia' : 'Memeriksa…'}</span><span class="service-address table-mono">{server ? `${server.interface} · ${server.endpoint_host || server.address}` : serverError}</span></a>
-	{#if session.me?.adguard}<a href="/adguard" class="service-item"><Icon name="shield" size={16} /><strong>AdGuard</strong><span class="status" class:online={dnsHealthy}><i class="status-dot"></i>{dnsLabel}</span></a>{/if}
+<div class="overview-summary" aria-label="Status layanan">
+	<a href="/settings" class="service-item"><Icon name="server" size={22} /><div><strong>WireGuard</strong><span class="status" class:online={feed.current}><i class="status-dot"></i>{feed.error ? 'Perlu diperiksa' : feed.current ? 'Tersedia' : 'Memeriksa…'}</span></div></a>
+	{#if session.me?.adguard}<a href="/adguard" class="service-item"><Icon name="shield" size={22} /><div><strong>AdGuard</strong><span class="status" class:online={dnsHealthy}><i class="status-dot"></i>{dnsLabel}</span></div></a>{/if}
+	<div class="summary-devices"><Icon name="laptop" size={22} /><div><span>Perangkat online</span><strong>{feed.current ? feed.status?.online : '—'} <small>/ {feed.status?.total ?? '—'}</small></strong></div></div>
 </div>
 
 {#if feed.error}<div class="inline-notice" role="status">{feed.error}<span>Status dan trafik perangkat ditampilkan kembali setelah koneksi pulih.</span></div>{/if}
 
-<section class="overview-traffic" aria-label="Trafik server">
-	<dl class="overview-metrics">
-		<div><dt>Perangkat online</dt><dd>{feed.current ? feed.status?.online : '—'}<small>/ {feed.status?.total ?? '—'}</small></dd><span>{feed.current ? 'Tersambung ke jaringan' : 'Menunggu status jaringan'}</span></div>
-		<div><dt><i class="legend"></i>Data masuk</dt><dd>{feed.current ? bytes(feed.status?.rx_bytes ?? 0) : '—'}</dd><span>{feed.live && feed.current && latest ? rate(latest.rx) : '—'}</span></div>
-		<div><dt><i class="legend tx"></i>Data keluar</dt><dd>{feed.current ? bytes(feed.status?.tx_bytes ?? 0) : '—'}</dd><span>{feed.live && feed.current && latest ? rate(latest.tx) : '—'}</span></div>
-	</dl>
-	<div class="overview-chart"><TrafficChart samples={feed.samples} live={feed.live && feed.current} /></div>
-</section>
+<div class="monitoring-grid">
+	<section class="monitoring-main" aria-label="Trafik server">
+		<dl class="monitoring-rates">
+			<div><dt><Icon name="down" size={16} />Masuk ke server</dt><dd>{feed.live && feed.current && latest ? rate(latest.rx) : '—'}</dd></div>
+			<div><dt><Icon name="up" size={16} />Keluar dari server</dt><dd>{feed.live && feed.current && latest ? rate(latest.tx) : '—'}</dd></div>
+		</dl>
+		<TrafficChart samples={feed.samples} live={feed.live && feed.current} />
+		<div class="monitoring-totals"><span>Total masuk <strong>{feed.current ? bytes(feed.status?.rx_bytes ?? 0) : '—'}</strong></span><span>Total keluar <strong>{feed.current ? bytes(feed.status?.tx_bytes ?? 0) : '—'}</strong></span></div>
+	</section>
+	<OverviewContext {server} {serverError} adguard={adguardError ? null : adguard} {dnsLabel} showDns={!!session.me?.adguard} />
+</div>
 
 <DeviceList devices={feed.status?.clients ?? []} current={feed.current} loading={!feed.status && !feed.error} unavailable={!!feed.error && !feed.status?.clients.length} selected={detailOpen ? selected ?? undefined : undefined} {now} onselect={id => { selected = id; detailOpen = true; }} />
 <DeviceDetails bind:open={detailOpen} {device} current={feed.current} {now} />
