@@ -12,7 +12,7 @@ import (
 
 var agTagRe = regexp.MustCompile(`\[wg#(\d+)\]$`)
 
-// agReady memastikan AdGuard dikonfigurasi; bila tidak, balas 503.
+// agReady ensures AdGuard is configured; if not, it replies with 503.
 func (s *Server) agReady(w http.ResponseWriter) bool {
 	if !s.ag.Enabled() {
 		writeError(w, http.StatusServiceUnavailable, adguard.ErrDisabled.Error())
@@ -23,7 +23,7 @@ func (s *Server) agReady(w http.ResponseWriter) bool {
 
 func agError(w http.ResponseWriter, what string, err error) {
 	if errors.Is(err, adguard.ErrDisabled) {
-		writeError(w, http.StatusServiceUnavailable, "AdGuard belum dihubungkan")
+		writeError(w, http.StatusServiceUnavailable, "AdGuard is not connected yet")
 		return
 	}
 	internalLog(what, err)
@@ -51,14 +51,14 @@ func (s *Server) handleAdGuardProtection(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if in.Enabled == nil {
-		writeError(w, http.StatusBadRequest, "field enabled wajib diisi")
+		writeError(w, http.StatusBadRequest, "the enabled field is required")
 		return
 	}
 	if !s.agReady(w) {
 		return
 	}
 	if err := s.ag.SetProtection(r.Context(), *in.Enabled); err != nil {
-		agError(w, "ubah proteksi AdGuard", err)
+		agError(w, "update AdGuard protection", err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -70,15 +70,15 @@ func (s *Server) handleAdGuardStats(w http.ResponseWriter, r *http.Request) {
 	}
 	raw, err := s.ag.Stats(r.Context())
 	if err != nil {
-		agError(w, "baca statistik AdGuard", err)
+		agError(w, "read AdGuard stats", err)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Write(raw)
 }
 
-// handleAdGuardSync menyamakan client AdGuard dengan database: semua klien
-// didaftarkan ulang, dan client "[wg#N]" yang kliennya sudah dihapus ikut dibuang.
+// handleAdGuardSync syncs AdGuard clients with the database: all clients are
+// re-registered, and "[wg#N]" clients whose client was deleted are removed.
 func (s *Server) handleAdGuardSync(w http.ResponseWriter, r *http.Request) {
 	if !s.agReady(w) {
 		return
@@ -87,13 +87,13 @@ func (s *Server) handleAdGuardSync(w http.ResponseWriter, r *http.Request) {
 	defer s.mu.Unlock()
 	synced, removed, warnings, err := s.agSyncAllLocked(r.Context())
 	if err != nil {
-		agError(w, "baca client AdGuard", err)
+		agError(w, "read AdGuard clients", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"synced": synced, "removed": removed, "warnings": warnings})
 }
 
-// agSyncAllLocked: pemanggil wajib memegang s.mu.
+// agSyncAllLocked syncs all clients to AdGuard. The caller must hold s.mu.
 func (s *Server) agSyncAllLocked(ctx context.Context) (synced, removed int, warnings []string, err error) {
 	clients, err := s.st.ListClients(ctx)
 	if err != nil {
@@ -116,7 +116,7 @@ func (s *Server) agSyncAllLocked(ctx context.Context) (synced, removed int, warn
 	for _, e := range existing {
 		m := agTagRe.FindStringSubmatch(e.Name)
 		if m == nil {
-			continue // client buatan pengguna sendiri, jangan disentuh
+			continue // a client the user created themselves; leave it alone
 		}
 		id, _ := strconv.ParseInt(m[1], 10, 64)
 		if known[id] {

@@ -9,8 +9,8 @@ import (
 	"github.com/luzyver/lzvr-umbra/internal/store"
 )
 
-// Fake meniru WireGuard untuk pengembangan di Windows/macOS: menyimpan peer di memori
-// dan mengarang statistik supaya dashboard bisa dicoba.
+// Fake imitates WireGuard for development on Windows/macOS: it keeps peers in memory
+// and invents statistics so the dashboard can be tried out.
 type Fake struct {
 	mu    sync.Mutex
 	peers map[string]*PeerStat
@@ -22,7 +22,7 @@ func (*Fake) Name() string { return "fake" }
 func (*Fake) Close() error { return nil }
 
 func (f *Fake) EnsureInterface(cfg store.ServerConfig) error {
-	slog.Info("fake wg: interface siap", "iface", cfg.Interface, "address", cfg.Address)
+	slog.Info("fake wg: interface ready", "iface", cfg.Interface, "address", cfg.Address)
 	return nil
 }
 
@@ -47,7 +47,7 @@ func (f *Fake) Stats(string) ([]PeerStat, error) {
 	defer f.mu.Unlock()
 	out := make([]PeerStat, 0, len(f.peers))
 	for _, p := range f.peers {
-		// separuh peer "online" dengan trafik yang terus bertambah
+		// half of the peers are "online" with ever-growing traffic
 		if p.PublicKey[0]%2 == 0 {
 			p.LastHandshake = time.Now().Add(-time.Duration(rand.IntN(90)) * time.Second)
 			p.Endpoint = "203.0.113.7:51820"

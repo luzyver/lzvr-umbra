@@ -21,7 +21,7 @@ import (
 	"github.com/luzyver/lzvr-umbra/internal/store"
 )
 
-// agJob adalah status pemasangan/pelepasan AdGuard yang berjalan di latar belakang.
+// agJob is the state of a background AdGuard install/uninstall job.
 type agJob struct {
 	Action  string `json:"action"`
 	State   string `json:"state"` // idle | running | done | error
@@ -30,13 +30,13 @@ type agJob struct {
 
 var defaultDNS = []string{"8.8.8.8", "9.9.9.9"}
 
-// loadAdGuardConn memakai koneksi AdGuard yang disimpan di database bila ada;
-// bila tidak, tetap memakai nilai dari environment.
+// loadAdGuardConn uses the AdGuard connection stored in the database if there is one;
+// otherwise it keeps the values from the environment.
 func (s *Server) loadAdGuardConn(ctx context.Context) {
 	var conn store.AdGuardConn
 	found, err := s.st.GetJSON(ctx, store.KeyAdGuard, &conn)
 	if err != nil {
-		internalLog("baca koneksi AdGuard", err)
+		internalLog("read AdGuard connection", err)
 		return
 	}
 	if found && conn.URL != "" {
@@ -44,7 +44,7 @@ func (s *Server) loadAdGuardConn(ctx context.Context) {
 	}
 }
 
-// currentConn mengembalikan koneksi yang aktif beserta asalnya: db, env, atau none.
+// currentConn returns the active connection and where it came from: db, env, or none.
 func (s *Server) currentConn(ctx context.Context) (store.AdGuardConn, string, error) {
 	var conn store.AdGuardConn
 	found, err := s.st.GetJSON(ctx, store.KeyAdGuard, &conn)
@@ -63,12 +63,12 @@ func (s *Server) currentConn(ctx context.Context) (store.AdGuardConn, string, er
 func (s *Server) tunnelIP(srv store.ServerConfig) (string, error) {
 	p, err := netip.ParsePrefix(srv.Address)
 	if err != nil {
-		return "", fmt.Errorf("alamat server %q tidak valid", srv.Address)
+		return "", fmt.Errorf("invalid server address %q", srv.Address)
 	}
 	return p.Addr().String(), nil
 }
 
-// ---------- pekerjaan latar belakang ----------
+// ---------- background jobs ----------
 
 func (s *Server) startAGJob(action string, fn func(ctx context.Context) (string, error)) bool {
 	s.agJobMu.Lock()
@@ -76,7 +76,7 @@ func (s *Server) startAGJob(action string, fn func(ctx context.Context) (string,
 		s.agJobMu.Unlock()
 		return false
 	}
-	s.agJob = agJob{Action: action, State: "running", Message: "memulai..."}
+	s.agJob = agJob{Action: action, State: "running", Message: "starting..."}
 	s.agJobMu.Unlock()
 
 	go func() {
@@ -86,11 +86,11 @@ func (s *Server) startAGJob(action string, fn func(ctx context.Context) (string,
 		s.agJobMu.Lock()
 		defer s.agJobMu.Unlock()
 		if err != nil {
-			slog.Error("AdGuard "+action+" gagal", "err", err)
+			slog.Error("AdGuard "+action+" failed", "err", err)
 			s.agJob = agJob{Action: action, State: "error", Message: err.Error()}
 			return
 		}
-		slog.Info("AdGuard "+action+" selesai", "msg", msg)
+		slog.Info("AdGuard "+action+" finished", "msg", msg)
 		s.agJob = agJob{Action: action, State: "done", Message: msg}
 	}()
 	return true
@@ -102,8 +102,8 @@ func (s *Server) setAGJobMsg(msg string) {
 	s.agJobMu.Unlock()
 }
 
-// maybeAutoInstallAdGuard memasang AdGuard otomatis bila installer dijalankan
-// dengan --with-adguard (UMBRA_ADGUARD_AUTOINSTALL=true) dan belum terhubung.
+// maybeAutoInstallAdGuard installs AdGuard automatically if the installer was run
+// with --with-adguard (UMBRA_ADGUARD_AUTOINSTALL=true) and AdGuard is not yet connected.
 func (s *Server) maybeAutoInstallAdGuard() {
 	if !s.cfg.AdGuardAutoInstall || s.ag.Enabled() {
 		return
@@ -111,8 +111,8 @@ func (s *Server) maybeAutoInstallAdGuard() {
 	s.startAGJob("install", s.installAdGuard)
 }
 
-// runHelper meminta umbra-helper (root) mengerjakan req lalu menunggu hasilnya.
-// wait (opsional) dipanggil berulang setelah helper selesai sampai bernilai true.
+// runHelper asks umbra-helper (root) to carry out req, then waits for the result.
+// wait (optional) is called repeatedly after the helper finishes until it returns true.
 func (s *Server) runHelper(ctx context.Context, req helper.Request, wait func() bool) (string, error) {
 	dir := helper.Dir(s.cfg.DataDir)
 	if err := os.MkdirAll(dir, 0o700); err != nil {
@@ -135,7 +135,7 @@ func (s *Server) runHelper(ctx context.Context, req helper.Request, wait func() 
 		if !ok {
 			if time.Since(start) > 30*time.Second {
 				_ = os.Remove(helper.RequestPath(s.cfg.DataDir))
-				return "", errors.New("helper tidak merespons (cek: systemctl status umbra-helper.path)")
+				return "", errors.New("helper is not responding (check: systemctl status umbra-helper.path)")
 			}
 			continue
 		}
@@ -147,7 +147,7 @@ func (s *Server) runHelper(ctx context.Context, req helper.Request, wait func() 
 			break
 		}
 		if time.Now().After(deadline) {
-			return "", errors.New("helper terlalu lama, cek: journalctl -u umbra-helper")
+			return "", errors.New("helper is taking too long, check: journalctl -u umbra-helper")
 		}
 	}
 	if wait == nil {
@@ -161,7 +161,7 @@ func (s *Server) runHelper(ctx context.Context, req helper.Request, wait func() 
 			return "", err
 		}
 	}
-	return "", errors.New(msg + ", tetapi AdGuard belum menjawab (cek: systemctl status AdGuardHome)")
+	return "", errors.New(msg + ", but AdGuard is not responding yet (check: systemctl status AdGuardHome)")
 }
 
 func sleepCtx(ctx context.Context, d time.Duration) error {
@@ -181,7 +181,7 @@ func (s *Server) installAdGuard(ctx context.Context) (string, error) {
 		return "", err
 	}
 	if !srv.Initialized {
-		return "", errors.New("atur server WireGuard dulu sebelum memasang AdGuard")
+		return "", errors.New("set up the WireGuard server before installing AdGuard")
 	}
 	ip, err := s.tunnelIP(srv)
 	if err != nil {
@@ -190,14 +190,14 @@ func (s *Server) installAdGuard(ctx context.Context) (string, error) {
 
 	switch adguard.WizardState(ctx, adguard.WizardURL) {
 	case "ready":
-		return "", errors.New("AdGuard Home sudah terpasang dan disiapkan di " + adguard.WizardURL +
-			"; hubungkan dengan login yang sudah ada di tab Koneksi")
+		return "", errors.New("AdGuard Home is already installed and set up at " + adguard.WizardURL +
+			"; connect it with the existing login in the Connection tab")
 	case "down":
 		if !helper.Available() {
-			return "", errors.New("helper pemasang belum ada di server; jalankan ulang install.sh versi terbaru, " +
-				"atau pasang AdGuard Home sendiri lalu hubungkan di tab Koneksi")
+			return "", errors.New("the installer helper is missing on the server; re-run the latest install.sh, " +
+				"or install AdGuard Home yourself and connect it in the Connection tab")
 		}
-		s.setAGJobMsg("mengunduh dan memasang AdGuard Home...")
+		s.setAGJobMsg("downloading and installing AdGuard Home...")
 		_, err := s.runHelper(ctx, helper.Request{Action: "install", WGInterface: srv.Interface}, func() bool {
 			return adguard.WizardState(ctx, adguard.WizardURL) == "wizard"
 		})
@@ -206,12 +206,12 @@ func (s *Server) installAdGuard(ctx context.Context) (string, error) {
 		}
 	}
 
-	s.setAGJobMsg("menjalankan setup awal AdGuard...")
+	s.setAGJobMsg("running AdGuard initial setup...")
 	pass := auth.NewToken()
 	if err := adguard.RunWizard(ctx, adguard.WizardURL, ip, "admin", pass); err != nil {
-		return "", fmt.Errorf("setup awal AdGuard: %w", err)
+		return "", fmt.Errorf("AdGuard initial setup: %w", err)
 	}
-	// Setelah setup, AdGuard memulai ulang web dan DNS-nya; tunggu sampai siap.
+	// After setup, AdGuard restarts its web UI and DNS; wait until it is ready.
 	var testErr error
 	for range 15 {
 		if err := sleepCtx(ctx, 2*time.Second); err != nil {
@@ -222,7 +222,7 @@ func (s *Server) installAdGuard(ctx context.Context) (string, error) {
 		}
 	}
 	if testErr != nil {
-		return "", fmt.Errorf("AdGuard belum siap setelah setup: %w", testErr)
+		return "", fmt.Errorf("AdGuard is not ready after setup: %w", testErr)
 	}
 
 	conn := store.AdGuardConn{URL: adguard.WizardURL, User: "admin", Pass: pass, Managed: true}
@@ -234,23 +234,23 @@ func (s *Server) installAdGuard(ctx context.Context) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if err := s.setDefaultDNS(ctx, srv, []string{ip}); err != nil {
-		internalLog("ubah DNS default", err)
+		internalLog("update default DNS", err)
 	}
 	synced, _, warnings, err := s.agSyncAllLocked(ctx)
 	if err != nil {
-		return "", fmt.Errorf("AdGuard terpasang, tetapi sinkron klien gagal: %w", err)
+		return "", fmt.Errorf("AdGuard is installed, but device sync failed: %w", err)
 	}
-	msg := fmt.Sprintf("AdGuard Home terpasang dan %d klien didaftarkan.", synced)
+	msg := fmt.Sprintf("AdGuard Home installed and %d devices registered.", synced)
 	if n := s.clientsWithoutDNS(ctx, ip); n > 0 {
-		msg += fmt.Sprintf(" %d klien lama masih memakai DNS lain; unduh ulang profilnya supaya iklan ikut diblokir.", n)
+		msg += fmt.Sprintf(" %d existing devices still use other DNS; re-download their profiles so ads get blocked too.", n)
 	}
 	for _, w := range warnings {
-		msg += " Peringatan: " + w
+		msg += " Warning: " + w
 	}
 	return msg, nil
 }
 
-// setDefaultDNS mengganti DNS default klien baru. Pemanggil memegang s.mu.
+// setDefaultDNS replaces the default DNS for new clients. The caller holds s.mu.
 func (s *Server) setDefaultDNS(ctx context.Context, srv store.ServerConfig, dns []string) error {
 	d, err := s.loadDefaults(ctx, srv)
 	if err != nil {
@@ -280,16 +280,16 @@ func (s *Server) uninstallAdGuard(ctx context.Context) (string, error) {
 		return "", err
 	}
 	if source != "db" || !conn.Managed {
-		return "", errors.New("AdGuard ini tidak dipasang oleh panel; lepas sendiri di server, lalu putuskan koneksinya")
+		return "", errors.New("this AdGuard was not installed by the panel; remove it on the server yourself, then disconnect it")
 	}
 	if !helper.Available() {
-		return "", errors.New("helper pemasang belum ada di server; jalankan ulang install.sh versi terbaru")
+		return "", errors.New("the installer helper is missing on the server; re-run the latest install.sh")
 	}
 	srv, err := s.loadServer(ctx)
 	if err != nil {
 		return "", err
 	}
-	s.setAGJobMsg("melepas AdGuard Home...")
+	s.setAGJobMsg("uninstalling AdGuard Home...")
 	msg, err := s.runHelper(ctx, helper.Request{Action: "uninstall", WGInterface: srv.Interface}, nil)
 	if err != nil {
 		return "", err
@@ -297,11 +297,11 @@ func (s *Server) uninstallAdGuard(ctx context.Context) (string, error) {
 	if err := s.disconnectAdGuard(ctx, srv); err != nil {
 		return "", err
 	}
-	return msg + ". Klien yang memakai DNS AdGuard perlu mengunduh ulang profilnya.", nil
+	return msg + ". Devices using AdGuard DNS need to re-download their profiles.", nil
 }
 
-// disconnectAdGuard menghapus koneksi di database (kembali ke nilai environment)
-// dan mengembalikan DNS default bila masih menunjuk ke AdGuard.
+// disconnectAdGuard removes the connection from the database (falling back to the environment values)
+// and restores the default DNS if it still points at AdGuard.
 func (s *Server) disconnectAdGuard(ctx context.Context, srv store.ServerConfig) error {
 	if err := s.st.SetJSON(ctx, store.KeyAdGuard, store.AdGuardConn{}); err != nil {
 		return err
@@ -327,12 +327,12 @@ func (s *Server) disconnectAdGuard(ctx context.Context, srv store.ServerConfig) 
 	return nil
 }
 
-// ---------- endpoint koneksi & pemasangan ----------
+// ---------- connection & install endpoints ----------
 
 func (s *Server) handleAdGuardGetConn(w http.ResponseWriter, r *http.Request) {
 	conn, source, err := s.currentConn(r.Context())
 	if err != nil {
-		internalError(w, "baca koneksi AdGuard", err)
+		internalError(w, "read AdGuard connection", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
@@ -347,11 +347,11 @@ type agConnInput struct {
 	Pass string `json:"pass"`
 }
 
-// resolveConnInput memvalidasi URL dan mengisi password lama bila kosong.
+// resolveConnInput validates the URL and fills in the existing password if empty.
 func (s *Server) resolveConnInput(ctx context.Context, in agConnInput) (store.AdGuardConn, error) {
 	u, err := url.Parse(in.URL)
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-		return store.AdGuardConn{}, errors.New("alamat AdGuard harus berupa http:// atau https:// lengkap dengan host")
+		return store.AdGuardConn{}, errors.New("the AdGuard address must be a full http:// or https:// URL including the host")
 	}
 	conn := store.AdGuardConn{URL: in.URL, User: in.User, Pass: in.Pass}
 	cur, _, err := s.currentConn(ctx)
@@ -399,7 +399,7 @@ func (s *Server) handleAdGuardPutConn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.st.SetJSON(ctx, store.KeyAdGuard, conn); err != nil {
-		internalError(w, "simpan koneksi AdGuard", err)
+		internalError(w, "save AdGuard connection", err)
 		return
 	}
 	s.ag.Configure(conn.URL, conn.User, conn.Pass)
@@ -408,7 +408,7 @@ func (s *Server) handleAdGuardPutConn(w http.ResponseWriter, r *http.Request) {
 	defer s.mu.Unlock()
 	synced, removed, warnings, err := s.agSyncAllLocked(ctx)
 	if err != nil {
-		warnings = append(warnings, "sinkron klien: "+err.Error())
+		warnings = append(warnings, "device sync: "+err.Error())
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"synced": synced, "removed": removed, "warnings": warnings})
 }
@@ -416,11 +416,11 @@ func (s *Server) handleAdGuardPutConn(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleAdGuardDeleteConn(w http.ResponseWriter, r *http.Request) {
 	srv, err := s.loadServer(r.Context())
 	if err != nil {
-		internalError(w, "baca server", err)
+		internalError(w, "read server", err)
 		return
 	}
 	if err := s.disconnectAdGuard(r.Context(), srv); err != nil {
-		internalError(w, "hapus koneksi AdGuard", err)
+		internalError(w, "delete AdGuard connection", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"enabled": s.ag.Enabled()})
@@ -435,7 +435,7 @@ func (s *Server) handleAdGuardJob(w http.ResponseWriter, r *http.Request) {
 	}
 	conn, source, err := s.currentConn(r.Context())
 	if err != nil {
-		internalError(w, "baca koneksi AdGuard", err)
+		internalError(w, "read AdGuard connection", err)
 		return
 	}
 	detected := false
@@ -452,11 +452,11 @@ func (s *Server) handleAdGuardJob(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleAdGuardInstall(w http.ResponseWriter, r *http.Request) {
 	if s.ag.Enabled() {
-		writeError(w, http.StatusConflict, "AdGuard sudah terhubung")
+		writeError(w, http.StatusConflict, "AdGuard is already connected")
 		return
 	}
 	if !s.startAGJob("install", s.installAdGuard) {
-		writeError(w, http.StatusConflict, "masih ada proses AdGuard yang berjalan")
+		writeError(w, http.StatusConflict, "an AdGuard task is still running")
 		return
 	}
 	writeJSON(w, http.StatusAccepted, map[string]any{"state": "running"})
@@ -464,13 +464,13 @@ func (s *Server) handleAdGuardInstall(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleAdGuardUninstall(w http.ResponseWriter, r *http.Request) {
 	if !s.startAGJob("uninstall", s.uninstallAdGuard) {
-		writeError(w, http.StatusConflict, "masih ada proses AdGuard yang berjalan")
+		writeError(w, http.StatusConflict, "an AdGuard task is still running")
 		return
 	}
 	writeJSON(w, http.StatusAccepted, map[string]any{"state": "running"})
 }
 
-// ---------- pengaturan per klien ----------
+// ---------- per-client settings ----------
 
 func (s *Server) handleAdGuardGetClient(w http.ResponseWriter, r *http.Request) {
 	c, ok := s.clientOr404(w, r)
@@ -479,7 +479,7 @@ func (s *Server) handleAdGuardGetClient(w http.ResponseWriter, r *http.Request) 
 	}
 	e, err := s.ag.GetClient(r.Context(), c.ID)
 	if err != nil {
-		agError(w, "baca client AdGuard", err)
+		agError(w, "read AdGuard client", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"client": e})
@@ -495,16 +495,16 @@ func (s *Server) handleAdGuardPutClient(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err := s.ag.UpdateClient(r.Context(), c.ID, in); err != nil {
-		agError(w, "ubah client AdGuard", err)
+		agError(w, "update AdGuard client", err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// ---------- proxy pengaturan AdGuard ----------
+// ---------- AdGuard settings proxy ----------
 
-// agProxyRoutes: endpoint /control/... AdGuard yang boleh diakses lewat panel
-// di /api/adguard/ctl/... (daftar putih, bukan proxy bebas).
+// agProxyRoutes lists the AdGuard /control/... endpoints that may be reached through
+// the panel at /api/adguard/ctl/... (an allowlist, not an open proxy).
 var agProxyRoutes = []struct{ method, path string }{
 	{"GET", "filtering/status"},
 	{"GET", "dns_info"},
@@ -548,16 +548,16 @@ func (s *Server) agProxy(method, upstream string) http.HandlerFunc {
 		} else {
 			b, err := io.ReadAll(io.LimitReader(r.Body, 1<<20+1))
 			if err != nil {
-				writeError(w, http.StatusBadRequest, "gagal membaca data")
+				writeError(w, http.StatusBadRequest, "failed to read request body")
 				return
 			}
 			if len(b) > 1<<20 {
-				writeError(w, http.StatusRequestEntityTooLarge, "data terlalu besar")
+				writeError(w, http.StatusRequestEntityTooLarge, "request body too large")
 				return
 			}
 			if len(bytes.TrimSpace(b)) > 0 {
 				if !json.Valid(b) {
-					writeError(w, http.StatusBadRequest, "data tidak valid")
+					writeError(w, http.StatusBadRequest, "invalid request body")
 					return
 				}
 				body = json.RawMessage(b)

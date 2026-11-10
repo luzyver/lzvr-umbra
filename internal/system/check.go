@@ -1,4 +1,4 @@
-// Package system memeriksa kesiapan server untuk WireGuard (dipakai wizard setup).
+// Package system checks whether the server is ready for WireGuard (used by the setup wizard).
 package system
 
 import (
@@ -38,40 +38,40 @@ func Check(ctx context.Context, listenPort int) Report {
 	}
 
 	if runtime.GOOS != "linux" {
-		add("os", "Sistem operasi", "warn", "Bukan Linux ("+runtime.GOOS+"): panel berjalan dalam mode tiruan")
+		add("os", "Operating system", "warn", "Not Linux ("+runtime.GOOS+"): the panel is running in simulated mode")
 	}
 
 	if _, err := os.Stat("/sys/module/wireguard"); err == nil {
-		add("module", "Modul kernel WireGuard", "ok", "Sudah dimuat")
+		add("module", "WireGuard kernel module", "ok", "Already loaded")
 	} else {
-		add("module", "Modul kernel WireGuard", "warn", "Modul tidak terdeteksi. Mode auto memakai wireguard-go userspace bila kernel tidak mendukung WireGuard; perlu /dev/net/tun dan CAP_NET_ADMIN. Mode kernel memerlukan dukungan kernel.")
+		add("module", "WireGuard kernel module", "warn", "Module not detected. Auto mode uses userspace wireguard-go if the kernel does not support WireGuard; this needs /dev/net/tun and CAP_NET_ADMIN. Kernel mode requires kernel support.")
 	}
 
 	if b, err := os.ReadFile("/proc/sys/net/ipv4/ip_forward"); err == nil && strings.TrimSpace(string(b)) == "1" {
-		add("forward", "IP forwarding", "ok", "Aktif")
+		add("forward", "IP forwarding", "ok", "Enabled")
 	} else {
-		add("forward", "IP forwarding", "fail", "Mati. Installer mengaktifkan net.ipv4.ip_forward=1")
+		add("forward", "IP forwarding", "fail", "Disabled. The installer enables net.ipv4.ip_forward=1")
 	}
 
 	if _, err := exec.LookPath("nft"); err == nil {
-		add("nft", "nftables", "ok", "Perintah nft tersedia")
+		add("nft", "nftables", "ok", "nft command is available")
 	} else {
-		add("nft", "nftables", "fail", "Perintah nft tidak ada. Pasang paket nftables")
+		add("nft", "nftables", "fail", "nft command not found. Install the nftables package")
 	}
 
 	if listenPort > 0 {
 		if conn, err := net.ListenPacket("udp", fmt.Sprintf(":%d", listenPort)); err == nil {
 			conn.Close()
-			add("port", fmt.Sprintf("Port UDP %d", listenPort), "ok", "Belum dipakai program lain")
+			add("port", fmt.Sprintf("Port UDP %d", listenPort), "ok", "Not used by any other program")
 		} else {
 			add("port", fmt.Sprintf("Port UDP %d", listenPort), "warn",
-				"Sudah dipakai (mungkin oleh WireGuard/wg-easy lama): "+err.Error())
+				"Already in use (possibly by an old WireGuard/wg-easy): "+err.Error())
 		}
 	}
 
 	if st := ufwStatus(); st != "" {
 		status := "ok"
-		if st == "aktif, forward DROP" {
+		if st == "active, forward DROP" {
 			status = "warn"
 		}
 		add("ufw", "UFW", status, ufwDetail(st))
@@ -79,9 +79,9 @@ func Check(ctx context.Context, listenPort int) Report {
 
 	r.DefaultIface = defaultIface()
 	if r.DefaultIface != "" {
-		add("route", "Interface internet", "ok", r.DefaultIface)
+		add("route", "Internet interface", "ok", r.DefaultIface)
 	} else {
-		add("route", "Interface internet", "warn", "Default route tidak ditemukan, isi manual")
+		add("route", "Internet interface", "warn", "Default route not found, enter it manually")
 	}
 
 	r.LocalIPs = localIPs()
@@ -94,14 +94,14 @@ func Check(ctx context.Context, listenPort int) Report {
 			}
 		}
 		if r.BehindNAT {
-			add("nat", "IP publik", "warn", fmt.Sprintf(
-				"Server di balik NAT (IP publik %s, IP lokal %s). Pastikan port UDP diteruskan ke server ini.",
+			add("nat", "Public IP", "warn", fmt.Sprintf(
+				"Server is behind NAT (public IP %s, local IP %s). Make sure the UDP port is forwarded to this server.",
 				r.PublicIP, strings.Join(r.LocalIPs, ", ")))
 		} else {
-			add("nat", "IP publik", "ok", r.PublicIP)
+			add("nat", "Public IP", "ok", r.PublicIP)
 		}
 	} else {
-		add("nat", "IP publik", "warn", "Tidak bisa mendeteksi IP publik")
+		add("nat", "Public IP", "warn", "Cannot detect the public IP")
 	}
 	return r
 }
@@ -112,26 +112,26 @@ func ufwStatus() string {
 		return ""
 	}
 	if !strings.Contains(string(conf), "ENABLED=yes") {
-		return "mati"
+		return "inactive"
 	}
 	def, _ := os.ReadFile("/etc/default/ufw")
 	if strings.Contains(string(def), `DEFAULT_FORWARD_POLICY="DROP"`) {
-		return "aktif, forward DROP"
+		return "active, forward DROP"
 	}
-	return "aktif"
+	return "active"
 }
 
 func ufwDetail(st string) string {
 	switch st {
-	case "mati":
-		return "Tidak aktif"
-	case "aktif, forward DROP":
-		return "Aktif dengan forward DROP. Installer menambahkan 'ufw route allow in on wg0' dan membuka port UDP"
+	case "inactive":
+		return "Inactive"
+	case "active, forward DROP":
+		return "Active with forward DROP. The installer adds 'ufw route allow in on wg0' and opens the UDP port"
 	}
-	return "Aktif"
+	return "Active"
 }
 
-// defaultIface membaca /proc/net/route dan mengambil interface dengan tujuan 0.0.0.0.
+// defaultIface reads /proc/net/route and picks the interface whose destination is 0.0.0.0.
 func defaultIface() string {
 	f, err := os.Open("/proc/net/route")
 	if err != nil {

@@ -1,5 +1,5 @@
-// Package wg mengatur interface WireGuard. Perubahan langsung dikirim ke backend
-// (tanpa tombol "Apply Config"), lalu salinan wg0.conf ditulis sebagai cadangan.
+// Package wg manages the WireGuard interface. Changes are sent straight to the backend
+// (no "Apply Config" button), and a copy of wg0.conf is written as a backup.
 package wg
 
 import (
@@ -8,11 +8,11 @@ import (
 	"github.com/luzyver/lzvr-umbra/internal/store"
 )
 
-// Peer adalah klien yang aktif dan harus ada di interface.
+// Peer is an active client that must exist on the interface.
 type Peer struct {
 	PublicKey    string
 	PresharedKey string
-	Address      string // IP tunggal klien, dipasang sebagai /32
+	Address      string // the client's single IP, installed as /32
 	Keepalive    int
 }
 
@@ -25,18 +25,18 @@ type PeerStat struct {
 }
 
 type Backend interface {
-	// Name mengembalikan backend aktif, atau pending bila belum siap.
+	// Name returns the active backend, or pending if not ready yet.
 	Name() string
-	// Close melepaskan sumber daya milik proses.
+	// Close releases the resources held by the process.
 	Close() error
-	// EnsureInterface membuat interface bila belum ada, lalu memasang alamat, MTU, dan menyalakannya.
+	// EnsureInterface creates the interface if missing, then sets its address and MTU and brings it up.
 	EnsureInterface(cfg store.ServerConfig) error
-	// Sync menyamakan daftar peer dengan daftar dari database.
+	// Sync reconciles the peer list with the list from the database.
 	Sync(cfg store.ServerConfig, peers []Peer) error
 	Stats(iface string) ([]PeerStat, error)
 }
 
-// PeersFromClients mengambil klien yang aktif saja.
+// PeersFromClients picks enabled clients only.
 func PeersFromClients(clients []store.Client) []Peer {
 	out := make([]Peer, 0, len(clients))
 	for _, c := range clients {

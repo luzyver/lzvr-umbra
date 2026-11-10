@@ -1,4 +1,4 @@
-// Package importer membaca cadangan WireGuard tanpa mengubah database.
+// Package importer reads WireGuard backups without modifying the database.
 package importer
 
 import (
@@ -49,13 +49,13 @@ func Check(in, existing []Candidate, subnet string) []Candidate {
 		a, e := netip.ParseAddr(c.Address)
 		switch {
 		case c.Reason != "":
-			// sudah ditolak sebelumnya (mis. kunci tidak valid)
+			// already rejected earlier (e.g. invalid key)
 		case err != nil || e != nil || !p.Contains(a) || a == p.Addr() || a == p.Masked().Addr() || !p.Contains(a.Next()):
-			c.Reason = "alamat di luar subnet server"
+			c.Reason = "address outside server subnet"
 		case keys[c.PublicKey]:
-			c.Reason = "kunci publik sudah ada"
+			c.Reason = "public key already exists"
 		case ips[c.Address]:
-			c.Reason = "alamat sudah ada"
+			c.Reason = "address already exists"
 		}
 		if c.Reason == "" {
 			keys[c.PublicKey] = true

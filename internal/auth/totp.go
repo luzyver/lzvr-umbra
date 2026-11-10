@@ -25,7 +25,7 @@ func NewTOTPSecret() (string, error) {
 func TOTPCode(secret string, step int64) (string, error) {
 	key, err := totpEncoding.DecodeString(secret)
 	if err != nil || len(key) == 0 || step < 0 {
-		return "", errors.New("kunci TOTP tidak valid")
+		return "", errors.New("invalid TOTP key")
 	}
 	var counter [8]byte
 	binary.BigEndian.PutUint64(counter[:], uint64(step))
@@ -37,7 +37,7 @@ func TOTPCode(secret string, step int64) (string, error) {
 	return fmt.Sprintf("%06d", value%1000000), nil
 }
 
-// VerifyTOTP mengembalikan langkah yang cocok hanya bila belum pernah dipakai.
+// VerifyTOTP returns the matching step only if it has not been used before.
 func VerifyTOTP(secret, code string, now time.Time, lastStep int64) (int64, bool) {
 	if len(code) != 6 {
 		return 0, false

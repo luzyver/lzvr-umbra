@@ -35,11 +35,11 @@ func ParseWGUI(files map[string][]byte) (Source, error) {
 		if !strings.HasSuffix(strings.ToLower(normalized), ".json") {
 			continue
 		}
-		// Unggahan satuan tidak punya folder; isi arsip dikenali dari foldernya (db/clients, db/server).
+		// A single-file upload has no folder; archive contents are recognized by folder (db/clients, db/server).
 		single := !strings.Contains(normalized, "/")
 		folder := path.Base(path.Dir(normalized))
 		if !single && folder != "clients" && folder != "server" {
-			continue // mis. db/users, db/wake_on_lan_hosts
+			continue // e.g. db/users, db/wake_on_lan_hosts
 		}
 		switch path.Base(normalized) {
 		case "interfaces.json":
@@ -79,17 +79,17 @@ func ParseWGUI(files map[string][]byte) (Source, error) {
 			continue
 		}
 		if folder == "server" {
-			continue // metadata server lain, mis. hashes.json
+			continue // other server metadata, e.g. hashes.json
 		}
 		var x wguiClient
 		if err := json.Unmarshal(files[n], &x); err != nil {
 			return out, fmt.Errorf("%s: %w", n, err)
 		}
 		if single && x.PublicKey == "" && x.PrivateKey == "" {
-			continue // bukan berkas perangkat
+			continue // not a device file
 		}
 		if x.PublicKey == "" || x.PrivateKey == "" {
-			return out, fmt.Errorf("%s: kunci perangkat tidak lengkap", n)
+			return out, fmt.Errorf("%s: incomplete device keys", n)
 		}
 		addr := ""
 		for _, s := range x.AllocatedIPs {
@@ -100,12 +100,12 @@ func ParseWGUI(files map[string][]byte) (Source, error) {
 			}
 		}
 		if addr == "" {
-			return out, fmt.Errorf("%s: tidak ada allocated_ips IPv4 /32", n)
+			return out, fmt.Errorf("%s: no IPv4 /32 allocated_ips", n)
 		}
 		out.Clients = append(out.Clients, Candidate{Name: x.Name, PrivateKey: x.PrivateKey, PublicKey: x.PublicKey, PresharedKey: x.PresharedKey, Address: addr, AllowedIPs: x.AllowedIPs, Enabled: x.Enabled, HasPrivateKey: true, CreatedAt: x.CreatedAt, UpdatedAt: x.UpdatedAt})
 	}
 	if len(out.Clients) == 0 {
-		return out, fmt.Errorf("tidak ada berkas perangkat di clients/")
+		return out, fmt.Errorf("no device files in clients/")
 	}
 	return out, nil
 }

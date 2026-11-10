@@ -22,13 +22,13 @@
 	import Connection from '#lib/adguard/Connection.svelte';
 
 	const tabs = [
-		['overview', 'Ringkasan'],
-		['filters', 'Filter'],
+		['overview', 'Overview'],
+		['filters', 'Filters'],
 		['dns', 'DNS'],
-		['services', 'Layanan'],
-		['clients', 'Klien'],
+		['services', 'Services'],
+		['clients', 'Clients'],
 		['log', 'Log'],
-		['conn', 'Koneksi']
+		['conn', 'Connection']
 	] as const;
 	type Tab = (typeof tabs)[number][0];
 
@@ -64,7 +64,7 @@
 		clearInterval(timer);
 		timer = undefined;
 		if (prev === 'running') {
-			// Proses pasang/copot baru selesai: tampilkan hasilnya dan muat ulang semuanya.
+			// The install/uninstall just finished: show the result and reload everything.
 			toast(job.message, job.state === 'error' ? 'error' : 'ok');
 			await refreshMe();
 			tab = 'overview';
@@ -89,7 +89,7 @@
 		try {
 			const r = await post<AdGuardSync>('/adguard/sync');
 			warnAll(r.warnings);
-			toast(`Sinkron selesai: ${r.synced} klien diperbarui, ${r.removed} dihapus.`);
+			toast(`Sync complete: ${r.synced} devices updated, ${r.removed} removed.`);
 		} catch (e) {
 			toast(errMsg(e), 'error');
 		} finally {
@@ -105,28 +105,28 @@
 <div class="page-heading">
 	<h1>AdGuard</h1>
 	{#if st?.configured && st.reachable && !running}
-		<button class="btn-ghost ml-auto" disabled={busy} onclick={load}>Muat ulang</button>
-		<button class="btn-primary" disabled={busy} onclick={sync}>Sinkron klien</button>
+		<button class="btn-ghost ml-auto" disabled={busy} onclick={load}>Reload</button>
+		<button class="btn-primary" disabled={busy} onclick={sync}>Sync devices</button>
 	{/if}
 </div>
 
 {#if error}
 	<div class="card text-sm text-red-600">{error}</div>
 {:else if !st || !job}
-	<p class="text-sm text-zinc-500">Memuat…</p>
+	<p class="text-sm text-zinc-500">Loading…</p>
 {:else if running && job.action === 'uninstall'}
 	<div class="card space-y-2 text-sm">
-		<p class="font-medium">Mencopot AdGuard Home…</p>
-		<p class="hint">{job.message || 'Mohon tunggu.'}</p>
+		<p class="font-medium">Uninstalling AdGuard Home…</p>
+		<p class="hint">{job.message || 'Please wait.'}</p>
 	</div>
 {:else if !st.configured || running}
 	<Setup {job} ondone={loadJob} />
 {:else}
 	{#if !st.reachable}
 		<div class="card mb-4 space-y-2 text-sm">
-			<p class="font-medium text-red-600">AdGuard Home tidak bisa dihubungi.</p>
+			<p class="font-medium text-red-600">AdGuard Home could not be reached.</p>
 			{#if st.error}<p class="font-mono text-xs text-zinc-500">{st.error}</p>{/if}
-			<p class="hint">Periksa apakah service AdGuard berjalan, atau perbaiki alamat/kata sandinya di bawah.</p>
+			<p class="hint">Check that the AdGuard service is running, or fix its address or password below.</p>
 		</div>
 		<Connection onchange={changed} />
 	{:else if st.status}

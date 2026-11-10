@@ -12,13 +12,13 @@ import (
 
 type connectionsResp struct {
 	Conns []conntrack.Conn `json:"conns"`
-	// Accounting false bila kernel tidak menghitung byte (nf_conntrack_acct=0).
+	// Accounting is false if the kernel does not count bytes (nf_conntrack_acct=0).
 	Accounting  bool   `json:"accounting"`
 	Unsupported string `json:"unsupported,omitempty"`
 }
 
-// handleClientConnections menampilkan koneksi yang sedang dibuat klien
-// (dari tabel conntrack kernel).
+// handleClientConnections lists the connections a client is currently making
+// (from the kernel conntrack table).
 func (s *Server) handleClientConnections(w http.ResponseWriter, r *http.Request) {
 	c, ok := s.clientOr404(w, r)
 	if !ok {
@@ -26,7 +26,7 @@ func (s *Server) handleClientConnections(w http.ResponseWriter, r *http.Request)
 	}
 	ip := net.ParseIP(strings.SplitN(c.Address, "/", 2)[0])
 	if ip == nil {
-		writeError(w, http.StatusBadRequest, "alamat klien tidak valid")
+		writeError(w, http.StatusBadRequest, "invalid device address")
 		return
 	}
 
@@ -41,7 +41,7 @@ func (s *Server) handleClientConnections(w http.ResponseWriter, r *http.Request)
 	if errors.Is(err, conntrack.ErrUnsupported) {
 		resp.Unsupported = err.Error()
 	} else if err != nil {
-		internalError(w, "baca tabel koneksi", err)
+		internalError(w, "read connection table", err)
 		return
 	}
 	if resp.Conns == nil {
@@ -57,7 +57,7 @@ func (s *Server) handleClientConnections(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusOK, resp)
 }
 
-// fakeConns memberi contoh koneksi untuk mode dev.
+// fakeConns returns sample connections for dev mode.
 func fakeConns(ip net.IP) []conntrack.Conn {
 	now := time.Now()
 	mk := func(proto, dst string, port uint16, sent, recv uint64, state string, age time.Duration) conntrack.Conn {

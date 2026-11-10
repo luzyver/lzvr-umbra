@@ -1,4 +1,4 @@
-// Package auth: hash password (argon2id), token sesi, dan pembatas percobaan login.
+// Package auth provides password hashing (argon2id), session tokens, and a login attempt limiter.
 package auth
 
 import (
@@ -16,7 +16,7 @@ import (
 	"golang.org/x/crypto/argon2"
 )
 
-// Parameter argon2id dibuat hemat RAM (32 MB) karena server target kecil.
+// The argon2id parameters are RAM-frugal (32 MB) because target servers are small.
 const (
 	argonTime    = 3
 	argonMemory  = 32 * 1024
@@ -57,7 +57,7 @@ func VerifyPassword(password, encoded string) bool {
 	return subtle.ConstantTimeCompare(got, want) == 1
 }
 
-// NewToken membuat token acak yang aman untuk cookie/URL.
+// NewToken creates a random token that is safe for cookies and URLs.
 func NewToken() string {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
@@ -66,7 +66,7 @@ func NewToken() string {
 	return base64.RawURLEncoding.EncodeToString(b)
 }
 
-// HashToken: yang disimpan di DB hanya hash, jadi bocornya DB tidak membocorkan sesi.
+// HashToken returns the token hash; only the hash is stored in the DB, so a DB leak does not expose sessions.
 func HashToken(token string) string {
 	sum := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(sum[:])
@@ -78,15 +78,15 @@ func Equal(a, b string) bool {
 
 func ValidatePassword(pw string) error {
 	if len(pw) < 10 {
-		return errors.New("password minimal 10 karakter")
+		return errors.New("password must be at least 10 characters")
 	}
 	if len(pw) > 128 {
-		return errors.New("password terlalu panjang")
+		return errors.New("password is too long")
 	}
 	return nil
 }
 
-// Limiter membatasi percobaan login gagal per kunci (IP).
+// Limiter limits failed login attempts per key (IP).
 type Limiter struct {
 	mu     sync.Mutex
 	max    int
@@ -98,7 +98,7 @@ func NewLimiter(max int, window time.Duration) *Limiter {
 	return &Limiter{max: max, window: window, hits: map[string][]time.Time{}}
 }
 
-// Allowed mengembalikan false bila kunci sudah melewati batas; retry = sisa waktu tunggu.
+// Allowed returns false once the key has exceeded the limit, along with the remaining wait time.
 func (l *Limiter) Allowed(key string) (bool, time.Duration) {
 	l.mu.Lock()
 	defer l.mu.Unlock()

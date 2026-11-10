@@ -22,7 +22,7 @@ func TestUAPICloseStopsIdleConnections(t *testing.T) {
 	select {
 	case <-entered:
 	case <-time.After(3 * time.Second):
-		t.Fatal("handler UAPI tidak berjalan")
+		t.Fatal("UAPI handler did not run")
 	}
 	done := make(chan error, 1)
 	go func() { done <- s.Close() }()
@@ -32,12 +32,12 @@ func TestUAPICloseStopsIdleConnections(t *testing.T) {
 			t.Fatal(err)
 		}
 	case <-time.After(3 * time.Second):
-		t.Fatal("shutdown macet pada koneksi UAPI diam")
+		t.Fatal("shutdown hung on idle UAPI connection")
 	}
 	if err := s.Close(); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := c.Read(make([]byte, 1)); err == nil {
-		t.Fatal("koneksi UAPI masih terbuka")
+		t.Fatal("UAPI connection still open")
 	}
 }

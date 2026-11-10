@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Umbra architecture</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    /* Same tokens as web/src/design.css. */
+    :root {
+      --paper: #dcdfdd; --panel: #e9ebea; --ink: #1b1b1a; --muted: #55524b;
+      --rule: #adb2ae; --strong: #8b918d;
+      --accent: #e9a31c; --accent-soft: #e3d6b4;
+      --zone: rgba(27, 27, 26, 0.03); --store: rgba(27, 27, 26, 0.07);
+      --font-sans: 'Hanken Grotesk', system-ui, sans-serif;
+      --font-mono: 'Sometype Mono', ui-monospace, monospace;
+    }
+    [data-theme='dark'] {
+      --paper: #1c1e1d; --panel: #242625; --ink: #e9ebe8; --muted: #a4aaa5;
+      --rule: #3d413f; --strong: #5b605d;
+      --accent: #e9a31c; --accent-soft: #3a2f16;
+      --zone: rgba(233, 235, 232, 0.03); --store: rgba(233, 235, 232, 0.07);
+    }
+    body { font-family: var(--font-sans); background: var(--paper); color: var(--ink); padding: 3rem 2rem; }
+    .frame { max-width: 1200px; margin: 0 auto; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    h1 { font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem; }
+    svg { width: 100%; min-width: 960px; display: block; }
+    @media print { .diagram-container { overflow-x: visible; } svg { min-width: 0; } }
+
+    .paper { fill: var(--paper); }
+    .zone { fill: var(--zone); stroke: var(--rule); }
+    .node { fill: var(--panel); stroke: var(--strong); }
+    .focal { fill: var(--accent-soft); stroke: var(--accent); }
+    .store { fill: var(--store); stroke: var(--muted); }
+    .ext { fill: var(--zone); stroke: var(--strong); }
+    .edge { fill: none; stroke: var(--muted); stroke-width: 1; }
+    .opt { stroke-dasharray: 4 3; }
+    .head { fill: var(--muted); }
+    .rule { stroke: var(--rule); }
+    .name { font: 600 12px var(--font-sans); fill: var(--ink); text-anchor: middle; }
+    .sub, .lbl { font: 10px var(--font-mono); fill: var(--muted); }
+    .sub { text-anchor: middle; }
+    .mid { text-anchor: middle; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <h1>Umbra architecture</h1>
+    <div class="diagram-container">
+      <svg viewBox="0 0 960 552" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="umbra-arch-title umbra-arch-desc">
+        <title id="umbra-arch-title">Umbra architecture</title>
+        <desc id="umbra-arch-desc">On one Linux VPS, the Umbra panel stores data in SQLite and controls WireGuard, AdGuard Home, and nftables; the admin comes in over SSH or a proxy, devices over UDP 51820.</desc>
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="head" points="0 0, 8 3, 0 6"/></marker>
+        </defs>
+
+        <rect class="paper" width="960" height="552"/>
+
+        <!-- Zone -->
+        <rect class="zone" x="240" y="48" width="560" height="416" rx="8"/>
+        <rect class="paper" x="256" y="42" width="66" height="12"/>
+        <text class="lbl" x="262" y="51">Linux VPS</text>
+
+        <!-- Arrows -->
+        <path class="edge" d="M160,124 H264" marker-end="url(#arrow)"/>
+        <text class="lbl mid" x="200" y="114">ssh / proxy</text>
+
+        <path class="edge" d="M160,364 H264" marker-end="url(#arrow)"/>
+        <text class="lbl mid" x="200" y="354">udp 51820</text>
+
+        <path class="edge" d="M584,124 H632" marker-end="url(#arrow)"/>
+        <text class="lbl mid" x="608" y="114">data</text>
+
+        <path class="edge" d="M336,152 V336" marker-end="url(#arrow)"/>
+        <text class="lbl" x="346" y="291">peer</text>
+
+        <path class="edge opt" d="M520,152 V336" marker-end="url(#arrow)"/>
+        <text class="lbl" x="530" y="291">api</text>
+
+        <path class="edge" d="M568,152 V232 Q568,240 576,240 H696 Q704,240 704,248 V336" marker-end="url(#arrow)"/>
+        <text class="lbl mid" x="636" y="230">rules</text>
+
+        <path class="edge opt" d="M408,364 H448" marker-end="url(#arrow)"/>
+        <text class="lbl mid" x="428" y="354">dns</text>
+
+        <path class="edge" d="M336,392 V424 Q336,432 344,432 H696 Q704,432 704,424 V392" marker-end="url(#arrow)"/>
+        <text class="lbl mid" x="520" y="422">forward</text>
+
+        <path class="edge" d="M776,364 H848" marker-end="url(#arrow)"/>
+        <text class="lbl mid" x="824" y="354">nat</text>
+
+        <!-- Nodes -->
+        <rect class="paper" x="24" y="96" width="136" height="56" rx="6"/>
+        <rect class="ext" x="24" y="96" width="136" height="56" rx="6"/>
+        <text class="name" x="92" y="121">Admin browser</text>
+        <text class="sub" x="92" y="137">manages over the web</text>
+
+        <rect class="paper" x="24" y="336" width="136" height="56" rx="6"/>
+        <rect class="ext" x="24" y="336" width="136" height="56" rx="6"/>
+        <text class="name" x="92" y="361">Devices</text>
+        <text class="sub" x="92" y="377">phone, laptop, router</text>
+
+        <rect class="paper" x="264" y="96" width="320" height="56" rx="6"/>
+        <rect class="focal" x="264" y="96" width="320" height="56" rx="6"/>
+        <text class="name" x="424" y="121">Umbra panel</text>
+        <text class="sub" x="424" y="137">interface + API · 127.0.0.1:8967</text>
+
+        <rect class="paper" x="632" y="96" width="144" height="56" rx="6"/>
+        <rect class="store" x="632" y="96" width="144" height="56" rx="6"/>
+        <text class="name" x="704" y="121">SQLite</text>
+        <text class="sub" x="704" y="137">/var/lib/umbra</text>
+
+        <rect class="paper" x="264" y="336" width="144" height="56" rx="6"/>
+        <rect class="node" x="264" y="336" width="144" height="56" rx="6"/>
+        <text class="name" x="336" y="361">WireGuard</text>
+        <text class="sub" x="336" y="377">wg0 · 10.8.0.1/24</text>
+
+        <rect class="paper" x="448" y="336" width="144" height="56" rx="6"/>
+        <rect class="node" x="448" y="336" width="144" height="56" rx="6"/>
+        <text class="name" x="520" y="361">AdGuard Home</text>
+        <text class="sub" x="520" y="377">DNS 10.8.0.1:53</text>
+
+        <rect class="paper" x="632" y="336" width="144" height="56" rx="6"/>
+        <rect class="node" x="632" y="336" width="144" height="56" rx="6"/>
+        <text class="name" x="704" y="361">nftables</text>
+        <text class="sub" x="704" y="377">forward + NAT</text>
+
+        <rect class="paper" x="848" y="336" width="88" height="56" rx="6"/>
+        <rect class="ext" x="848" y="336" width="88" height="56" rx="6"/>
+        <text class="name" x="892" y="368">Internet</text>
+
+        <!-- Legend -->
+        <line class="rule" x1="24" y1="496" x2="936" y2="496"/>
+        <rect class="focal" x="24" y="516" width="16" height="12" rx="2"/>
+        <text class="lbl" x="48" y="526">Umbra panel</text>
+        <path class="edge" d="M152,522 H184" marker-end="url(#arrow)"/>
+        <text class="lbl" x="192" y="526">always present</text>
+        <path class="edge opt" d="M288,522 H320" marker-end="url(#arrow)"/>
+        <text class="lbl" x="328" y="526">when AdGuard Home is installed</text>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>

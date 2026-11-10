@@ -4,7 +4,7 @@ import { appendSample, clientRates, sampleTraffic, type TrafficSample } from './
 
 // One feed per mounted page; no sessions or timers survive navigation.
 export function createLiveStatus() {
-	// inventory: daftar perangkat pernah diterima utuh; snapshot galat tanpa klien tidak dihitung.
+	// inventory: the full device list has been received at least once; error snapshots without devices do not count.
 	const feed = $state({ status: null as Status | null, inventory: false, live: false, current: false, error: '', samples: [] as TrafficSample[], rates: {} as Record<number, number> });
 	onMount(() => {
 		let active = true;
@@ -13,7 +13,7 @@ export function createLiveStatus() {
 		const disconnect = () => {
 			feed.live = false;
 			feed.current = false;
-			feed.error = 'Pembaruan terputus. Mencoba menyambungkan kembali…';
+			feed.error = 'Live updates disconnected. Trying to reconnect…';
 			feed.rates = {};
 			previous = null;
 		};
@@ -36,7 +36,7 @@ export function createLiveStatus() {
 			feed.error = s.error ?? '';
 		};
 		get<Status>('/status').then(s => update(s, false)).catch(() => {
-			if (active && !feed.status) feed.error = 'Status jaringan belum dapat dimuat. Mencoba menyambungkan kembali…';
+			if (active && !feed.status) feed.error = 'Network status could not be loaded. Trying to reconnect…';
 		});
 		const events = new EventSource('/api/events');
 		events.addEventListener('status', e => {

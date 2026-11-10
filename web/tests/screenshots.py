@@ -1,7 +1,7 @@
-"""Buat ulang tangkapan layar README: python web/tests/screenshots.py [--url http://127.0.0.1:5173].
+"""Regenerate the README screenshots: python web/tests/screenshots.py [--url http://127.0.0.1:5173].
 
-Butuh frontend berjalan (cd web && npm run dev), Python, Playwright, dan Chromium. Semua permintaan API
-diganti data contoh, jadi backend tidak perlu dijalankan. Hasil disimpan di docs/screenshots/.
+Needs the frontend running (cd web && npm run dev), Python, Playwright, and Chromium. Every API request
+is replaced with sample data, so the backend does not need to run. Output goes to docs/screenshots/.
 """
 import argparse
 import json
@@ -17,9 +17,9 @@ OUT.mkdir(parents=True, exist_ok=True)
 
 now = datetime.now(timezone.utc)
 stamp = now.isoformat()
-names = ['Laptop kantor', 'iPhone pribadi', 'Server rumah', 'Tablet keluarga', 'Router ruang kerja', 'Laptop cadangan']
+names = ['Office laptop', 'Personal iPhone', 'Home server', 'Family tablet', 'Study router', 'Spare laptop']
 clients = [dict(id=i, name=name, address=f'10.8.0.{i+1}/32', enabled=i != 4, has_private_key=True,
-    public_key='contoh-kunci-publik', allowed_ips=['0.0.0.0/0'], dns=['10.8.0.1'], mtu=1420, keepalive=25,
+    public_key='sample-public-key', allowed_ips=['0.0.0.0/0'], dns=['10.8.0.1'], mtu=1420, keepalive=25,
     adblock=True, created_at=stamp, updated_at=stamp) for i, name in enumerate(names, 1)]
 status = dict(wg_backend='kernel', initialized=True, interface='wg0', online=3, total=len(clients),
     rx_bytes=18400000000, tx_bytes=4200000000, time=stamp,
@@ -32,15 +32,15 @@ data = {
     '/status': status, '/clients': clients,
     '/defaults': dict(dns=['10.8.0.1'], allowed_ips=['0.0.0.0/0'], keepalive=25, mtu=1420),
     '/server': dict(interface='wg0', address='10.8.0.1/24', endpoint_host='vpn.example.net', endpoint_port=51820,
-        listen_port=51820, mtu=1420, out_interface='eth0', public_key='contoh', initialized=True),
+        listen_port=51820, mtu=1420, out_interface='eth0', public_key='sample', initialized=True),
     '/adguard/status': dict(configured=True, reachable=True, status=dict(running=True, protection_enabled=True,
         version='v0.107', dns_addresses=['10.8.0.1'], dns_port=53)),
     '/activity': dict(items=[dict(id=i, client_id=1 + i % 3, client_name=names[i % 3], kind=['connect', 'disconnect', 'roam'][i % 3],
         endpoint='203.0.113.12:51820', duration=3600 * i, rx_bytes=10**8 * i, tx_bytes=10**7 * i,
         at=(now - timedelta(minutes=17 * i)).isoformat()) for i in range(1, 9)], more=False),
 }
-# Umpan status tiruan: 40 titik pertama dimajukan 2 detik per titik supaya grafik langsung terisi,
-# waktunya selalu maju dari cuplikan /status awal agar laju tidak melonjak.
+# Fake status feed: the first 40 points advance 2 seconds each so the chart fills at once;
+# time always moves forward from the initial /status snapshot so rates do not spike.
 feed = '''window.EventSource = class {
   constructor() { this.listeners = {}; let n = 0; this.timer = setInterval(() => {
     const s = window.__status; const old = Date.parse(s.time);
@@ -64,13 +64,13 @@ def open_page(browser, width, height, theme, signed_in=True):
             if signed_in:
                 route.fulfill(json=dict(id=1, username='admin', adguard=True, fake_wg=False))
             else:
-                route.fulfill(status=401, json=dict(error='Belum masuk'))
+                route.fulfill(status=401, json=dict(error='Not signed in'))
         elif path.startswith('/clients/') and path.split('/')[2].isdigit() and path.count('/') == 2:
             route.fulfill(json=next(c for c in clients if c['id'] == int(path.split('/')[2])))
         elif path in data:
             route.fulfill(json=data[path])
         else:
-            route.fulfill(status=404, json=dict(error='Tidak ada di data contoh'))
+            route.fulfill(status=404, json=dict(error='Not in the sample data'))
     page.route('**/api/**', api)
     page.add_init_script(feed)
     page.add_init_script(f"try {{ localStorage.setItem('umbra-theme', '{theme}') }} catch {{}}")
@@ -82,14 +82,14 @@ def shot(page, name, theme):
     page.screenshot(path=str(OUT / name))
     print(name)
 
-detail = dict(name='Detail Laptop kantor, 10.8.0.2/32', exact=True)
+detail = dict(name='Details for Office laptop, 10.8.0.2/32', exact=True)
 
 with sync_playwright() as p:
     browser = p.chromium.launch()
     for theme in ['light', 'dark']:
         page = open_page(browser, 1280, 860, theme)
         page.goto(BASE + '/')
-        page.get_by_role('heading', name='Ringkasan', exact=True).wait_for()
+        page.get_by_role('heading', name='Overview', exact=True).wait_for()
         shot(page, f'overview-{theme}.png', theme)
         if theme == 'light':
             page.get_by_role('button', **detail).click()
@@ -97,12 +97,12 @@ with sync_playwright() as p:
             shot(page, 'device-detail.png', theme)
             page.keyboard.press('Escape')
             page.goto(BASE + '/activity')
-            page.get_by_role('button', name='Sesi VPN').click()
+            page.get_by_role('button', name='VPN sessions').click()
             shot(page, 'activity.png', theme)
         page.close()
     page = open_page(browser, 390, 780, 'dark')
     page.goto(BASE + '/')
-    page.get_by_role('heading', name='Ringkasan', exact=True).wait_for()
+    page.get_by_role('heading', name='Overview', exact=True).wait_for()
     shot(page, 'mobile-overview.png', 'dark')
     page.close()
     page = open_page(browser, 390, 780, 'light')
@@ -113,6 +113,6 @@ with sync_playwright() as p:
     page.close()
     page = open_page(browser, 1280, 860, 'light', signed_in=False)
     page.goto(BASE + '/login')
-    page.get_by_role('heading', name='Masuk').wait_for()
+    page.get_by_role('heading', name='Sign in').wait_for()
     shot(page, 'login.png', 'light')
     browser.close()

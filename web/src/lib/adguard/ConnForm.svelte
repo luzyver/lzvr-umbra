@@ -17,7 +17,7 @@
 		busy = true;
 		try {
 			const r = await post<{ status: { version: string } }>('/adguard/connection/test', form);
-			toast(`Terhubung ke AdGuard Home ${r.status.version}.`);
+			toast(`Connected to AdGuard Home ${r.status.version}.`);
 		} catch (e) {
 			toast(errMsg(e), 'error');
 		} finally {
@@ -31,7 +31,7 @@
 		try {
 			const r = await put<AdGuardSync>('/adguard/connection', form);
 			warnAll(r.warnings);
-			toast(`AdGuard terhubung. ${r.synced} klien disinkronkan.`);
+			toast(`AdGuard connected. ${r.synced} devices synced.`);
 			onsaved();
 		} catch (e) {
 			toast(errMsg(e), 'error');
@@ -43,7 +43,7 @@
 
 <form class="space-y-3" onsubmit={save}>
 	<div>
-		<label class="label" for="ag-url">Alamat web AdGuard</label>
+		<label class="label" for="ag-url">AdGuard web address</label>
 		<input id="ag-url" class="input w-full font-mono" bind:value={form.url} required placeholder="http://127.0.0.1:3000" />
 	</div>
 	<div class="grid gap-3 sm:grid-cols-2">
@@ -52,19 +52,19 @@
 			<input id="ag-user" class="input w-full" bind:value={form.user} autocomplete="off" />
 		</div>
 		<div>
-			<label class="label" for="ag-pass">Kata sandi</label>
+			<label class="label" for="ag-pass">Password</label>
 			<input
 				id="ag-pass"
 				type="password"
 				class="input w-full"
 				bind:value={form.pass}
 				autocomplete="new-password"
-				placeholder={hasPassword ? '(tidak diubah)' : ''}
+				placeholder={hasPassword ? '(unchanged)' : ''}
 			/>
 		</div>
 	</div>
 	<div class="flex justify-end gap-2">
-		<button type="button" class="btn-ghost" disabled={busy || !form.url} onclick={test}>Tes koneksi</button>
-		<button class="btn-primary" disabled={busy}>Simpan & hubungkan</button>
+		<button type="button" class="btn-ghost" disabled={busy || !form.url} onclick={test}>Test connection</button>
+		<button class="btn-primary" disabled={busy}>Save & connect</button>
 	</div>
 </form>

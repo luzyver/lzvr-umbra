@@ -1,5 +1,5 @@
 <script lang="ts">
-	// Firewall dengan masa uji 60 detik: aturan otomatis dibatalkan bila tidak dikonfirmasi.
+	// Firewall with a 60-second trial: the rules are rolled back automatically unless confirmed.
 	import { onDestroy } from 'svelte';
 	import { get, post, errMsg, type FirewallInfo } from './api';
 	import { toast } from './toast.svelte';
@@ -52,36 +52,36 @@
 		act(async () => {
 			await post('/firewall/confirm');
 			onconfirmed?.();
-		}, 'Firewall aktif dan tersimpan.');
-	const remove = () => act(() => post('/firewall/remove'), 'Aturan firewall panel dihapus.');
+		}, 'Firewall enabled and saved.');
+	const remove = () => act(() => post('/firewall/remove'), 'Panel firewall rules deleted.');
 </script>
 
 {#if !info}
-	<p class="hint">Memuat…</p>
+	<p class="hint">Loading…</p>
 {:else}
 	<div class="space-y-4">
 		<p class="text-sm text-[var(--muted)]">
-			Panel membuat tabel nftables sendiri (<span class="font-mono">inet umbra</span>) untuk NAT dan
-			meneruskan trafik <span class="font-mono">{info.rules.wg_interface}</span> →
-			<span class="font-mono">{info.rules.out_interface}</span> (subnet
-			<span class="font-mono">{info.rules.subnet}</span>). Aturan lain di server tidak disentuh.
+			The panel creates its own nftables table (<span class="font-mono">inet umbra</span>) for NAT and
+			forwards <span class="font-mono">{info.rules.wg_interface}</span> →
+			<span class="font-mono">{info.rules.out_interface}</span> traffic (subnet
+			<span class="font-mono">{info.rules.subnet}</span>). Other rules on the server are left untouched.
 		</p>
 
 		<div class="flex items-center gap-2 text-sm">
 			<i class="check-led {info.pending ? 'warn' : info.state.applied ? 'ok' : 'off'}" style="margin-top:0" aria-hidden="true"></i>
-			{info.pending ? 'Masa uji' : info.state.applied ? 'Aktif' : 'Belum dipasang'}
+			{info.pending ? 'Trial' : info.state.applied ? 'Enabled' : 'Not installed'}
 		</div>
 
 		{#if info.pending}
 			<div class="rounded border border-[var(--busy)] bg-[var(--accent-soft)] p-4">
-				<p class="font-medium">Aturan sedang diuji, sisa {left} detik</p>
+				<p class="font-medium">Rules are on trial, {left} seconds left</p>
 				<p class="hint mt-1">
-					Coba sambungkan perangkat atau pastikan panel ini masih bisa dibuka. Bila tidak dikonfirmasi,
-					aturan dibatalkan otomatis supaya Anda tidak terkunci.
+					Try connecting a device or check that this panel still opens. If you do not confirm,
+					the rules are rolled back automatically so you do not get locked out.
 				</p>
 				<div class="mt-3 flex flex-wrap gap-2">
-					<button class="btn-primary" disabled={busy} onclick={confirm}>Semua aman, konfirmasi</button>
-					<button class="btn-ghost" disabled={busy} onclick={remove}>Batalkan</button>
+					<button class="btn-primary" disabled={busy} onclick={confirm}>All good, confirm</button>
+					<button class="btn-ghost" disabled={busy} onclick={remove}>Cancel</button>
 				</div>
 			</div>
 		{:else}
@@ -89,18 +89,18 @@
 				<input type="checkbox" class="mt-0.5" bind:checked={mss} />
 				<span>
 					MSS clamping
-					<span class="hint block">Disarankan. Mencegah situs tertentu macet karena ukuran paket.</span>
+					<span class="hint block">Recommended. Prevents some sites from stalling because of packet size.</span>
 				</span>
 			</label>
 			<div class="flex flex-wrap gap-2">
 				<button class="btn-primary" disabled={busy} onclick={apply}>
-					{info.state.applied ? 'Terapkan ulang (uji 60 detik)' : 'Pasang firewall (uji 60 detik)'}
+					{info.state.applied ? 'Reapply (60-second trial)' : 'Install firewall (60-second trial)'}
 				</button>
 				{#if info.state.applied}
-					<button class="btn-ghost" disabled={busy} onclick={remove}>Hapus aturan</button>
+					<button class="btn-ghost" disabled={busy} onclick={remove}>Delete rules</button>
 				{/if}
 				<button class="btn-ghost" type="button" onclick={() => (showPreview = !showPreview)}>
-					{showPreview ? 'Sembunyikan' : 'Lihat'} aturan
+					{showPreview ? 'Hide' : 'View'} rules
 				</button>
 			</div>
 		{/if}

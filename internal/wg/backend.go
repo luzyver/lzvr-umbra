@@ -10,21 +10,21 @@ import (
 	"github.com/luzyver/lzvr-umbra/internal/store"
 )
 
-// ErrKernelUnsupported menandai kernel yang tidak bisa membuat link WireGuard.
-var ErrKernelUnsupported = errors.New("kernel tidak mendukung WireGuard")
+// ErrKernelUnsupported marks a kernel that cannot create WireGuard links.
+var ErrKernelUnsupported = errors.New("kernel does not support WireGuard")
 
 func kernelSupportError(err error) bool {
 	return errors.Is(err, syscall.EOPNOTSUPP) || errors.Is(err, syscall.EPROTONOSUPPORT) ||
 		errors.Is(err, syscall.ENODEV) || errors.Is(err, syscall.ENOSYS)
 }
 
-// New memilih backend saat interface pertama kali disiapkan.
+// New selects a backend when the interface is first set up.
 func New(mode string) (Backend, error) {
 	if mode == "" {
 		mode = "auto"
 	}
 	if mode != "auto" && mode != "kernel" && mode != "userspace" {
-		return nil, fmt.Errorf("UMBRA_WG_BACKEND harus auto, kernel, atau userspace: %q", mode)
+		return nil, fmt.Errorf("UMBRA_WG_BACKEND must be auto, kernel, or userspace: %q", mode)
 	}
 	return &managed{mode: mode, kernel: NewKernel, userspace: newUserspace}, nil
 }
@@ -54,7 +54,7 @@ func (m *managed) EnsureInterface(cfg store.ServerConfig) error {
 
 func (m *managed) ensureLocked(cfg store.ServerConfig) error {
 	if m.closed {
-		return errors.New("backend WireGuard sudah ditutup")
+		return errors.New("WireGuard backend is already closed")
 	}
 	if m.active != nil {
 		return m.active.EnsureInterface(cfg)
@@ -75,7 +75,7 @@ func (m *managed) ensureLocked(cfg store.ServerConfig) error {
 		if m.mode != "auto" || !errors.Is(err, ErrKernelUnsupported) {
 			return err
 		}
-		slog.Warn("kernel WireGuard tidak tersedia, beralih ke wireguard-go userspace", "err", err)
+		slog.Warn("WireGuard kernel unavailable, falling back to wireguard-go userspace", "err", err)
 		b, err = m.userspace()
 		if err != nil {
 			return err
@@ -85,17 +85,17 @@ func (m *managed) ensureLocked(cfg store.ServerConfig) error {
 		}
 	}
 	m.active = b
-	slog.Info("backend WireGuard aktif", "backend", b.Name(), "interface", cfg.Interface)
+	slog.Info("WireGuard backend active", "backend", b.Name(), "interface", cfg.Interface)
 	return nil
 }
 
-// Sync menyiapkan interface dulu bila belum ada backend aktif (mis. bootstrap gagal
-// sementara), supaya perubahan perangkat tidak gagal terus sampai service di-restart.
+// Sync sets up the interface first if no backend is active yet (e.g. bootstrap failed
+// temporarily), so device changes do not keep failing until the service is restarted.
 func (m *managed) Sync(cfg store.ServerConfig, peers []Peer) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.closed {
-		return errors.New("backend WireGuard sudah ditutup")
+		return errors.New("WireGuard backend is already closed")
 	}
 	if m.active == nil {
 		if err := m.ensureLocked(cfg); err != nil {
@@ -109,7 +109,7 @@ func (m *managed) Stats(iface string) ([]PeerStat, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.closed || m.active == nil {
-		return nil, errors.New("backend WireGuard belum siap")
+		return nil, errors.New("WireGuard backend not ready")
 	}
 	return m.active.Stats(iface)
 }

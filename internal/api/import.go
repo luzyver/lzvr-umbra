@@ -30,7 +30,7 @@ type importPreview struct {
 func importUpload(w http.ResponseWriter, r *http.Request) (importer.Source, []byte, bool, error) {
 	r.Body = http.MaxBytesReader(w, r.Body, importer.MaxUpload+65536)
 	if err := r.ParseMultipartForm(1 << 20); err != nil {
-		return importer.Source{}, nil, false, fmt.Errorf("unggahan terlalu besar atau tidak valid: %w", err)
+		return importer.Source{}, nil, false, fmt.Errorf("upload is too large or invalid: %w", err)
 	}
 	if r.MultipartForm != nil {
 		defer r.MultipartForm.RemoveAll()
@@ -50,7 +50,7 @@ func importUpload(w http.ResponseWriter, r *http.Request) (importer.Source, []by
 			return importer.Source{}, nil, false, e
 		}
 		if len(b) > importer.MaxUpload {
-			return importer.Source{}, nil, false, fmt.Errorf("berkas terlalu besar")
+			return importer.Source{}, nil, false, fmt.Errorf("file is too large")
 		}
 		raw = append(raw, []byte(hs.Filename)...)
 		raw = append(raw, b...)
@@ -84,7 +84,7 @@ func importUpload(w http.ResponseWriter, r *http.Request) (importer.Source, []by
 		x, e := importer.ParseWGUI(files)
 		return x, raw, adopt, e
 	}
-	return importer.Source{}, nil, false, fmt.Errorf("sumber impor tidak dikenal")
+	return importer.Source{}, nil, false, fmt.Errorf("unknown import source")
 }
 
 func (s *Server) prepareImport(w http.ResponseWriter, r *http.Request) (importer.Source, importPreview, bool) {
@@ -95,36 +95,36 @@ func (s *Server) prepareImport(w http.ResponseWriter, r *http.Request) (importer
 	}
 	srv, err := s.loadServer(r.Context())
 	if err != nil {
-		internalError(w, "baca server", err)
+		internalError(w, "read server", err)
 		return src, importPreview{}, false
 	}
 	if r.FormValue("adopt_server") == "" {
 		adopt = !srv.Initialized
 	}
 	if src.Server.PrivateKey != "" && adopt && (src.Server.ListenPort < 1 || src.Server.ListenPort > 65535) {
-		writeError(w, http.StatusBadRequest, "port server sumber harus 1 sampai 65535")
+		writeError(w, http.StatusBadRequest, "source server port must be 1 to 65535")
 		return src, importPreview{}, false
 	}
 	if !srv.Initialized && src.Server.Address != "" {
 		p, e := netip.ParsePrefix(src.Server.Address)
 		if e != nil || !p.Addr().Is4() || p.Bits() < 16 || p.Bits() > 30 || p.Addr() == p.Masked().Addr() {
-			writeError(w, http.StatusBadRequest, "alamat server sumber harus IPv4 /16 sampai /30")
+			writeError(w, http.StatusBadRequest, "source server address must be IPv4 /16 to /30")
 			return src, importPreview{}, false
 		}
 		srv.Address = src.Server.Address
 	}
 	if _, err = netip.ParsePrefix(srv.Address); err != nil {
-		writeError(w, http.StatusBadRequest, "subnet server tidak valid")
+		writeError(w, http.StatusBadRequest, "invalid server subnet")
 		return src, importPreview{}, false
 	}
 	defaults, err := s.loadDefaults(r.Context(), srv)
 	if err != nil {
-		internalError(w, "baca bawaan", err)
+		internalError(w, "read defaults", err)
 		return src, importPreview{}, false
 	}
 	existing, err := s.st.ListClients(r.Context())
 	if err != nil {
-		internalError(w, "baca perangkat", err)
+		internalError(w, "read devices", err)
 		return src, importPreview{}, false
 	}
 	old := make([]importer.Candidate, 0, len(existing))
@@ -134,19 +134,19 @@ func (s *Server) prepareImport(w http.ResponseWriter, r *http.Request) (importer
 	for i := range src.Clients {
 		c := &src.Clients[i]
 		if c.Name == "" {
-			c.Name = fmt.Sprintf("Impor %d", i+1)
+			c.Name = fmt.Sprintf("Import %d", i+1)
 		}
 		if c.Name, err = cleanName(c.Name); err != nil {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return src, importPreview{}, false
 		}
 		if !wg.ValidKey(c.PublicKey) || (c.PrivateKey != "" && !wg.ValidKey(c.PrivateKey)) || (c.PresharedKey != "" && !wg.ValidKey(c.PresharedKey)) {
-			c.Reason = "kunci WireGuard tidak valid"
+			c.Reason = "invalid WireGuard key"
 			continue
 		}
 		if c.PrivateKey != "" {
 			if pub, e := wg.PublicKeyOf(c.PrivateKey); e != nil || pub != c.PublicKey {
-				c.Reason = "pasangan kunci tidak cocok"
+				c.Reason = "key pair does not match"
 				continue
 			}
 		}
@@ -193,21 +193,21 @@ func (s *Server) prepareImport(w http.ResponseWriter, r *http.Request) (importer
 	if src.Server.PrivateKey != "" {
 		pub, e := wg.PublicKeyOf(src.Server.PrivateKey)
 		if e != nil {
-			writeError(w, http.StatusBadRequest, "kunci server tidak valid")
+			writeError(w, http.StatusBadRequest, "invalid server key")
 			return src, p, false
 		}
 		p.ServerKeyChanges = srv.PrivateKey != "" && pub != srv.PublicKey
 		if p.ServerKeyChanges && adopt {
-			p.Warnings = append(p.Warnings, "Kunci server akan berubah; perangkat lama yang memakai kunci server Umbra harus memperbarui profil.")
+			p.Warnings = append(p.Warnings, "The server key will change; existing devices using the Umbra server key must update their profile.")
 		}
 		if p.ServerKeyChanges && !adopt {
-			p.Warnings = append(p.Warnings, "Kunci server berbeda; perangkat yang diimpor perlu profil server Umbra agar tersambung.")
+			p.Warnings = append(p.Warnings, "The server key is different; imported devices need the Umbra server profile to connect.")
 		}
 	}
 	if !srv.Initialized {
-		p.Warnings = append(p.Warnings, "Lengkapi pengaturan server sebelum perangkat bisa tersambung.")
+		p.Warnings = append(p.Warnings, "Complete the server settings before devices can connect.")
 		if src.Server.PrivateKey == "" {
-			p.Warnings = append(p.Warnings, "Kunci server tidak ada dalam unggahan; impor keypair.json agar profil lama tetap bisa tersambung.")
+			p.Warnings = append(p.Warnings, "The server key is missing from the upload; import keypair.json so existing profiles can still connect.")
 		}
 	}
 	digest := sha256.New()
@@ -244,12 +244,12 @@ func (s *Server) handleImportCommit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if expected == "" || expected != p.Signature {
-		writeError(w, http.StatusConflict, "pratinjau berubah; periksa ulang sebelum menyimpan")
+		writeError(w, http.StatusConflict, "preview changed; review it again before saving")
 		return
 	}
 	srv, err := s.loadServer(r.Context())
 	if err != nil {
-		internalError(w, "baca server", err)
+		internalError(w, "read server", err)
 		return
 	}
 	var update *store.ServerConfig
@@ -270,7 +270,7 @@ func (s *Server) handleImportCommit(w http.ResponseWriter, r *http.Request) {
 	}
 	if update != nil && srv.Initialized {
 		if err = s.wg.EnsureInterface(srv); err != nil {
-			writeError(w, http.StatusBadGateway, "gagal menyiapkan interface: "+err.Error())
+			writeError(w, http.StatusBadGateway, "failed to set up interface: "+err.Error())
 			return
 		}
 	}
@@ -282,11 +282,11 @@ func (s *Server) handleImportCommit(w http.ResponseWriter, r *http.Request) {
 	}
 	saved, err := s.st.ImportClients(r.Context(), clients, update)
 	if err != nil {
-		internalError(w, "simpan perangkat", err)
+		internalError(w, "save devices", err)
 		return
 	}
 	if err = s.syncLocked(r.Context()); err != nil {
-		internalError(w, "perangkat tersimpan tetapi gagal diterapkan", err)
+		internalError(w, "devices saved but failed to apply", err)
 		return
 	}
 	warnings := p.Warnings

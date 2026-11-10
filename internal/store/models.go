@@ -2,21 +2,21 @@ package store
 
 import "time"
 
-// ServerConfig adalah konfigurasi interface WireGuard di server.
+// ServerConfig is the WireGuard interface configuration on the server.
 type ServerConfig struct {
-	Interface    string `json:"interface"`     // mis. wg0
-	Address      string `json:"address"`       // CIDR server, mis. 10.8.0.1/24
-	ListenPort   int    `json:"listen_port"`   // UDP, mis. 51820
-	EndpointHost string `json:"endpoint_host"` // domain/IP publik untuk klien
-	EndpointPort int    `json:"endpoint_port"` // port publik (bisa beda kalau di balik NAT)
+	Interface    string `json:"interface"`     // e.g. wg0
+	Address      string `json:"address"`       // server CIDR, e.g. 10.8.0.1/24
+	ListenPort   int    `json:"listen_port"`   // UDP, e.g. 51820
+	EndpointHost string `json:"endpoint_host"` // public domain/IP for clients
+	EndpointPort int    `json:"endpoint_port"` // public port (may differ when behind NAT)
 	MTU          int    `json:"mtu"`
-	OutInterface string `json:"out_interface"` // interface keluar untuk MASQUERADE, mis. enp3s0
+	OutInterface string `json:"out_interface"` // outbound interface for MASQUERADE, e.g. enp3s0
 	PrivateKey   string `json:"private_key,omitempty"`
 	PublicKey    string `json:"public_key"`
 	Initialized  bool   `json:"initialized"`
 }
 
-// ClientDefaults dipakai saat membuat klien baru.
+// ClientDefaults are used when creating a new client.
 type ClientDefaults struct {
 	DNS        []string `json:"dns"`
 	AllowedIPs []string `json:"allowed_ips"`
@@ -24,7 +24,7 @@ type ClientDefaults struct {
 	MTU        int      `json:"mtu"`
 }
 
-// FirewallState menyimpan aturan firewall yang sudah dikonfirmasi.
+// FirewallState holds the confirmed firewall rules.
 type FirewallState struct {
 	Applied  bool `json:"applied"`
 	MSSClamp bool `json:"mss_clamp"`
@@ -37,7 +37,7 @@ type Client struct {
 	HasPrivateKey bool      `json:"has_private_key"`
 	PublicKey     string    `json:"public_key"`
 	PresharedKey  string    `json:"-"`
-	Address       string    `json:"address"` // IP tunggal, mis. 10.8.0.2
+	Address       string    `json:"address"` // single IP, e.g. 10.8.0.2
 	AllowedIPs    []string  `json:"allowed_ips"`
 	DNS           []string  `json:"dns"`
 	MTU           int       `json:"mtu"`
@@ -63,8 +63,8 @@ const (
 	KeyAdGuard  = "adguard"
 )
 
-// AdGuardConn adalah koneksi ke AdGuard Home yang diatur dari panel.
-// Managed berarti AdGuard dipasang dan disiapkan oleh panel sendiri.
+// AdGuardConn is the connection to AdGuard Home configured from the panel.
+// Managed means AdGuard was installed and set up by the panel itself.
 type AdGuardConn struct {
 	URL     string `json:"url"`
 	User    string `json:"user"`

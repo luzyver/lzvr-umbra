@@ -36,7 +36,7 @@
 			recoveryOpen = true;
 			setup = null; code = '';
 			await load();
-			toast('Verifikasi dua langkah aktif.');
+			toast('Two-factor authentication enabled.');
 		} catch (e) { error = errMsg(e); }
 		finally { busy = false; }
 	}
@@ -47,7 +47,7 @@
 			await post('/auth/totp/disable', { password, code: code.trim() });
 			password = ''; code = '';
 			await load();
-			toast('Verifikasi dua langkah dinonaktifkan.');
+			toast('Two-factor authentication disabled.');
 		} catch (e) { error = errMsg(e); }
 		finally { busy = false; }
 	}
@@ -56,33 +56,33 @@
 </script>
 
 <div class="mt-4 max-w-md space-y-4">
-	<h3 class="font-medium">Verifikasi dua langkah</h3>
-	{#if !status}<p class="hint">Memuat…</p>
+	<h3 class="font-medium">Two-factor authentication</h3>
+	{#if !status}<p class="hint">Loading…</p>
 	{:else if status.enabled}
-		<p class="hint">Aktif. Sisa kode pemulihan: {status.recovery_remaining}.</p>
+		<p class="hint">Enabled. Recovery codes remaining: {status.recovery_remaining}.</p>
 		<form class="space-y-3" onsubmit={disable}>
-			<div><label class="label" for="totp-password">Kata sandi</label><input id="totp-password" class="input" type="password" autocomplete="current-password" bind:value={password} required /></div>
-			<div><label class="label" for="totp-disable-code">Kode autentikator atau pemulihan</label><input id="totp-disable-code" class="input font-mono" autocomplete="one-time-code" bind:value={code} required /></div>
-			<button class="btn-ghost" disabled={busy}>Nonaktifkan verifikasi dua langkah</button>
+			<div><label class="label" for="totp-password">Password</label><input id="totp-password" class="input" type="password" autocomplete="current-password" bind:value={password} required /></div>
+			<div><label class="label" for="totp-disable-code">Authenticator or recovery code</label><input id="totp-disable-code" class="input font-mono" autocomplete="one-time-code" bind:value={code} required /></div>
+			<button class="btn-ghost" disabled={busy}>Disable two-factor authentication</button>
 		</form>
 	{:else if setup}
-		<p class="hint">Pindai kode QR dengan aplikasi autentikator, atau masukkan kunci ini secara manual.</p>
-		<img src={setup.qr} alt="Kode QR untuk aplikasi autentikator" width="192" height="192" />
+		<p class="hint">Scan the QR code with an authenticator app, or enter this key manually.</p>
+		<img src={setup.qr} alt="QR code for the authenticator app" width="192" height="192" />
 		<p class="break-all font-mono text-sm select-all">{setup.secret}</p>
 		<form class="space-y-3" onsubmit={enable}>
-			<div><label class="label" for="totp-enable-code">Kode 6 digit</label><input id="totp-enable-code" class="input font-mono" inputmode="numeric" autocomplete="one-time-code" maxlength="6" bind:value={code} required /></div>
-			<button class="btn-primary" disabled={busy}>Aktifkan</button>
-			<button type="button" class="btn-ghost" onclick={() => { setup = null; code = ''; }}>Batal</button>
+			<div><label class="label" for="totp-enable-code">6-digit code</label><input id="totp-enable-code" class="input font-mono" inputmode="numeric" autocomplete="one-time-code" maxlength="6" bind:value={code} required /></div>
+			<button class="btn-primary" disabled={busy}>Enable</button>
+			<button type="button" class="btn-ghost" onclick={() => { setup = null; code = ''; }}>Cancel</button>
 		</form>
 	{:else}
-		<p class="hint">Minta kode dari aplikasi autentikator setiap kali masuk.</p>
-		<button class="btn-primary" disabled={busy} onclick={start}>Siapkan verifikasi dua langkah</button>
+		<p class="hint">Ask for a code from the authenticator app at every sign-in.</p>
+		<button class="btn-primary" disabled={busy} onclick={start}>Set up two-factor authentication</button>
 	{/if}
 	{#if error}<p class="text-sm text-[var(--red)]" role="alert">{error}</p>{/if}
 </div>
 
-<Modal bind:open={recoveryOpen} title="Kode pemulihan">
-	<p class="hint mb-3">Simpan delapan kode ini sekarang. Kode hanya ditampilkan sekali dan masing-masing dapat dipakai satu kali.</p>
+<Modal bind:open={recoveryOpen} title="Recovery codes">
+	<p class="hint mb-3">Save these eight codes now. They are shown only once and each can be used a single time.</p>
 	<div class="grid grid-cols-2 gap-2 font-mono text-sm">{#each recovery as item}<span class="select-all break-all">{item}</span>{/each}</div>
-	<button class="btn-primary mt-5" onclick={closeRecovery}>Sudah disimpan</button>
+	<button class="btn-primary mt-5" onclick={closeRecovery}>I have saved them</button>
 </Modal>

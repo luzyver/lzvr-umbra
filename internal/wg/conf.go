@@ -9,7 +9,7 @@ import (
 	"github.com/luzyver/lzvr-umbra/internal/store"
 )
 
-// RenderClientConfig membuat isi file .conf untuk diimpor di aplikasi WireGuard klien.
+// RenderClientConfig produces the .conf contents to import into the client's WireGuard app.
 func RenderClientConfig(srv store.ServerConfig, c store.Client) string {
 	var b strings.Builder
 	b.WriteString("[Interface]\n")
@@ -35,11 +35,11 @@ func RenderClientConfig(srv store.ServerConfig, c store.Client) string {
 	return b.String()
 }
 
-// RenderServerConfig membuat wg0.conf cadangan (format wg-quick) dari isi database.
-// Panel tidak membaca file ini; gunanya agar server tetap bisa dipulihkan dengan wg-quick.
+// RenderServerConfig produces a backup wg0.conf (wg-quick format) from the database contents.
+// The panel does not read this file; it exists so the server can still be restored with wg-quick.
 func RenderServerConfig(srv store.ServerConfig, clients []store.Client) string {
 	var b strings.Builder
-	b.WriteString("# Dibuat otomatis oleh umbra. Jangan diedit: perubahan akan ditimpa.\n")
+	b.WriteString("# Generated automatically by umbra. Do not edit: changes will be overwritten.\n")
 	b.WriteString("[Interface]\n")
 	fmt.Fprintf(&b, "Address = %s\n", srv.Address)
 	fmt.Fprintf(&b, "ListenPort = %d\n", srv.ListenPort)
@@ -69,7 +69,7 @@ func endpointPort(srv store.ServerConfig) int {
 	return srv.ListenPort
 }
 
-// oneLine mencegah nama klien menyisipkan baris baru ke file konfigurasi.
+// oneLine prevents a client name from injecting newlines into the config file.
 func oneLine(s string) string {
 	return strings.Map(func(r rune) rune {
 		if r == '\n' || r == '\r' {

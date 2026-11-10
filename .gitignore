@@ -1,4 +1,4 @@
-# data dev & binary
+# dev data & binary
 /data/
 /umbra
 /umbra.exe
@@ -10,7 +10,7 @@ web/.svelte-kit/
 internal/ui/dist/*
 !internal/ui/dist/.keep
 
-# catatan desain lokal (tidak ikut repo)
+# local design notes (not part of the repo)
 /DESIGN.md
 /PRODUCT.md
 /.impeccable/

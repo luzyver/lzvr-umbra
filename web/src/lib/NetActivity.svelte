@@ -22,7 +22,7 @@
 	const service = (c: Conn) =>
 		c.proto === 'udp' && c.dst_port === 443 ? 'QUIC (HTTPS)' : (ports[c.dst_port] ?? (c.dst_port ? String(c.dst_port) : ''));
 
-	// --- Koneksi live (conntrack) ---
+	// --- Live connections (conntrack) ---
 	let conns = $state<ConnList | null>(null);
 	let connErr = $state('');
 	let auto = $state(false);
@@ -43,7 +43,7 @@
 	}
 	onDestroy(() => clearInterval(timer));
 
-	// --- Riwayat DNS (log query AdGuard untuk IP klien) ---
+	// --- DNS history (AdGuard query log for the device IP) ---
 	let entries = $state<Entry[] | null>(null);
 	let oldest = $state('');
 	let dnsErr = $state('');
@@ -80,7 +80,7 @@
 
 	const blocked = (e: Entry) => e.reason.startsWith('Filtered') && e.reason !== 'FilteredWhiteList';
 
-	// Peta IP -> domain dari jawaban DNS, agar koneksi bisa diberi nama situs.
+	// IP -> domain map from DNS answers, so connections can be labelled with site names.
 	const names = $derived.by(() => {
 		const m = new Map<string, string>();
 		for (const e of [...(entries ?? [])].reverse())
@@ -116,37 +116,37 @@
 	<div class="card">
 		<div class="mb-3 flex flex-wrap items-center gap-3">
 			<div>
-				<h2 class="font-semibold">Koneksi saat ini</h2>
-				<p class="hint">Tujuan yang sedang/baru saja dihubungi {client.name} ({ip}).</p>
+				<h2 class="font-semibold">Current connections</h2>
+				<p class="hint">Destinations {client.name} ({ip}) is connecting to or just contacted.</p>
 			</div>
 			<label class="ml-auto flex items-center gap-2 text-sm">
 				<input type="checkbox" checked={auto} onchange={(e) => setAuto(e.currentTarget.checked)} />
-				Segarkan tiap 5 detik
+				Refresh every 5 seconds
 			</label>
-			<button class="btn-ghost" onclick={loadConns}>Muat ulang</button>
+			<button class="btn-ghost" onclick={loadConns}>Reload</button>
 		</div>
 
 		{#if connErr}
 			<p class="hint text-red-600">{connErr}</p>
 		{:else if !conns}
-			<p class="hint">Memuat…</p>
+			<p class="hint">Loading…</p>
 		{:else if conns.unsupported}
 			<p class="hint">{conns.unsupported}</p>
 		{:else}
 			{#if conns.conns.length}
 				<p class="mb-2 text-xs text-zinc-500">
-					{conns.conns.length} koneksi · ↑ {bytes(totals.sent)} dikirim · ↓ {bytes(totals.received)} diterima
+					{conns.conns.length} connections · ↑ {bytes(totals.sent)} sent · ↓ {bytes(totals.received)} received
 				</p>
 			{/if}
 			<div class="overflow-x-auto">
 				<table class="w-full text-left text-xs">
 					<thead class="text-zinc-500">
 						<tr>
-							<th class="py-1 pr-3 font-medium">Tujuan</th>
-							<th class="py-1 pr-3 font-medium">Layanan</th>
+							<th class="py-1 pr-3 font-medium">Destination</th>
+							<th class="py-1 pr-3 font-medium">Service</th>
 							<th class="py-1 pr-3 font-medium">Status</th>
-							<th class="py-1 pr-3 font-medium">Mulai</th>
-							<th class="py-1 font-medium">Trafik</th>
+							<th class="py-1 pr-3 font-medium">Started</th>
+							<th class="py-1 font-medium">Traffic</th>
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-zinc-200 dark:divide-zinc-800">
@@ -162,14 +162,14 @@
 								<td class="whitespace-nowrap py-1.5 tabular-nums">↓ {bytes(c.received)} · ↑ {bytes(c.sent)}</td>
 							</tr>
 						{:else}
-							<tr><td colspan="5" class="hint py-3">Tidak ada koneksi aktif dari perangkat ini.</td></tr>
+							<tr><td colspan="5" class="hint py-3">No active connections from this device.</td></tr>
 						{/each}
 					</tbody>
 				</table>
 			</div>
 			{#if !conns.accounting}
 				<p class="hint mt-2">
-					Kernel belum menghitung byte per koneksi. Jalankan ulang installer/update.sh, atau
+					The kernel is not counting bytes per connection yet. Re-run the installer/update.sh, or
 					<code>sysctl -w net.netfilter.nf_conntrack_acct=1</code>.
 				</p>
 			{/if}
@@ -179,24 +179,24 @@
 	<div class="card">
 		<div class="mb-3 flex flex-wrap items-center gap-3">
 			<div>
-				<h2 class="font-semibold">Situs yang dibuka (riwayat DNS)</h2>
-				<p class="hint">Domain yang diminta perangkat ini lewat AdGuard.</p>
+				<h2 class="font-semibold">Sites visited (DNS history)</h2>
+				<p class="hint">Domains this device requested through AdGuard.</p>
 			</div>
 			{#if session.me?.adguard}
-				<input class="input ml-auto" placeholder="Cari domain…" bind:value={search} />
-				<button class="btn-ghost" disabled={busy} onclick={() => loadDns()}>Muat ulang</button>
+				<input class="input ml-auto" placeholder="Search domains…" bind:value={search} />
+				<button class="btn-ghost" disabled={busy} onclick={() => loadDns()}>Reload</button>
 			{/if}
 		</div>
 
 		{#if !session.me?.adguard}
 			<p class="hint">
-				Riwayat situs butuh AdGuard Home. Pasang/hubungkan di menu <a class="underline" href="/adguard">AdGuard</a>
-				dan aktifkan blokir iklan (DNS lewat AdGuard) untuk perangkat ini.
+				Site history needs AdGuard Home. Install or connect it in the <a class="underline" href="/adguard">AdGuard</a> menu
+				and enable ad blocking (DNS through AdGuard) for this device.
 			</p>
 		{:else if dnsErr}
 			<p class="hint text-red-600">{dnsErr}</p>
 		{:else if !entries}
-			<p class="hint">Memuat…</p>
+			<p class="hint">Loading…</p>
 		{:else}
 			{#if top.length}
 				<div class="mb-4 flex flex-wrap gap-2">
@@ -204,7 +204,7 @@
 						<button
 							class="rounded-sm border border-zinc-200 px-2.5 py-0.5 text-xs dark:border-zinc-700"
 							class:text-red-600={v.blocked === v.n}
-							title="Terakhir {date(v.last)}"
+							title="Last seen {date(v.last)}"
 							onclick={() => (search = d)}>{d} <span class="text-zinc-500">{v.n}×</span></button
 						>
 					{/each}
@@ -214,10 +214,10 @@
 				<table class="w-full text-left text-xs">
 					<thead class="text-zinc-500">
 						<tr>
-							<th class="py-1 pr-3 font-medium">Waktu</th>
+							<th class="py-1 pr-3 font-medium">Time</th>
 							<th class="py-1 pr-3 font-medium">Domain</th>
-							<th class="py-1 pr-3 font-medium">Tipe</th>
-							<th class="py-1 font-medium">Hasil</th>
+							<th class="py-1 pr-3 font-medium">Type</th>
+							<th class="py-1 font-medium">Result</th>
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-zinc-200 dark:divide-zinc-800">
@@ -227,14 +227,14 @@
 								<td class="break-all py-1.5 pr-3 font-mono">{e.question.name.replace(/\.$/, '')}</td>
 								<td class="py-1.5 pr-3 text-zinc-500">{e.question.type}</td>
 								<td class="whitespace-nowrap py-1.5">
-									{#if blocked(e)}<span class="text-red-600">Diblokir</span>{:else}<span class="text-zinc-500">Diizinkan</span>{/if}
+									{#if blocked(e)}<span class="text-red-600">Blocked</span>{:else}<span class="text-zinc-500">Allowed</span>{/if}
 								</td>
 							</tr>
 						{:else}
 							<tr>
 								<td colspan="4" class="hint py-3">
-									Belum ada query DNS dari {ip}. Pastikan perangkat memakai DNS AdGuard (opsi blokir iklan aktif)
-									dan log query AdGuard menyala.
+									No DNS queries from {ip} yet. Make sure the device uses AdGuard DNS (ad blocking enabled)
+									and the AdGuard query log is turned on.
 								</td>
 							</tr>
 						{/each}
@@ -242,14 +242,14 @@
 				</table>
 			</div>
 			{#if oldest}
-				<button class="btn-ghost mt-3" disabled={busy} onclick={() => loadDns(true)}>Muat lebih lama</button>
+				<button class="btn-ghost mt-3" disabled={busy} onclick={() => loadDns(true)}>Load older</button>
 			{/if}
 		{/if}
 	</div>
 
 	<p class="hint">
-		Yang terlihat hanya "amplop"-nya: domain, alamat IP tujuan, port, dan jumlah data. Isi halaman, pesan, atau
-		password tidak bisa dilihat karena hampir semua situs memakai HTTPS (terenkripsi). Koneksi saat ini hanya yang masih
-		diingat kernel (beberapa menit); riwayat jangka panjang berasal dari log DNS AdGuard.
+		Only the "envelope" is visible: domain, destination IP address, port and amount of data. Page contents, messages
+		and passwords cannot be seen because almost all sites use HTTPS (encrypted). Current connections are only those
+		the kernel still remembers (a few minutes); long-term history comes from the AdGuard DNS log.
 	</p>
 </div>

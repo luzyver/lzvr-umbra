@@ -38,32 +38,32 @@ func (s *Server) handleLoginVerify(w http.ResponseWriter, r *http.Request) {
 	pending, exists := s.loginSteps[auth.HashToken(in.Challenge)]
 	if !exists || time.Now().After(pending.expires) {
 		s.limiter.Fail(ip)
-		writeError(w, http.StatusUnauthorized, "verifikasi berakhir, masukkan kata sandi lagi")
+		writeError(w, http.StatusUnauthorized, "verification expired, enter your password again")
 		return
 	}
 	a, err := s.st.AdminByID(r.Context(), pending.adminID)
 	if err != nil {
-		internalError(w, "baca admin", err)
+		internalError(w, "read admin", err)
 		return
 	}
 	if a.TOTPSecret == "" {
-		writeError(w, http.StatusUnauthorized, "verifikasi tidak berlaku")
+		writeError(w, http.StatusUnauthorized, "verification is not valid")
 		return
 	}
 	ok, err := s.consumeSecondFactor(r, a, in.Code)
 	if err != nil {
-		internalError(w, "verifikasi dua langkah", err)
+		internalError(w, "two-factor verification", err)
 		return
 	}
 	if !ok {
 		s.limiter.Fail(ip)
-		writeError(w, http.StatusUnauthorized, "kode verifikasi salah atau sudah dipakai")
+		writeError(w, http.StatusUnauthorized, "incorrect or already used verification code")
 		return
 	}
 	delete(s.loginSteps, auth.HashToken(in.Challenge))
 	s.limiter.Reset(ip)
 	if err := s.startSession(w, r, a.ID); err != nil {
-		internalError(w, "buat sesi", err)
+		internalError(w, "create session", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"id": a.ID, "username": a.Username})
@@ -83,12 +83,12 @@ func (s *Server) consumeSecondFactor(r *http.Request, a store.Admin, code string
 func (s *Server) handleTOTPStatus(w http.ResponseWriter, r *http.Request) {
 	a, err := s.st.AdminByID(r.Context(), adminID(r))
 	if err != nil {
-		internalError(w, "baca admin", err)
+		internalError(w, "read admin", err)
 		return
 	}
 	n, err := s.st.RecoveryCount(r.Context(), a.ID)
 	if err != nil {
-		internalError(w, "hitung kode pemulihan", err)
+		internalError(w, "count recovery codes", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"enabled": a.TOTPSecret != "", "recovery_remaining": n})
@@ -97,22 +97,22 @@ func (s *Server) handleTOTPStatus(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleTOTPStart(w http.ResponseWriter, r *http.Request) {
 	a, err := s.st.AdminByID(r.Context(), adminID(r))
 	if err != nil {
-		internalError(w, "baca admin", err)
+		internalError(w, "read admin", err)
 		return
 	}
 	if a.TOTPSecret != "" {
-		writeError(w, http.StatusConflict, "verifikasi dua langkah sudah aktif")
+		writeError(w, http.StatusConflict, "two-factor authentication is already enabled")
 		return
 	}
 	secret, err := auth.NewTOTPSecret()
 	if err != nil {
-		internalError(w, "buat kunci TOTP", err)
+		internalError(w, "generate TOTP secret", err)
 		return
 	}
 	uri := "otpauth://totp/" + url.PathEscape("Umbra:"+a.Username) + "?secret=" + url.QueryEscape(secret) + "&issuer=Umbra&algorithm=SHA1&digits=6&period=30"
 	png, err := qrcode.Encode(uri, qrcode.Medium, 256)
 	if err != nil {
-		internalError(w, "buat QR", err)
+		internalError(w, "generate QR code", err)
 		return
 	}
 	s.twoFactorMu.Lock()
@@ -135,33 +135,33 @@ func (s *Server) handleTOTPEnable(w http.ResponseWriter, r *http.Request) {
 	}
 	a, err := s.st.AdminByID(r.Context(), adminID(r))
 	if err != nil {
-		internalError(w, "baca admin", err)
+		internalError(w, "read admin", err)
 		return
 	}
 	if a.TOTPSecret != "" {
-		writeError(w, http.StatusConflict, "verifikasi dua langkah sudah aktif")
+		writeError(w, http.StatusConflict, "two-factor authentication is already enabled")
 		return
 	}
 	s.twoFactorMu.Lock()
 	pending, exists := s.setupSteps[a.ID]
 	s.twoFactorMu.Unlock()
 	if !exists || time.Now().After(pending.expires) {
-		writeError(w, http.StatusBadRequest, "pengaturan kedaluwarsa, mulai lagi")
+		writeError(w, http.StatusBadRequest, "setup expired, start again")
 		return
 	}
 	step, ok := auth.VerifyTOTP(pending.secret, in.Code, time.Now(), -1)
 	if !ok {
 		s.limiter.Fail(ip)
-		writeError(w, http.StatusBadRequest, "kode verifikasi salah")
+		writeError(w, http.StatusBadRequest, "incorrect verification code")
 		return
 	}
 	codes, hashes, err := auth.NewRecoveryCodes()
 	if err != nil {
-		internalError(w, "buat kode pemulihan", err)
+		internalError(w, "generate recovery codes", err)
 		return
 	}
 	if err := s.st.EnableTOTP(r.Context(), a.ID, pending.secret, step, hashes); err != nil {
-		internalError(w, "aktifkan TOTP", err)
+		internalError(w, "enable TOTP", err)
 		return
 	}
 	s.twoFactorMu.Lock()
@@ -186,30 +186,30 @@ func (s *Server) handleTOTPDisable(w http.ResponseWriter, r *http.Request) {
 	}
 	a, err := s.st.AdminByID(r.Context(), adminID(r))
 	if err != nil {
-		internalError(w, "baca admin", err)
+		internalError(w, "read admin", err)
 		return
 	}
 	if a.TOTPSecret == "" {
-		writeError(w, http.StatusConflict, "verifikasi dua langkah belum aktif")
+		writeError(w, http.StatusConflict, "two-factor authentication is not enabled")
 		return
 	}
 	if !auth.VerifyPassword(in.Password, a.PasswordHash) {
 		s.limiter.Fail(ip)
-		writeError(w, http.StatusUnauthorized, "kata sandi atau kode salah")
+		writeError(w, http.StatusUnauthorized, "incorrect password or code")
 		return
 	}
 	ok, err := s.consumeSecondFactor(r, a, in.Code)
 	if err != nil {
-		internalError(w, "verifikasi dua langkah", err)
+		internalError(w, "two-factor verification", err)
 		return
 	}
 	if !ok {
 		s.limiter.Fail(ip)
-		writeError(w, http.StatusUnauthorized, "kata sandi atau kode salah")
+		writeError(w, http.StatusUnauthorized, "incorrect password or code")
 		return
 	}
 	if err := s.st.DisableTOTP(r.Context(), a.ID); err != nil {
-		internalError(w, "nonaktifkan TOTP", err)
+		internalError(w, "disable TOTP", err)
 		return
 	}
 	s.limiter.Reset(ip)

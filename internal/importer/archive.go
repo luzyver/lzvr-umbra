@@ -24,24 +24,24 @@ func Extract(name string, data []byte) (map[string][]byte, error) {
 	total := 0
 	add := func(n string, r io.Reader) error {
 		if !safePath(n) {
-			return fmt.Errorf("path arsip tidak aman: %s", n)
+			return fmt.Errorf("unsafe archive path: %s", n)
 		}
 		if strings.HasSuffix(n, "/") {
 			return nil
 		}
 		if len(out) >= 512 {
-			return fmt.Errorf("terlalu banyak berkas")
+			return fmt.Errorf("too many files")
 		}
 		b, e := io.ReadAll(io.LimitReader(r, (1<<20)+1))
 		if e != nil {
 			return e
 		}
 		if len(b) > 1<<20 {
-			return fmt.Errorf("berkas terlalu besar: %s", n)
+			return fmt.Errorf("file too large: %s", n)
 		}
 		total += len(b)
 		if total > MaxUpload {
-			return fmt.Errorf("isi arsip terlalu besar")
+			return fmt.Errorf("archive contents too large")
 		}
 		out[n] = b
 		return nil
@@ -54,13 +54,13 @@ func Extract(name string, data []byte) (map[string][]byte, error) {
 		}
 		for _, f := range z.File {
 			if !safePath(f.Name) {
-				return nil, fmt.Errorf("path arsip tidak aman: %s", f.Name)
+				return nil, fmt.Errorf("unsafe archive path: %s", f.Name)
 			}
 			if f.FileInfo().IsDir() {
 				continue
 			}
 			if !f.Mode().IsRegular() {
-				return nil, fmt.Errorf("jenis berkas tidak didukung")
+				return nil, fmt.Errorf("unsupported file type")
 			}
 			r, e := f.Open()
 			if e != nil {
@@ -88,20 +88,20 @@ func Extract(name string, data []byte) (map[string][]byte, error) {
 				return nil, e
 			}
 			if !safePath(h.Name) {
-				return nil, fmt.Errorf("path arsip tidak aman: %s", h.Name)
+				return nil, fmt.Errorf("unsafe archive path: %s", h.Name)
 			}
 			if h.Typeflag == tar.TypeDir {
 				continue
 			}
 			if h.Typeflag != tar.TypeReg && h.Typeflag != tar.TypeRegA {
-				return nil, fmt.Errorf("jenis berkas tidak didukung")
+				return nil, fmt.Errorf("unsupported file type")
 			}
 			if e = add(h.Name, tr); e != nil {
 				return nil, e
 			}
 		}
 	default:
-		return nil, fmt.Errorf("format arsip tidak didukung")
+		return nil, fmt.Errorf("unsupported archive format")
 	}
 	return out, nil
 }

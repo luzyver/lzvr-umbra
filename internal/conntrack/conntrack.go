@@ -1,5 +1,5 @@
-// Package conntrack membaca tabel koneksi kernel (nf_conntrack) untuk melihat
-// koneksi jaringan yang sedang dibuat oleh klien VPN.
+// Package conntrack reads the kernel connection table (nf_conntrack) to show
+// the network connections currently made by VPN clients.
 package conntrack
 
 import (
@@ -9,25 +9,25 @@ import (
 	"time"
 )
 
-// ErrUnsupported dikembalikan di sistem tanpa nf_conntrack (mis. Windows/macOS).
-var ErrUnsupported = errors.New("tabel koneksi hanya tersedia di Linux")
+// ErrUnsupported is returned on systems without nf_conntrack (e.g. Windows/macOS).
+var ErrUnsupported = errors.New("connection table is only available on Linux")
 
-// Conn adalah satu koneksi yang dimulai oleh klien.
+// Conn is a single connection initiated by a client.
 type Conn struct {
 	Proto    string     `json:"proto"` // tcp, udp, icmp, ...
 	SrcIP    string     `json:"src_ip"`
 	SrcPort  uint16     `json:"src_port"`
 	DstIP    string     `json:"dst_ip"`
 	DstPort  uint16     `json:"dst_port"`
-	Sent     uint64     `json:"sent"`     // byte dari klien ke tujuan
-	Received uint64     `json:"received"` // byte dari tujuan ke klien
+	Sent     uint64     `json:"sent"`     // bytes from client to destination
+	Received uint64     `json:"received"` // bytes from destination to client
 	Packets  uint64     `json:"packets"`
-	State    string     `json:"state,omitempty"` // status TCP
+	State    string     `json:"state,omitempty"` // TCP state
 	Started  *time.Time `json:"started,omitempty"`
-	Expires  int        `json:"expires"` // detik sampai entri dihapus kernel
+	Expires  int        `json:"expires"` // seconds until the kernel removes the entry
 }
 
-// ForSource mengembalikan koneksi yang berasal dari ip, terbesar dulu.
+// ForSource returns connections originating from ip, largest first.
 func ForSource(ip net.IP) ([]Conn, error) {
 	all, err := list()
 	if err != nil {
@@ -58,7 +58,7 @@ func protoName(p uint8) string {
 	case 132:
 		return "sctp"
 	}
-	return "lainnya"
+	return "other"
 }
 
 var tcpStates = []string{"", "SYN_SENT", "SYN_RECV", "ESTABLISHED", "FIN_WAIT", "CLOSE_WAIT", "LAST_ACK", "TIME_WAIT", "CLOSE", "SYN_SENT2"}

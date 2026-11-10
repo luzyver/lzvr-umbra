@@ -1,5 +1,5 @@
-// Package adguard berbicara dengan AdGuard Home lewat REST API-nya (/control/...).
-// AdGuard berjalan sebagai service terpisah; panel hanya mengendalikannya.
+// Package adguard talks to AdGuard Home through its REST API (/control/...).
+// AdGuard runs as a separate service; the panel only controls it.
 package adguard
 
 import (
@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-var ErrDisabled = errors.New("AdGuard belum dihubungkan (pasang atau hubungkan dari halaman AdGuard)")
+var ErrDisabled = errors.New("AdGuard is not connected (install or connect it from the AdGuard page)")
 
 type Client struct {
 	mu   sync.RWMutex
@@ -31,8 +31,8 @@ func New(base, user, pass string) *Client {
 	return c
 }
 
-// Configure mengganti alamat dan login AdGuard tanpa perlu restart panel.
-// base kosong berarti integrasi dimatikan.
+// Configure changes the AdGuard address and login without restarting the panel.
+// An empty base means the integration is disabled.
 func (c *Client) Configure(base, user, pass string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -50,7 +50,7 @@ func (c *Client) Enabled() bool {
 	return c.base != ""
 }
 
-// URL mengembalikan alamat AdGuard yang sedang dipakai.
+// URL returns the AdGuard address currently in use.
 func (c *Client) URL() string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -88,7 +88,7 @@ func request(ctx context.Context, hc *http.Client, method, url, user, pass strin
 	}
 	resp, err := hc.Do(req)
 	if err != nil {
-		return fmt.Errorf("AdGuard tidak bisa dihubungi: %w", err)
+		return fmt.Errorf("cannot reach AdGuard: %w", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
@@ -112,7 +112,7 @@ func request(ctx context.Context, hc *http.Client, method, url, user, pass strin
 	return json.NewDecoder(resp.Body).Decode(out)
 }
 
-// HTTPError: AdGuard menjawab dengan status gagal.
+// HTTPError: AdGuard replied with a failure status.
 type HTTPError struct {
 	Method, Path string
 	Code         int
@@ -121,13 +121,13 @@ type HTTPError struct {
 
 func (e *HTTPError) Error() string {
 	if e.Code == http.StatusUnauthorized || e.Code == http.StatusForbidden {
-		return fmt.Sprintf("AdGuard menolak login (%d): username atau password salah", e.Code)
+		return fmt.Sprintf("AdGuard rejected the login (%d): wrong username or password", e.Code)
 	}
 	return fmt.Sprintf("AdGuard %s %s: %d %s", e.Method, e.Path, e.Code, e.Body)
 }
 
-// Raw meneruskan request apa adanya; dipakai untuk halaman pengaturan supaya
-// panel tidak perlu meniru setiap struktur data AdGuard.
+// Raw forwards the request as-is; it is used by the settings page so the
+// panel does not need to mirror every AdGuard data structure.
 func (c *Client) Raw(ctx context.Context, method, path string, in any) (json.RawMessage, error) {
 	var raw json.RawMessage
 	err := c.do(ctx, method, path, in, &raw)
@@ -148,7 +148,7 @@ func (c *Client) Status(ctx context.Context) (Status, error) {
 	return s, err
 }
 
-// Test mencoba alamat dan login tertentu tanpa mengubah konfigurasi yang aktif.
+// Test tries a given address and login without changing the active configuration.
 func (c *Client) Test(ctx context.Context, base, user, pass string) (Status, error) {
 	var s Status
 	err := request(ctx, c.http, http.MethodGet, strings.TrimRight(strings.TrimSpace(base), "/")+"/control/status", user, pass, nil, &s)
@@ -159,12 +159,12 @@ func (c *Client) SetProtection(ctx context.Context, enabled bool) error {
 	return c.do(ctx, http.MethodPost, "/control/protection", map[string]any{"enabled": enabled}, nil)
 }
 
-// Stats dikembalikan apa adanya supaya frontend bisa memakai field yang dibutuhkan.
+// Stats is returned as-is so the frontend can use whichever fields it needs.
 func (c *Client) Stats(ctx context.Context) (json.RawMessage, error) {
 	return c.Raw(ctx, http.MethodGet, "/control/stats", nil)
 }
 
-// Persistent client AdGuard: satu per klien WireGuard, dikenali lewat IP tunnel.
+// PersistentClient is an AdGuard persistent client: one per WireGuard client, identified by its tunnel IP.
 type PersistentClient struct {
 	Name                     string   `json:"name"`
 	IDs                      []string `json:"ids"`
@@ -187,8 +187,8 @@ func (c *Client) ListClients(ctx context.Context) ([]PersistentClient, error) {
 	return r.Clients, err
 }
 
-// rawClients membaca client AdGuard lengkap dengan semua field-nya, supaya
-// pembaruan tidak menghapus pengaturan yang tidak dikenal panel.
+// rawClients reads AdGuard clients with all of their fields, so updates
+// do not wipe settings the panel does not know about.
 func (c *Client) rawClients(ctx context.Context) ([]map[string]any, error) {
 	var r struct {
 		Clients []map[string]any `json:"clients"`
@@ -197,7 +197,7 @@ func (c *Client) rawClients(ctx context.Context) ([]map[string]any, error) {
 	return r.Clients, err
 }
 
-// ClientName: penanda [wg#id] membuat panel bisa mengenali client buatannya sendiri.
+// ClientName: the [wg#id] marker lets the panel recognize clients it created itself.
 func ClientName(name string, id int64) string {
 	return fmt.Sprintf("%s [wg#%d]", name, id)
 }
@@ -217,8 +217,8 @@ func (c *Client) findClient(ctx context.Context, id int64) (map[string]any, erro
 	return nil, nil
 }
 
-// Upsert membuat atau memperbarui client AdGuard untuk satu klien WireGuard.
-// Pengaturan tambahan per klien (safe search, layanan diblokir, dll.) dipertahankan.
+// Upsert creates or updates the AdGuard client for one WireGuard client.
+// Extra per-client settings (safe search, blocked services, etc.) are preserved.
 func (c *Client) Upsert(ctx context.Context, id int64, name, ip string, adblock bool) error {
 	e, err := c.findClient(ctx, id)
 	if err != nil {
@@ -244,7 +244,7 @@ func (c *Client) Upsert(ctx context.Context, id int64, name, ip string, adblock 
 	return c.do(ctx, http.MethodPost, "/control/clients/update", map[string]any{"name": old, "data": e}, nil)
 }
 
-// ClientSettings adalah pengaturan per klien yang bisa diubah dari panel.
+// ClientSettings are the per-client settings that can be changed from the panel.
 type ClientSettings struct {
 	SafebrowsingEnabled      *bool    `json:"safebrowsing_enabled,omitempty"`
 	ParentalEnabled          *bool    `json:"parental_enabled,omitempty"`
@@ -254,19 +254,19 @@ type ClientSettings struct {
 	Upstreams                []string `json:"upstreams,omitempty"`
 }
 
-// GetClient mengembalikan client AdGuard mentah untuk klien WireGuard id (nil bila belum ada).
+// GetClient returns the raw AdGuard client for the WireGuard client id (nil if it does not exist yet).
 func (c *Client) GetClient(ctx context.Context, id int64) (map[string]any, error) {
 	return c.findClient(ctx, id)
 }
 
-// UpdateClient menggabungkan pengaturan ke client AdGuard yang sudah ada.
+// UpdateClient merges the settings into the existing AdGuard client.
 func (c *Client) UpdateClient(ctx context.Context, id int64, s ClientSettings) error {
 	e, err := c.findClient(ctx, id)
 	if err != nil {
 		return err
 	}
 	if e == nil {
-		return errors.New("klien belum terdaftar di AdGuard, jalankan sinkron dulu")
+		return errors.New("device is not registered in AdGuard yet, run a sync first")
 	}
 	e["use_global_settings"] = false
 	if s.SafebrowsingEnabled != nil {
@@ -282,7 +282,7 @@ func (c *Client) UpdateClient(ctx context.Context, id int64, s ClientSettings) e
 		}
 		ss["enabled"] = *s.SafeSearchEnabled
 		e["safe_search"] = ss
-		e["safesearch_enabled"] = *s.SafeSearchEnabled // AdGuard versi lama
+		e["safesearch_enabled"] = *s.SafeSearchEnabled // older AdGuard versions
 	}
 	if s.UseGlobalBlockedServices != nil {
 		e["use_global_blocked_services"] = *s.UseGlobalBlockedServices

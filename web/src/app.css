@@ -5,7 +5,7 @@
 @theme {
 	--font-sans: 'Hanken Grotesk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 	--font-mono: 'Sometype Mono', ui-monospace, 'Cascadia Code', Menlo, monospace;
-	/* Abu-abu "zinc" diganti abu-abu cat bubuk rak agar selaras dengan design.css. */
+	/* The "zinc" grays are swapped for powder-coat rack grays to match design.css. */
 	--color-zinc-50: #e9ebea;
 	--color-zinc-100: #dcdfdd;
 	--color-zinc-200: #cdd1ce;

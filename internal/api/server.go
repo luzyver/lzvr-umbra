@@ -1,4 +1,4 @@
-// Package api berisi HTTP API panel (JSON) dan penyajian frontend.
+// Package api contains the panel HTTP API (JSON) and serves the frontend.
 package api
 
 import (
@@ -28,9 +28,9 @@ const (
 	sessionCookie = "umbra_session"
 	sessionTTL    = 7 * 24 * time.Hour
 	csrfHeader    = "X-Umbra-Request"
-	// Lama masa percobaan firewall sebelum dikembalikan otomatis.
+	// How long a firewall trial lasts before it is rolled back automatically.
 	firewallTrial = 60 * time.Second
-	// Klien dianggap online bila handshake terakhir lebih baru dari ini.
+	// A client is considered online if its last handshake is more recent than this.
 	onlineWindow = 3 * time.Minute
 )
 
@@ -42,16 +42,16 @@ type Server struct {
 	ag      *adguard.Client
 	limiter *auth.Limiter
 
-	// mu menjaga agar perubahan server/klien dan sinkronisasi ke kernel tidak saling tumpang.
+	// mu keeps server/client changes and kernel sync from overlapping.
 	mu sync.Mutex
 
 	setupMu     sync.Mutex
-	setupToken  string // kosong setelah admin pertama dibuat
+	setupToken  string // empty after the first admin is created
 	twoFactorMu sync.Mutex
 	loginSteps  map[string]loginStep
 	setupSteps  map[int64]setupStep
 
-	// agJob: pekerjaan pasang/lepas AdGuard yang sedang/terakhir berjalan.
+	// agJob is the AdGuard install/uninstall job that is running or ran last.
 	agJobMu sync.Mutex
 	agJob   agJob
 }
@@ -70,8 +70,8 @@ func New(cfg config.Config, st *store.Store, backend wg.Backend, fw *firewall.Ma
 	}
 }
 
-// Handler menggabungkan API dan frontend. scriptHashes dipakai untuk CSP
-// supaya skrip inline bawaan SvelteKit diizinkan tanpa 'unsafe-inline'.
+// Handler combines the API and the frontend. scriptHashes are used for the CSP
+// so SvelteKit's built-in inline scripts are allowed without 'unsafe-inline'.
 func (s *Server) Handler(ui http.Handler, scriptHashes []string) http.Handler {
 	mux := http.NewServeMux()
 	pub := func(pattern string, h http.HandlerFunc) { mux.Handle(pattern, h) }
@@ -137,7 +137,7 @@ func (s *Server) Handler(ui http.Handler, scriptHashes []string) http.Handler {
 	}
 
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
-		writeError(w, http.StatusNotFound, "endpoint tidak ada")
+		writeError(w, http.StatusNotFound, "endpoint not found")
 	})
 	mux.Handle("/", ui)
 
@@ -154,15 +154,15 @@ func (s *Server) requireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c, err := r.Cookie(sessionCookie)
 		if err != nil || c.Value == "" {
-			writeError(w, http.StatusUnauthorized, "belum login")
+			writeError(w, http.StatusUnauthorized, "not logged in")
 			return
 		}
 		id, err := s.st.SessionAdmin(r.Context(), auth.HashToken(c.Value))
 		if err != nil {
 			if !errors.Is(err, store.ErrNotFound) {
-				slog.Error("cek sesi", "err", err)
+				slog.Error("check session", "err", err)
 			}
-			writeError(w, http.StatusUnauthorized, "sesi berakhir, silakan login lagi")
+			writeError(w, http.StatusUnauthorized, "session expired, please log in again")
 			return
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), adminKey, id)))
@@ -174,15 +174,15 @@ func adminID(r *http.Request) int64 {
 	return id
 }
 
-// csrf: request yang mengubah data wajib membawa header khusus. Browser tidak
-// mengizinkan situs lain mengirim header ini tanpa izin CORS (yang tidak kita berikan).
+// csrf: requests that change data must carry a custom header. Browsers do not
+// let other sites send this header without CORS permission (which we do not grant).
 func (s *Server) csrf(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet, http.MethodHead, http.MethodOptions:
 		default:
 			if r.Header.Get(csrfHeader) != "1" {
-				writeError(w, http.StatusForbidden, "header "+csrfHeader+" wajib ada")
+				writeError(w, http.StatusForbidden, "header "+csrfHeader+" is required")
 				return
 			}
 		}
@@ -193,7 +193,7 @@ func (s *Server) csrf(next http.Handler) http.Handler {
 func (s *Server) securityHeaders(scriptHashes []string, next http.Handler) http.Handler {
 	scriptSrc := "'self'"
 	for _, h := range scriptHashes {
-		scriptSrc += " " + h // h sudah berkutip: 'sha256-...'
+		scriptSrc += " " + h // h is already quoted: 'sha256-...'
 	}
 	csp := strings.Join([]string{
 		"default-src 'self'",
@@ -221,7 +221,7 @@ func (s *Server) securityHeaders(scriptHashes []string, next http.Handler) http.
 	})
 }
 
-// clientIP hanya mempercayai header proxy bila UMBRA_TRUST_PROXY aktif.
+// clientIP trusts proxy headers only when UMBRA_TRUST_PROXY is enabled.
 func (s *Server) clientIP(r *http.Request) string {
 	if s.cfg.TrustProxy {
 		if xr := strings.TrimSpace(r.Header.Get("X-Real-IP")); xr != "" {
@@ -238,13 +238,13 @@ func (s *Server) clientIP(r *http.Request) string {
 	return host
 }
 
-// ---- helper JSON ----
+// ---- JSON helpers ----
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
 	if err := json.NewEncoder(w).Encode(v); err != nil {
-		slog.Debug("tulis respons", "err", err)
+		slog.Debug("write response", "err", err)
 	}
 }
 
@@ -252,13 +252,13 @@ func writeError(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, map[string]string{"error": msg})
 }
 
-// internalError mencatat detail di log, tetapi tetap memberi pesan yang bisa dibaca.
+// internalError logs the details, but still returns a readable message.
 func internalError(w http.ResponseWriter, what string, err error) {
 	slog.Error(what, "err", err)
 	writeError(w, http.StatusInternalServerError, what+": "+err.Error())
 }
 
-// internalLog untuk kegagalan yang tidak perlu menggagalkan request.
+// internalLog is for failures that should not fail the request.
 func internalLog(what string, err error) { slog.Warn(what, "err", err) }
 
 func readJSON(w http.ResponseWriter, r *http.Request, v any) bool {
@@ -266,17 +266,17 @@ func readJSON(w http.ResponseWriter, r *http.Request, v any) bool {
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(v); err != nil {
-		writeError(w, http.StatusBadRequest, "data tidak valid: "+err.Error())
+		writeError(w, http.StatusBadRequest, "invalid data: "+err.Error())
 		return false
 	}
 	if _, err := dec.Token(); err != io.EOF {
-		writeError(w, http.StatusBadRequest, "data tidak valid: ada isi tambahan setelah JSON")
+		writeError(w, http.StatusBadRequest, "invalid data: extra content after JSON")
 		return false
 	}
 	return true
 }
 
-// writeFileAtomic menulis ke file sementara lalu rename, jadi file tidak pernah setengah jadi.
+// writeFileAtomic writes to a temporary file and then renames it, so the file is never half-written.
 func writeFileAtomic(path string, data []byte, perm os.FileMode) error {
 	dir := filepath.Dir(path)
 	tmp, err := os.CreateTemp(dir, ".tmp-*")
@@ -289,13 +289,13 @@ func writeFileAtomic(path string, data []byte, perm os.FileMode) error {
 		return err
 	}
 	if err := tmp.Chmod(perm); err != nil && !errors.Is(err, errors.ErrUnsupported) {
-		slog.Debug("chmod file sementara", "err", err)
+		slog.Debug("chmod temp file", "err", err)
 	}
 	if err := tmp.Close(); err != nil {
 		return err
 	}
 	if err := os.Rename(tmp.Name(), path); err != nil {
-		return fmt.Errorf("simpan %s: %w", path, err)
+		return fmt.Errorf("save %s: %w", path, err)
 	}
 	return nil
 }

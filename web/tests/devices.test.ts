@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { deviceState, selectDevices } from '../src/lib/devices.ts';
 
 const devices = [
-	{ id: 1, name: 'Laptop kantor', address: '10.8.0.10/32', enabled: true, online: true },
-	{ id: 2, name: 'Ponsel', address: '10.8.0.2/32', enabled: true, online: false },
-	{ id: 3, name: 'Arsip', address: '10.8.0.3/32', enabled: false, online: true },
+	{ id: 1, name: 'Office laptop', address: '10.8.0.10/32', enabled: true, online: true },
+	{ id: 2, name: 'Phone', address: '10.8.0.2/32', enabled: true, online: false },
+	{ id: 3, name: 'Archive', address: '10.8.0.3/32', enabled: false, online: true },
 	{ id: 4, name: 'Router', address: '10.8.0.4/32', enabled: true, online: true },
-	{ id: 5, name: 'Baru', address: '10.8.0.5/32', enabled: true }
+	{ id: 5, name: 'New', address: '10.8.0.5/32', enabled: true }
 ];
 
 test('disabled takes precedence over an old online snapshot', () => {
