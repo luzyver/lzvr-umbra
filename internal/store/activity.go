@@ -7,11 +7,11 @@ import (
 	"time"
 )
 
-// Jenis kejadian di log aktivitas WireGuard.
+// Event kinds in the WireGuard activity log.
 const (
-	ActConnect    = "connect"    // klien mulai terhubung (handshake pertama setelah offline)
-	ActDisconnect = "disconnect" // klien tidak lagi handshake; membawa durasi dan trafik sesi
-	ActRoam       = "roam"       // IP publik klien berganti saat masih terhubung
+	ActConnect    = "connect"    // client starts connecting (first handshake after being offline)
+	ActDisconnect = "disconnect" // client no longer handshakes; carries session duration and traffic
+	ActRoam       = "roam"       // client's public IP changes while still connected
 )
 
 type Activity struct {
@@ -21,7 +21,7 @@ type Activity struct {
 	Kind       string    `json:"kind"`
 	Endpoint   string    `json:"endpoint,omitempty"`
 	Detail     string    `json:"detail,omitempty"`
-	Duration   int64     `json:"duration"` // detik, hanya untuk disconnect
+	Duration   int64     `json:"duration"` // seconds, disconnect only
 	RxBytes    int64     `json:"rx_bytes"`
 	TxBytes    int64     `json:"tx_bytes"`
 	At         time.Time `json:"at"`
@@ -30,7 +30,7 @@ type Activity struct {
 type ActivityFilter struct {
 	ClientID int64
 	Kind     string
-	Before   int64 // id; 0 = dari yang terbaru
+	Before   int64 // id; 0 = from the newest
 	Limit    int
 }
 
@@ -57,7 +57,7 @@ func scanActivity(row scanner) (Activity, error) {
 	return a, err
 }
 
-// ListActivity mengembalikan kejadian terbaru dulu, mulai sebelum f.Before.
+// ListActivity returns events newest first, starting before f.Before.
 func (s *Store) ListActivity(ctx context.Context, f ActivityFilter) ([]Activity, error) {
 	q := `SELECT ` + activityCols + ` FROM activity WHERE 1 = 1`
 	args := []any{}
@@ -91,7 +91,7 @@ func (s *Store) ListActivity(ctx context.Context, f ActivityFilter) ([]Activity,
 	return out, rows.Err()
 }
 
-// LastActivity: kejadian connect/disconnect terakhir milik klien (dipakai saat panel baru menyala).
+// LastActivity returns the client's most recent connect/disconnect event (used when the panel has just started).
 func (s *Store) LastActivity(ctx context.Context, clientID int64) (Activity, error) {
 	a, err := scanActivity(s.db.QueryRowContext(ctx,
 		`SELECT `+activityCols+` FROM activity WHERE client_id = ? AND kind IN (?, ?) ORDER BY id DESC LIMIT 1`,
@@ -102,7 +102,7 @@ func (s *Store) LastActivity(ctx context.Context, clientID int64) (Activity, err
 	return a, err
 }
 
-// ClearActivity menghapus log; clientID 0 = semua klien.
+// ClearActivity deletes the log; clientID 0 = all clients.
 func (s *Store) ClearActivity(ctx context.Context, clientID int64) (int64, error) {
 	q, args := `DELETE FROM activity`, []any{}
 	if clientID > 0 {

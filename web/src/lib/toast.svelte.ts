@@ -1,4 +1,4 @@
-// Notifikasi kecil di pojok layar.
+// Small notifications in the corner of the screen.
 export type Toast = { id: number; kind: 'ok' | 'error' | 'warn'; text: string };
 
 let next = 1;
@@ -15,7 +15,7 @@ export function dismiss(id: number) {
 	if (i >= 0) toasts.splice(i, 1);
 }
 
-// Tampilkan peringatan dari API (misalnya AdGuard gagal) tanpa membatalkan aksi.
+// Show warnings from the API (for example an AdGuard failure) without cancelling the action.
 export function warnAll(warnings: string[] | undefined) {
 	for (const w of warnings ?? []) toast(w, 'warn', 7000);
 }

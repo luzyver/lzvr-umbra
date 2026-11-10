@@ -18,7 +18,7 @@ export function deviceState(device: DeviceRow, current: boolean): DeviceState {
 }
 
 export const stateLabels: Record<DeviceState, string> = {
-	online: 'Online', offline: 'Offline', disabled: 'Nonaktif', unknown: 'Belum diketahui'
+	online: 'Online', offline: 'Offline', disabled: 'Disabled', unknown: 'Unknown'
 };
 
 // Keep rows in a predictable address order, even when live status changes.

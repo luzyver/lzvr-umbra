@@ -15,22 +15,22 @@ export function rate(bps: number): string {
 }
 
 export function ago(iso: string | null | undefined, now = Date.now()): string {
-	if (!iso) return 'belum pernah';
+	if (!iso) return 'never';
 	const s = Math.max(0, Math.round((now - new Date(iso).getTime()) / 1000));
-	if (s < 10) return 'baru saja';
-	if (s < 60) return `${s} detik lalu`;
+	if (s < 10) return 'just now';
+	if (s < 60) return `${s}s ago`;
 	const m = Math.floor(s / 60);
-	if (m < 60) return `${m} menit lalu`;
+	if (m < 60) return `${m}m ago`;
 	const h = Math.floor(m / 60);
-	if (h < 24) return `${h} jam lalu`;
-	return `${Math.floor(h / 24)} hari lalu`;
+	if (h < 24) return `${h}h ago`;
+	return `${Math.floor(h / 24)}d ago`;
 }
 
 export function date(iso: string): string {
-	return new Date(iso).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+	return new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
-// Daftar dipisah koma/spasi/baris baru -> array tanpa elemen kosong.
+// List separated by commas, spaces or newlines -> array without empty items.
 export function splitList(s: string): string[] {
 	return s
 		.split(/[\s,]+/)
@@ -38,14 +38,14 @@ export function splitList(s: string): string[] {
 		.filter(Boolean);
 }
 
-// Durasi dalam detik -> "2 j 5 m", "45 d".
+// Duration in seconds -> "2h 5m", "45s".
 export function duration(sec: number): string {
 	if (!sec || sec < 0) return '–';
 	const d = Math.floor(sec / 86400);
 	const h = Math.floor((sec % 86400) / 3600);
 	const m = Math.floor((sec % 3600) / 60);
-	if (d) return `${d} hr ${h} j`;
-	if (h) return `${h} j ${m} m`;
-	if (m) return `${m} m`;
-	return `${sec} d`;
+	if (d) return `${d}d ${h}h`;
+	if (h) return `${h}h ${m}m`;
+	if (m) return `${m}m`;
+	return `${sec}s`;
 }

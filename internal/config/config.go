@@ -1,4 +1,4 @@
-// Package config membaca pengaturan proses dari environment variable.
+// Package config reads process settings from environment variables.
 package config
 
 import (
@@ -8,20 +8,20 @@ import (
 )
 
 type Config struct {
-	Listen       string // alamat HTTP panel, mis. 127.0.0.1:8967
-	DataDir      string // tempat database, token setup, cadangan
-	Dev          bool   // mode pengembangan: cookie tanpa Secure, WG palsu bila bukan Linux
-	FakeWG       bool   // pakai backend WireGuard tiruan (untuk dev di Windows/macOS)
-	WGBackend    string // auto, kernel, atau userspace
-	FakeFirewall bool   // jangan jalankan nft sungguhan
+	Listen       string // panel HTTP address, e.g. 127.0.0.1:8967
+	DataDir      string // where the database, setup token, and backups live
+	Dev          bool   // development mode: cookies without Secure, fake WG when not on Linux
+	FakeWG       bool   // use the fake WireGuard backend (for dev on Windows/macOS)
+	WGBackend    string // auto, kernel, or userspace
+	FakeFirewall bool   // do not run the real nft
 	SecureCookie bool
-	TrustProxy   bool // percayai X-Real-IP / X-Forwarded-For dari nginx
+	TrustProxy   bool // trust X-Real-IP / X-Forwarded-For from nginx
 
-	AdGuardURL  string // mis. http://127.0.0.1:3000 (kosong = integrasi mati)
+	AdGuardURL  string // e.g. http://127.0.0.1:3000 (empty = integration disabled)
 	AdGuardUser string
 	AdGuardPass string
-	// AdGuardAutoInstall: pasang AdGuard Home otomatis setelah WireGuard diatur
-	// (diisi installer bila dijalankan dengan --with-adguard).
+	// AdGuardAutoInstall installs AdGuard Home automatically after WireGuard is set up
+	// (set by the installer when run with --with-adguard).
 	AdGuardAutoInstall bool
 }
 

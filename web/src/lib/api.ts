@@ -1,5 +1,5 @@
-// Pembungkus fetch ke backend Go. Semua request tulis wajib membawa header
-// X-Umbra-Request (perlindungan CSRF), jadi header itu selalu dikirim.
+// Fetch wrapper for the Go backend. All write requests must carry the
+// X-Umbra-Request header (CSRF protection), so it is always sent.
 
 import { goto } from '$app/navigation';
 
@@ -30,13 +30,13 @@ export async function api<T = unknown>(path: string, opts: Opts = {}): Promise<T
 			credentials: 'same-origin'
 		});
 	} catch {
-		throw new ApiError(0, 'Tidak bisa menghubungi panel. Periksa koneksi.');
+		throw new ApiError(0, 'Cannot reach the panel. Check your connection.');
 	}
-	// 401 dari langkah masuk adalah jawaban (sandi atau kode salah), bukan sesi yang habis.
+	// A 401 from the sign-in steps is an answer (wrong password or code), not an expired session.
 	const signingIn = path === '/auth/login' || path === '/auth/verify';
 	if (res.status === 401 && !opts.noRedirect && !signingIn) {
 		if (!location.pathname.startsWith('/login')) goto('/login');
-		throw new ApiError(401, 'Sesi habis, silakan masuk lagi.');
+		throw new ApiError(401, 'Session expired, please sign in again.');
 	}
 	if (res.status === 204) return undefined as T;
 	const text = await res.text();
@@ -50,7 +50,7 @@ export async function api<T = unknown>(path: string, opts: Opts = {}): Promise<T
 		const msg =
 			data && typeof data === 'object' && 'error' in data
 				? String((data as { error: unknown }).error)
-				: `Permintaan gagal (${res.status})`;
+				: `Request failed (${res.status})`;
 		throw new ApiError(res.status, msg);
 	}
 	return data as T;
@@ -65,7 +65,7 @@ export function errMsg(e: unknown): string {
 	return e instanceof Error ? e.message : String(e);
 }
 
-// ---- Tipe data dari API ----
+// ---- API data types ----
 
 export type Me = { id: number; username: string; adguard: boolean; fake_wg: boolean };
 export type SetupStatus = { needs_admin: boolean; initialized: boolean };
@@ -174,7 +174,7 @@ export type AdGuardJob = {
 
 export type AdGuardSync = { synced: number; removed: number; warnings: string[] };
 
-// Pengaturan AdGuard per klien; field kosong berarti tidak diubah.
+// AdGuard settings per device; an empty field means unchanged.
 export type AdGuardClientSettings = {
 	safebrowsing_enabled?: boolean;
 	parental_enabled?: boolean;
@@ -184,7 +184,7 @@ export type AdGuardClientSettings = {
 	upstreams?: string[];
 };
 
-// Log aktivitas WireGuard (dicatat panel dari handshake peer).
+// WireGuard activity log (recorded by the panel from peer handshakes).
 export type Activity = {
 	id: number;
 	client_id: number;
@@ -200,7 +200,7 @@ export type Activity = {
 
 export type ActivityPage = { items: Activity[]; more: boolean };
 
-// Koneksi live klien dari tabel conntrack kernel.
+// Live device connections from the kernel conntrack table.
 export type Conn = {
 	proto: string;
 	src_ip: string;

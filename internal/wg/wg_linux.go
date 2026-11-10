@@ -27,27 +27,27 @@ func (Kernel) EnsureInterface(cfg store.ServerConfig) error {
 	if err != nil {
 		var notFound netlink.LinkNotFoundError
 		if !errors.As(err, &notFound) {
-			return fmt.Errorf("cek interface %s: %w", cfg.Interface, err)
+			return fmt.Errorf("check interface %s: %w", cfg.Interface, err)
 		}
 		la := netlink.NewLinkAttrs()
 		la.Name = cfg.Interface
 		if err := netlink.LinkAdd(&netlink.GenericLink{LinkAttrs: la, LinkType: "wireguard"}); err != nil {
 			if kernelSupportError(err) {
-				return fmt.Errorf("buat interface %s: %w: %w", cfg.Interface, ErrKernelUnsupported, err)
+				return fmt.Errorf("create interface %s: %w: %w", cfg.Interface, ErrKernelUnsupported, err)
 			}
-			return fmt.Errorf("buat interface %s (modul wireguard sudah dimuat?): %w", cfg.Interface, err)
+			return fmt.Errorf("create interface %s (is the wireguard module loaded?): %w", cfg.Interface, err)
 		}
 		if link, err = netlink.LinkByName(cfg.Interface); err != nil {
 			return err
 		}
 	}
 	if link.Type() != "wireguard" {
-		return fmt.Errorf("interface %s sudah ada dengan tipe %s, bukan WireGuard kernel", cfg.Interface, link.Type())
+		return fmt.Errorf("interface %s already exists with type %s, not kernel WireGuard", cfg.Interface, link.Type())
 	}
 	return configureLink(link, cfg)
 }
 
-// configureLink dipakai untuk link kernel maupun TUN userspace.
+// configureLink is used for both kernel links and userspace TUN.
 func configureLink(link netlink.Link, cfg store.ServerConfig) error {
 	if cfg.MTU > 0 {
 		if err := netlink.LinkSetMTU(link, cfg.MTU); err != nil {
@@ -56,10 +56,10 @@ func configureLink(link netlink.Link, cfg store.ServerConfig) error {
 	}
 	addr, err := netlink.ParseAddr(cfg.Address)
 	if err != nil {
-		return fmt.Errorf("alamat server %q: %w", cfg.Address, err)
+		return fmt.Errorf("server address %q: %w", cfg.Address, err)
 	}
 	if err := netlink.AddrReplace(link, addr); err != nil {
-		return fmt.Errorf("pasang alamat: %w", err)
+		return fmt.Errorf("set address: %w", err)
 	}
 	return netlink.LinkSetUp(link)
 }
@@ -84,7 +84,7 @@ func (Kernel) Sync(cfg store.ServerConfig, peers []Peer) error {
 		}
 		ip := net.ParseIP(p.Address).To4()
 		if ip == nil {
-			return fmt.Errorf("alamat klien %q tidak valid", p.Address)
+			return fmt.Errorf("invalid device address %q", p.Address)
 		}
 		pc := wgtypes.PeerConfig{
 			PublicKey:         pub,
@@ -104,7 +104,7 @@ func (Kernel) Sync(cfg store.ServerConfig, peers []Peer) error {
 		}
 		pcs = append(pcs, pc)
 	}
-	// ReplacePeers: peer yang tidak ada di DB ikut terhapus dari kernel
+	// ReplacePeers: peers not in the DB are also removed from the kernel
 	return c.ConfigureDevice(cfg.Interface, wgtypes.Config{
 		PrivateKey:   &priv,
 		ListenPort:   &port,

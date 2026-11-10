@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-// uapiServer memiliki listener dan koneksinya agar shutdown tidak menunggu klien diam.
+// uapiServer owns the listener and its connections so shutdown does not wait on idle clients.
 type uapiServer struct {
 	listener net.Listener
 	done     chan struct{}
@@ -29,7 +29,7 @@ func startUAPI(l net.Listener, handle func(net.Conn)) *uapiServer {
 				closing := s.closing
 				s.mu.Unlock()
 				if !closing {
-					slog.Error("listener UAPI berhenti", "err", err)
+					slog.Error("UAPI listener stopped", "err", err)
 				}
 				return
 			}
@@ -40,7 +40,7 @@ func startUAPI(l net.Listener, handle func(net.Conn)) *uapiServer {
 			go func() {
 				defer s.handlers.Done()
 				defer func() {
-					_ = c.Close() // IpcHandle juga menutup koneksi saat selesai.
+					_ = c.Close() // IpcHandle also closes the connection when done.
 					s.mu.Lock()
 					delete(s.conns, c)
 					s.mu.Unlock()

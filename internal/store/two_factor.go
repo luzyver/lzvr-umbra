@@ -21,7 +21,7 @@ func (s *Store) EnableTOTP(ctx context.Context, id int64, secret string, step in
 		return err
 	}
 	if n != 1 {
-		return errors.New("verifikasi dua langkah sudah aktif")
+		return errors.New("two-step verification is already enabled")
 	}
 	if _, err = tx.ExecContext(ctx, `INSERT INTO totp_state (admin_id, last_step) VALUES (?, ?) ON CONFLICT(admin_id) DO UPDATE SET last_step = excluded.last_step`, id, step); err != nil {
 		return err

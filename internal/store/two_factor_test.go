@@ -28,16 +28,16 @@ func TestRecoveryCodeConsumedOnce(t *testing.T) {
 		t.Fatal(err)
 	}
 	if ok, err := s.ConsumeRecoveryCode(ctx, id, auth.HashRecoveryCode(codes[0])); err != nil || !ok {
-		t.Fatalf("pemakaian pertama: %v, %v", ok, err)
+		t.Fatalf("first use: %v, %v", ok, err)
 	}
 	if ok, err := s.ConsumeRecoveryCode(ctx, id, auth.HashRecoveryCode(codes[0])); err != nil || ok {
-		t.Fatalf("kode dipakai ulang: %v, %v", ok, err)
+		t.Fatalf("code reused: %v, %v", ok, err)
 	}
 	if ok, err := s.UseTOTPStep(ctx, id, 100); err != nil || ok {
-		t.Fatalf("langkah lama diterima: %v, %v", ok, err)
+		t.Fatalf("old step accepted: %v, %v", ok, err)
 	}
 	if ok, err := s.UseTOTPStep(ctx, id, 101); err != nil || !ok {
-		t.Fatalf("langkah baru ditolak: %v, %v", ok, err)
+		t.Fatalf("new step rejected: %v, %v", ok, err)
 	}
 	if err := s.Close(); err != nil {
 		t.Fatal(err)
@@ -48,9 +48,9 @@ func TestRecoveryCodeConsumedOnce(t *testing.T) {
 	}
 	a, err := s.AdminByID(ctx, id)
 	if err != nil || a.LastTOTPStep != 101 {
-		t.Fatalf("langkah tidak bertahan setelah buka ulang: %d, %v", a.LastTOTPStep, err)
+		t.Fatalf("step did not persist after reopen: %d, %v", a.LastTOTPStep, err)
 	}
 	if ok, err := s.ConsumeRecoveryCode(ctx, id, auth.HashRecoveryCode(codes[0])); err != nil || ok {
-		t.Fatalf("kode pulih setelah buka ulang: %v, %v", ok, err)
+		t.Fatalf("code restored after reopen: %v, %v", ok, err)
 	}
 }

@@ -43,7 +43,7 @@
 			const next = { ...cfg, ...patch };
 			await put('/adguard/ctl/querylog/config/update', next);
 			cfg = next;
-			toast('Pengaturan log disimpan.');
+			toast('Log settings saved.');
 		} catch (e) {
 			toast(errMsg(e), 'error');
 		} finally {
@@ -52,11 +52,11 @@
 	}
 
 	async function clear() {
-		if (!confirm('Hapus seluruh log query?')) return;
+		if (!confirm('Delete the entire query log?')) return;
 		busy = true;
 		try {
 			await post('/adguard/ctl/querylog_clear');
-			toast('Log dihapus.');
+			toast('Log deleted.');
 			await load();
 		} catch (e) {
 			toast(errMsg(e), 'error');
@@ -68,11 +68,11 @@
 	const blocked = (e: Entry) => e.reason.startsWith('Filtered') && e.reason !== 'FilteredWhiteList';
 	const day = 24 * 3600 * 1000;
 	const retention = [
-		[6 * 3600 * 1000, '6 jam'],
-		[day, '1 hari'],
-		[7 * day, '7 hari'],
-		[30 * day, '30 hari'],
-		[90 * day, '90 hari']
+		[6 * 3600 * 1000, '6 hours'],
+		[day, '1 day'],
+		[7 * day, '7 days'],
+		[30 * day, '30 days'],
+		[90 * day, '90 days']
 	] as const;
 </script>
 
@@ -80,27 +80,27 @@
 	{#if cfg}
 		<div class="card flex flex-wrap items-center gap-x-6 gap-y-3 text-sm">
 			<div class="flex items-center gap-2">
-				<Toggle checked={cfg.enabled} disabled={busy} label="Catat query" onchange={(v) => saveCfg({ enabled: v })} />
-				Catat query
+				<Toggle checked={cfg.enabled} disabled={busy} label="Log queries" onchange={(v) => saveCfg({ enabled: v })} />
+				Log queries
 			</div>
 			<div class="flex items-center gap-2">
 				<Toggle
 					checked={cfg.anonymize_client_ip}
 					disabled={busy}
-					label="Samarkan IP klien"
+					label="Anonymize device IP"
 					onchange={(v) => saveCfg({ anonymize_client_ip: v })}
 				/>
-				Samarkan IP klien
+				Anonymize device IP
 			</div>
 			<label class="flex items-center gap-2">
-				Simpan selama
+				Keep for
 				<select class="input" value={cfg.interval} disabled={busy} onchange={(e) => saveCfg({ interval: Number(e.currentTarget.value) })}>
 					{#each retention as [ms, l] (ms)}
 						<option value={ms}>{l}</option>
 					{/each}
 				</select>
 			</label>
-			<button class="btn-danger ml-auto text-xs" disabled={busy} onclick={clear}>Hapus log</button>
+			<button class="btn-danger ml-auto text-xs" disabled={busy} onclick={clear}>Delete log</button>
 		</div>
 	{/if}
 
@@ -112,47 +112,47 @@
 				load();
 			}}
 		>
-			<input class="input flex-1" bind:value={search} placeholder="Cari domain atau IP klien…" aria-label="Cari" />
+			<input class="input flex-1" bind:value={search} placeholder="Search domain or device IP…" aria-label="Search" />
 			<label class="flex items-center gap-1 text-sm">
-				<input type="checkbox" bind:checked={blockedOnly} onchange={load} /> Hanya yang diblokir
+				<input type="checkbox" bind:checked={blockedOnly} onchange={load} /> Blocked only
 			</label>
-			<button class="btn-ghost">Muat ulang</button>
+			<button class="btn-ghost">Reload</button>
 		</form>
 		{#if entries}
 			<div class="overflow-x-auto">
 				<table class="w-full text-left text-xs">
 					<thead class="text-zinc-500">
 						<tr>
-							<th class="py-1 pr-3 font-medium">Waktu</th>
+							<th class="py-1 pr-3 font-medium">Time</th>
 							<th class="py-1 pr-3 font-medium">Domain</th>
-							<th class="py-1 pr-3 font-medium">Klien</th>
-							<th class="py-1 font-medium">Hasil</th>
+							<th class="py-1 pr-3 font-medium">Device</th>
+							<th class="py-1 font-medium">Result</th>
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-zinc-200 dark:divide-zinc-800">
 						{#each entries as e, i (i)}
 							<tr>
-								<td class="whitespace-nowrap py-1 pr-3 tabular-nums">{new Date(e.time).toLocaleTimeString('id-ID')}</td>
+								<td class="whitespace-nowrap py-1 pr-3 tabular-nums">{new Date(e.time).toLocaleTimeString('en-GB')}</td>
 								<td class="max-w-xs truncate py-1 pr-3 font-mono" title={e.question.name}>
 									{e.question.name} <span class="text-zinc-500">{e.question.type}</span>
 								</td>
 								<td class="py-1 pr-3 font-mono">{e.client}</td>
 								<td class="py-1" title={e.rules?.map((r) => r.text).join('\n')}>
 									{#if blocked(e)}
-										<span class="text-red-600 dark:text-red-400">diblokir</span>
+										<span class="text-red-600 dark:text-red-400">blocked</span>
 									{:else}
 										<span class="text-zinc-500">ok · {Number(e.elapsedMs).toFixed(0)} ms</span>
 									{/if}
 								</td>
 							</tr>
 						{:else}
-							<tr><td colspan="4" class="hint py-2">Tidak ada entri.</td></tr>
+							<tr><td colspan="4" class="hint py-2">No entries.</td></tr>
 						{/each}
 					</tbody>
 				</table>
 			</div>
 		{:else}
-			<p class="hint">Memuat…</p>
+			<p class="hint">Loading…</p>
 		{/if}
 	</div>
 </div>

@@ -1,5 +1,5 @@
 [Unit]
-Description=Umbra - pengelola WireGuard
+Description=Umbra - WireGuard manager
 After=network-online.target
 Wants=network-online.target
 
@@ -12,7 +12,7 @@ ExecStart=/usr/local/bin/umbra
 Restart=on-failure
 RestartSec=3
 
-# Hanya hak mengatur jaringan (WireGuard via netlink + nftables), bukan root penuh.
+# Network administration rights only (WireGuard via netlink + nftables), not full root.
 AmbientCapabilities=CAP_NET_ADMIN
 CapabilityBoundingSet=CAP_NET_ADMIN
 NoNewPrivileges=true
@@ -25,7 +25,7 @@ ProtectSystem=strict
 ProtectHome=true
 PrivateTmp=true
 PrivateDevices=true
-# Hanya TUN host yang dibuka di /dev privat untuk wireguard-go.
+# Only the host TUN device is exposed in the private /dev, for wireguard-go.
 BindPaths=-/dev/net/tun
 DeviceAllow=/dev/net/tun rw
 ProtectKernelTunables=true

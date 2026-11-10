@@ -1,4 +1,4 @@
-# Skrip shell dan file deploy harus LF supaya jalan di server Linux.
+# Shell scripts and deploy files must use LF to run on Linux servers.
 * text=auto eol=lf
 *.ttf binary
 *.png binary

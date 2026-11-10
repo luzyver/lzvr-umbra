@@ -1,6 +1,6 @@
-// Package firewall mengelola tabel nftables milik panel sendiri ("inet umbra").
-// Karena tabelnya terpisah, aturan tidak pernah dobel dan tidak mengganggu
-// aturan UFW/Docker. Setiap penerapan bersifat atomik (satu transaksi nft).
+// Package firewall manages the panel's own nftables table ("inet umbra").
+// Because the table is separate, rules are never duplicated and never interfere
+// with UFW/Docker rules. Every apply is atomic (a single nft transaction).
 package firewall
 
 import (
@@ -23,25 +23,25 @@ var ifaceRe = regexp.MustCompile(`^[a-zA-Z0-9_.-]{1,15}$`)
 type Rules struct {
 	WGInterface  string `json:"wg_interface"`
 	OutInterface string `json:"out_interface"`
-	Subnet       string `json:"subnet"` // mis. 10.8.0.0/24
+	Subnet       string `json:"subnet"` // e.g. 10.8.0.0/24
 	MSSClamp     bool   `json:"mss_clamp"`
 }
 
 func (r Rules) Validate() error {
 	if !ifaceRe.MatchString(r.WGInterface) {
-		return fmt.Errorf("nama interface WireGuard %q tidak valid", r.WGInterface)
+		return fmt.Errorf("invalid WireGuard interface name %q", r.WGInterface)
 	}
 	if !ifaceRe.MatchString(r.OutInterface) {
-		return fmt.Errorf("nama interface keluar %q tidak valid", r.OutInterface)
+		return fmt.Errorf("invalid outbound interface name %q", r.OutInterface)
 	}
 	if _, _, err := net.ParseCIDR(r.Subnet); err != nil {
-		return fmt.Errorf("subnet %q tidak valid", r.Subnet)
+		return fmt.Errorf("invalid subnet %q", r.Subnet)
 	}
 	return nil
 }
 
-// Render menghasilkan skrip nft. Baris pertama memastikan tabel ada, lalu dihapus
-// dan dibuat ulang dalam transaksi yang sama, jadi tidak ada jeda tanpa aturan.
+// Render produces the nft script. The first line ensures the table exists, then it is deleted
+// and recreated in the same transaction, so there is no gap without rules.
 func Render(r Rules) (string, error) {
 	if err := r.Validate(); err != nil {
 		return "", err
@@ -64,8 +64,8 @@ func Render(r Rules) (string, error) {
 	return b.String(), nil
 }
 
-// Manager menerapkan aturan dengan masa percobaan: bila tidak dikonfirmasi dalam
-// batas waktu, tabel dihapus lagi (supaya salah konfigurasi tidak mengunci server).
+// Manager applies rules with a trial period: if not confirmed within the
+// time limit, the table is removed again (so a misconfiguration cannot lock out the server).
 type Manager struct {
 	fake bool
 
@@ -91,8 +91,8 @@ func (m *Manager) Pending() *Pending {
 	return &Pending{Rules: *m.pending, Expires: m.expires}
 }
 
-// ApplyTrial menerapkan aturan dan memasang timer rollback. Bila tidak dikonfirmasi,
-// aturan sebelumnya (prev) dipasang lagi; bila prev nil, tabel panel dihapus.
+// ApplyTrial applies the rules and sets a rollback timer. If not confirmed,
+// the previous rules (prev) are reinstated; if prev is nil, the panel table is removed.
 func (m *Manager) ApplyTrial(r Rules, wait time.Duration, prev *Rules) error {
 	script, err := Render(r)
 	if err != nil {
@@ -120,7 +120,7 @@ func (m *Manager) ApplyTrial(r Rules, wait time.Duration, prev *Rules) error {
 		if m.pending == nil {
 			return
 		}
-		slog.Warn("firewall tidak dikonfirmasi, dikembalikan ke aturan sebelumnya")
+		slog.Warn("firewall not confirmed, reverting to previous rules")
 		m.pending = nil
 		var err error
 		if prevScript != "" {
@@ -129,18 +129,18 @@ func (m *Manager) ApplyTrial(r Rules, wait time.Duration, prev *Rules) error {
 			err = m.remove()
 		}
 		if err != nil {
-			slog.Error("rollback firewall gagal", "err", err)
+			slog.Error("firewall rollback failed", "err", err)
 		}
 	})
 	return nil
 }
 
-// Confirm menghentikan timer rollback dan mengembalikan aturan yang dikonfirmasi.
+// Confirm stops the rollback timer and returns the confirmed rules.
 func (m *Manager) Confirm() (Rules, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.pending == nil {
-		return Rules{}, errors.New("tidak ada perubahan firewall yang menunggu konfirmasi")
+		return Rules{}, errors.New("no firewall change is awaiting confirmation")
 	}
 	if m.timer != nil {
 		m.timer.Stop()
@@ -150,7 +150,7 @@ func (m *Manager) Confirm() (Rules, error) {
 	return r, nil
 }
 
-// ApplyNow menerapkan tanpa masa percobaan (dipakai saat boot untuk aturan yang sudah dikonfirmasi).
+// ApplyNow applies without a trial period (used at boot for already-confirmed rules).
 func (m *Manager) ApplyNow(r Rules) error {
 	script, err := Render(r)
 	if err != nil {
@@ -161,7 +161,7 @@ func (m *Manager) ApplyNow(r Rules) error {
 	return m.run(script)
 }
 
-// Remove menghapus tabel milik panel dan membatalkan percobaan yang sedang berjalan.
+// Remove deletes the panel's table and cancels any trial in progress.
 func (m *Manager) Remove() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -186,7 +186,7 @@ func (m *Manager) run(script string) error {
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("nft gagal: %v: %s", err, strings.TrimSpace(stderr.String()))
+		return fmt.Errorf("nft failed: %v: %s", err, strings.TrimSpace(stderr.String()))
 	}
 	return nil
 }

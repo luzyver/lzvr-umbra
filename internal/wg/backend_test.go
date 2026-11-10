@@ -9,7 +9,7 @@ import (
 	"github.com/luzyver/lzvr-umbra/internal/store"
 )
 
-// probeBackend mengganti operasi jaringan yang membutuhkan root.
+// probeBackend replaces network operations that require root.
 type probeBackend struct {
 	Fake
 	name            string
@@ -31,7 +31,7 @@ func TestBackendSelection(t *testing.T) {
 	}{
 		{"", nil, "kernel", false, 2, 0},
 		{"auto", nil, "kernel", false, 2, 0},
-		{"auto", fmt.Errorf("buat link: %w", ErrKernelUnsupported), "userspace", false, 1, 2},
+		{"auto", fmt.Errorf("create link: %w", ErrKernelUnsupported), "userspace", false, 1, 2},
 		{"auto", syscall.EPERM, "pending", true, 1, 0},
 		{"auto", syscall.EINVAL, "pending", true, 1, 0},
 		{"kernel", ErrKernelUnsupported, "pending", true, 1, 0},
@@ -66,10 +66,10 @@ func TestBackendSelection(t *testing.T) {
 				t.Fatal(err)
 			}
 			if !tt.wantErr && ((tt.want == "kernel" && k.closes != 1) || (tt.want == "userspace" && u.closes != 1)) {
-				t.Fatal("backend aktif harus ditutup sekali")
+				t.Fatal("active backend must be closed exactly once")
 			}
 			if err := b.EnsureInterface(store.ServerConfig{}); err == nil {
-				t.Fatal("backend tertutup bisa dibuka lagi")
+				t.Fatal("closed backend could be reopened")
 			}
 		})
 	}
@@ -77,7 +77,7 @@ func TestBackendSelection(t *testing.T) {
 
 func TestNewBackendRejectsInvalidMode(t *testing.T) {
 	if _, err := New("typo"); err == nil {
-		t.Fatal("mode tidak valid diterima")
+		t.Fatal("invalid mode accepted")
 	}
 }
 
@@ -91,7 +91,7 @@ func TestKernelSupportError(t *testing.T) {
 		{syscall.EPERM, false}, {syscall.EACCES, false}, {syscall.EINVAL, false},
 		{syscall.EEXIST, false}, {errors.New("operation not supported"), false}, {nil, false},
 	} {
-		if got := kernelSupportError(fmt.Errorf("buat link: %w", tt.err)); got != tt.want {
+		if got := kernelSupportError(fmt.Errorf("create link: %w", tt.err)); got != tt.want {
 			t.Errorf("%v: got %v", tt.err, got)
 		}
 	}

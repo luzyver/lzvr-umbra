@@ -1,28 +1,29 @@
-# Kebijakan keamanan
+# Security policy
 
-Umbra mengelola VPN, firewall, dan DNS dengan hak root, jadi laporan keamanan kami tangani lebih dulu.
+Umbra manages a VPN, a firewall, and DNS with root privileges, so security reports are handled first.
 
-## Versi yang didukung
+## Supported versions
 
-Hanya rilis [`latest`](https://github.com/luzyver/lzvr-umbra/releases/tag/latest) (build terbaru dari
-`master`). Perbaikan keamanan tidak di-backport.
+Only the [`latest`](https://github.com/luzyver/lzvr-umbra/releases/tag/latest) release (the newest build
+from `master`). Security fixes are not backported.
 
-## Melaporkan celah
+## Reporting a vulnerability
 
-**Jangan** buka issue publik. Laporkan lewat
+Do **not** open a public issue. Report it through
 [GitHub private vulnerability reporting](https://github.com/luzyver/lzvr-umbra/security/advisories/new).
 
-Sertakan:
+Include:
 
-- jenis celah dan dampaknya (mis. bypass login, CSRF, eksekusi perintah, kebocoran kunci),
-- langkah untuk mengulang atau proof of concept,
-- versi/commit dan sistem server.
+- the kind of vulnerability and its impact (e.g. login bypass, CSRF, command execution, key leak),
+- steps to reproduce or a proof of concept,
+- the version/commit and the server system.
 
-Target: balasan pertama dalam 7 hari, dan perbaikan atau rencana mitigasi dalam 30 hari untuk celah yang
-terkonfirmasi. Pelapor akan disebut di advisory kecuali minta anonim.
+Target: a first reply within 7 days, and a fix or mitigation plan within 30 days for confirmed
+vulnerabilities. Reporters are credited in the advisory unless they ask to stay anonymous.
 
-## Di luar cakupan
+## Out of scope
 
-- Panel yang sengaja dibuka ke internet tanpa HTTPS atau reverse proxy (lihat README, *Membuka panel*).
-- Celah di WireGuard, AdGuard Home, atau kernel; laporkan ke proyek masing-masing.
-- Serangan yang butuh akses root di server.
+- A panel deliberately exposed to the internet without HTTPS or a reverse proxy (see the README,
+  *Opening the panel*).
+- Vulnerabilities in WireGuard, AdGuard Home, or the kernel; report them to those projects.
+- Attacks that need root access on the server.

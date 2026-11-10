@@ -1,13 +1,13 @@
-## Ringkasan
+## Summary
 
-<!-- Apa yang diubah dan kenapa. Tautkan issue bila ada (Closes #123). -->
+<!-- What changed and why. Link an issue if there is one (Closes #123). -->
 
-## Cara menguji
+## How to test
 
-<!-- Mis. mode uji: UMBRA_DEV=1 UMBRA_FAKE_WG=1 UMBRA_FAKE_FIREWALL=1 go run ./cmd/umbra -->
+<!-- E.g. test mode: UMBRA_DEV=1 UMBRA_FAKE_WG=1 UMBRA_FAKE_FIREWALL=1 go run ./cmd/umbra -->
 
 ## Checklist
 
-- [ ] `make check` dan `make test` lulus
-- [ ] Perubahan UI dicek di layar HP dan tema gelap
-- [ ] README / CHANGELOG diperbarui bila perilaku berubah
+- [ ] `make check` and `make test` pass
+- [ ] UI changes checked on a phone screen and in the dark theme
+- [ ] README / CHANGELOG updated if behavior changed

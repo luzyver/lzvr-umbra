@@ -41,43 +41,43 @@
 	}
 
 	const setEnabled = (v: boolean) =>
-		act(() => post('/adguard/ctl/filtering/config', { enabled: v, interval: st!.interval }), 'Filter diperbarui.');
+		act(() => post('/adguard/ctl/filtering/config', { enabled: v, interval: st!.interval }), 'Filtering updated.');
 	const setInterval_ = (h: number) =>
-		act(() => post('/adguard/ctl/filtering/config', { enabled: st!.enabled, interval: h }), 'Jadwal pembaruan disimpan.');
+		act(() => post('/adguard/ctl/filtering/config', { enabled: st!.enabled, interval: h }), 'Update schedule saved.');
 	const toggle = (f: Filter, whitelist: boolean, v: boolean) =>
 		act(
 			() => post('/adguard/ctl/filtering/set_url', { url: f.url, whitelist, data: { name: f.name, url: f.url, enabled: v } }),
-			`${f.name} ${v ? 'diaktifkan' : 'dimatikan'}.`
+			`${f.name} ${v ? 'enabled' : 'disabled'}.`
 		);
 	function remove(f: Filter, whitelist: boolean) {
-		if (!confirm(`Hapus daftar "${f.name}"?`)) return;
-		act(() => post('/adguard/ctl/filtering/remove_url', { url: f.url, whitelist }), 'Daftar dihapus.');
+		if (!confirm(`Delete list "${f.name}"?`)) return;
+		act(() => post('/adguard/ctl/filtering/remove_url', { url: f.url, whitelist }), 'List deleted.');
 	}
 	const refresh = () =>
 		act(async () => {
 			await post('/adguard/ctl/filtering/refresh', { whitelist: false });
 			await post('/adguard/ctl/filtering/refresh', { whitelist: true });
-		}, 'Daftar filter diperbarui.');
+		}, 'Filter lists updated.');
 	function addList(e: SubmitEvent) {
 		e.preventDefault();
 		act(async () => {
 			await post('/adguard/ctl/filtering/add_url', add);
 			add = { name: '', url: '', whitelist: false };
-		}, 'Daftar ditambahkan.');
+		}, 'List added.');
 	}
 	const saveRules = () =>
 		act(
 			() => post('/adguard/ctl/filtering/set_rules', { rules: rules.split('\n').map((r) => r.trim()).filter(Boolean) }),
-			'Aturan kustom disimpan.'
+			'Custom rules saved.'
 		);
 
 	const intervals = [
-		[0, 'Tidak pernah'],
-		[1, 'Tiap jam'],
-		[12, 'Tiap 12 jam'],
-		[24, 'Tiap hari'],
-		[72, 'Tiap 3 hari'],
-		[168, 'Tiap minggu']
+		[0, 'Never'],
+		[1, 'Every hour'],
+		[12, 'Every 12 hours'],
+		[24, 'Every day'],
+		[72, 'Every 3 days'],
+		[168, 'Every week']
 	] as const;
 </script>
 
@@ -85,8 +85,8 @@
 	<div class="space-y-4">
 		<div class="card flex flex-wrap items-center justify-between gap-3">
 			<div>
-				<p class="font-medium">Pemfilteran</p>
-				<p class="hint">Matikan untuk menonaktifkan semua daftar blokir sekaligus.</p>
+				<p class="font-medium">Filtering</p>
+				<p class="hint">Turn off to disable all blocklists at once.</p>
 			</div>
 			<div class="flex flex-wrap items-center gap-3">
 				<select
@@ -94,18 +94,18 @@
 					value={st.interval}
 					disabled={busy}
 					onchange={(e) => setInterval_(Number(e.currentTarget.value))}
-					aria-label="Jadwal pembaruan"
+					aria-label="Update schedule"
 				>
 					{#each intervals as [h, l] (h)}
 						<option value={h}>{l}</option>
 					{/each}
 				</select>
-				<button class="btn-ghost" disabled={busy} onclick={refresh}>Perbarui sekarang</button>
-				<Toggle checked={st.enabled} disabled={busy} label="Pemfilteran" onchange={setEnabled} />
+				<button class="btn-ghost" disabled={busy} onclick={refresh}>Update now</button>
+				<Toggle checked={st.enabled} disabled={busy} label="Filtering" onchange={setEnabled} />
 			</div>
 		</div>
 
-		{#each [['Daftar blokir', st.filters, false], ['Daftar izin', st.whitelist_filters, true]] as const as [title, list, wl] (title)}
+		{#each [['Blocklists', st.filters, false], ['Allowlists', st.whitelist_filters, true]] as const as [title, list, wl] (title)}
 			<div class="card">
 				<p class="mb-3 font-medium">{title}</p>
 				<ul class="divide-y divide-zinc-200 text-sm dark:divide-zinc-800">
@@ -116,44 +116,44 @@
 								<p class="truncate">{f.name}</p>
 								<p class="hint truncate font-mono" title={f.url}>{f.url}</p>
 							</div>
-							<span class="hint tabular-nums">{f.rules_count.toLocaleString('id-ID')} aturan</span>
-							<button class="btn-danger text-xs" disabled={busy} onclick={() => remove(f, wl)}>Hapus</button>
+							<span class="hint tabular-nums">{f.rules_count.toLocaleString('en-GB')} rules</span>
+							<button class="btn-danger text-xs" disabled={busy} onclick={() => remove(f, wl)}>Delete</button>
 						</li>
 					{:else}
-						<li class="hint py-2">Belum ada daftar.</li>
+						<li class="hint py-2">No lists yet.</li>
 					{/each}
 				</ul>
 			</div>
 		{/each}
 
 		<form class="card space-y-3" onsubmit={addList}>
-			<p class="font-medium">Tambah daftar</p>
+			<p class="font-medium">Add list</p>
 			<div class="grid gap-3 sm:grid-cols-[1fr_2fr]">
-				<input class="input" bind:value={add.name} required placeholder="Nama, mis. OISD" aria-label="Nama daftar" />
-				<input class="input font-mono" bind:value={add.url} required placeholder="https://…/list.txt" aria-label="URL daftar" />
+				<input class="input" bind:value={add.name} required placeholder="Name, e.g. OISD" aria-label="List name" />
+				<input class="input font-mono" bind:value={add.url} required placeholder="https://…/list.txt" aria-label="List URL" />
 			</div>
 			<div class="flex flex-wrap items-center justify-between gap-2">
 				<label class="flex items-center gap-2 text-sm">
-					<input type="checkbox" bind:checked={add.whitelist} /> Daftar izin (bukan blokir)
+					<input type="checkbox" bind:checked={add.whitelist} /> Allowlist (not a blocklist)
 				</label>
-				<button class="btn-primary" disabled={busy}>Tambah</button>
+				<button class="btn-primary" disabled={busy}>Add</button>
 			</div>
 		</form>
 
 		<div class="card space-y-3">
 			<div>
-				<p class="font-medium">Aturan kustom</p>
+				<p class="font-medium">Custom rules</p>
 				<p class="hint">
-					Satu aturan per baris. Contoh: <code>||iklan.com^</code> untuk memblokir,
-					<code>@@||situs.com^</code> untuk mengizinkan, <code>! catatan</code> untuk komentar.
+					One rule per line. Examples: <code>||ads.example.com^</code> to block,
+					<code>@@||example.com^</code> to allow, <code>! note</code> for a comment.
 				</p>
 			</div>
 			<textarea class="input h-48 w-full font-mono text-xs" bind:value={rules} spellcheck="false"></textarea>
 			<div class="flex justify-end">
-				<button class="btn-primary" disabled={busy} onclick={saveRules}>Simpan aturan</button>
+				<button class="btn-primary" disabled={busy} onclick={saveRules}>Save rules</button>
 			</div>
 		</div>
 	</div>
 {:else}
-	<p class="hint">Memuat…</p>
+	<p class="hint">Loading…</p>
 {/if}

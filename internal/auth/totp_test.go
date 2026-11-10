@@ -17,7 +17,7 @@ func TestTOTPVectorRFC6238(t *testing.T) {
 	} {
 		got, err := TOTPCode(secret, tc.unix/30)
 		if err != nil || got != tc.want {
-			t.Errorf("waktu %d: kode %q, galat %v; ingin %q", tc.unix, got, err, tc.want)
+			t.Errorf("time %d: code %q, error %v; want %q", tc.unix, got, err, tc.want)
 		}
 	}
 }
@@ -28,17 +28,17 @@ func TestTOTPWindowAndReplay(t *testing.T) {
 	previous, _ := TOTPCode(secret, 99)
 	step, ok := VerifyTOTP(secret, previous, now, -1)
 	if !ok || step != 99 {
-		t.Fatalf("langkah sebelumnya ditolak: %d, %v", step, ok)
+		t.Fatalf("previous step rejected: %d, %v", step, ok)
 	}
 	if _, ok := VerifyTOTP(secret, previous, now, step); ok {
-		t.Fatal("kode digunakan ulang")
+		t.Fatal("code reused")
 	}
 	next, _ := TOTPCode(secret, 101)
 	if _, ok := VerifyTOTP(secret, next, now, step); !ok {
-		t.Fatal("langkah berikutnya ditolak")
+		t.Fatal("next step rejected")
 	}
 	far, _ := TOTPCode(secret, 102)
 	if _, ok := VerifyTOTP(secret, far, now, -1); ok {
-		t.Fatal("kode di luar jendela diterima")
+		t.Fatal("code outside window accepted")
 	}
 }

@@ -1,34 +1,35 @@
-# Kode etik
+# Code of conduct
 
-## Janji kami
+## Our pledge
 
-Kami ingin siapa pun bisa ikut serta di Umbra tanpa dilecehkan, apa pun usia, latar belakang, identitas,
-tingkat pengalaman, kebangsaan, agama, atau kondisi fisiknya.
+We want anyone to be able to take part in Umbra without harassment, whatever their age, background,
+identity, level of experience, nationality, religion, or physical condition.
 
-## Yang diharapkan
+## Expected behavior
 
-- Bersikap sopan dan sabar, terutama kepada orang yang baru mulai.
-- Mengkritik kode dan gagasan, bukan orangnya.
-- Menerima masukan dengan terbuka dan mengakui kesalahan.
-- Menjaga pembahasan tetap pada hal yang berguna bagi proyek.
+- Be polite and patient, especially with people who are just starting out.
+- Criticize code and ideas, not people.
+- Take feedback openly and own up to mistakes.
+- Keep discussions on what is useful to the project.
 
-## Yang tidak diterima
+## Unacceptable behavior
 
-- Hinaan, serangan pribadi, atau komentar merendahkan.
-- Pelecehan dalam bentuk apa pun, di ruang publik maupun pribadi.
-- Menyebarkan data pribadi orang lain tanpa izin.
-- Komentar atau gambar bernuansa seksual.
+- Insults, personal attacks, or demeaning comments.
+- Harassment of any kind, in public or in private.
+- Sharing other people's private information without permission.
+- Sexualized comments or imagery.
 
-## Cakupan
+## Scope
 
-Kode etik ini berlaku di issue, pull request, diskusi, dan ruang lain yang memakai nama proyek.
+This code of conduct applies in issues, pull requests, discussions, and any other space that uses the
+project's name.
 
-## Penegakan
+## Enforcement
 
-Laporkan pelanggaran kepada pemelihara lewat [profil GitHub @luzyver](https://github.com/luzyver).
-Laporan ditangani secara rahasia. Pemelihara boleh menghapus atau menyunting komentar, commit, issue, dan
-kontribusi lain yang melanggar, serta memblokir sementara atau permanen pelakunya.
+Report violations to the maintainer through the [@luzyver GitHub profile](https://github.com/luzyver).
+Reports are handled confidentially. The maintainer may remove or edit comments, commits, issues, and
+other contributions that break these rules, and may block offenders temporarily or permanently.
 
-## Sumber
+## Attribution
 
-Disadur dari [Contributor Covenant 2.1](https://www.contributor-covenant.org/id/version/2/1/code_of_conduct/).
+Adapted from the [Contributor Covenant 2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct/).

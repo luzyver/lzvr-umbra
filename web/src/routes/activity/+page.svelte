@@ -6,15 +6,15 @@
 	import NetActivity from '#lib/NetActivity.svelte';
 
 	const kinds = [
-		['', 'Semua'],
-		['connect', 'Terhubung'],
-		['disconnect', 'Terputus'],
-		['roam', 'Ganti IP']
+		['', 'All'],
+		['connect', 'Connected'],
+		['disconnect', 'Disconnected'],
+		['roam', 'IP change']
 	] as const;
 	const label: Record<Activity['kind'], string> = {
-		connect: 'Terhubung',
-		disconnect: 'Terputus',
-		roam: 'Ganti IP'
+		connect: 'Connected',
+		disconnect: 'Disconnected',
+		roam: 'IP change'
 	};
 	const badge: Record<Activity['kind'], string> = {
 		connect: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
@@ -54,11 +54,11 @@
 
 	async function clear() {
 		const who = clients.find((c) => String(c.id) === clientId)?.name;
-		if (!confirm(who ? `Hapus log aktivitas ${who}?` : 'Hapus seluruh log aktivitas?')) return;
+		if (!confirm(who ? `Delete the activity log for ${who}?` : 'Delete the entire activity log?')) return;
 		busy = true;
 		try {
 			const r = await del<{ deleted: number }>(`/activity${clientId ? `?client_id=${clientId}` : ''}`);
-			toast(`${r.deleted} entri dihapus.`);
+			toast(`${r.deleted} entries deleted.`);
 			await load();
 		} catch (e) {
 			toast(errMsg(e), 'error');
@@ -68,23 +68,23 @@
 	}
 </script>
 
-<svelte:head><title>Aktivitas · Umbra</title></svelte:head>
+<svelte:head><title>Activity · Umbra</title></svelte:head>
 
 <div class="page-heading">
-	<h1>Aktivitas</h1>
+	<h1>Activity</h1>
 	{#if tab === 'sessions'}
-		<button class="btn-ghost ml-auto" disabled={busy} onclick={() => load()}>Muat ulang</button>
-		<button class="btn-danger" disabled={busy || !items?.length} onclick={clear}>Hapus log</button>
+		<button class="btn-ghost ml-auto" disabled={busy} onclick={() => load()}>Reload</button>
+		<button class="btn-danger" disabled={busy || !items?.length} onclick={clear}>Delete log</button>
 	{/if}
 </div>
 
 <div class="mb-4 flex flex-wrap items-center gap-3">
-	<div class="filter-tabs" aria-label="Tampilan">
-		<button class:selected={tab === 'net'} aria-pressed={tab === 'net'} onclick={() => (tab = 'net')}>Aktivitas jaringan</button>
-		<button class:selected={tab === 'sessions'} aria-pressed={tab === 'sessions'} onclick={() => (tab = 'sessions')}>Sesi VPN</button>
+	<div class="filter-tabs" aria-label="View">
+		<button class:selected={tab === 'net'} aria-pressed={tab === 'net'} onclick={() => (tab = 'net')}>Network activity</button>
+		<button class:selected={tab === 'sessions'} aria-pressed={tab === 'sessions'} onclick={() => (tab = 'sessions')}>VPN sessions</button>
 	</div>
-	<select class="input ml-auto" aria-label="Perangkat" bind:value={clientId} onchange={() => load()}>
-		<option value="">{tab === 'net' ? 'Pilih perangkat…' : 'Semua perangkat'}</option>
+	<select class="input ml-auto" aria-label="Device" bind:value={clientId} onchange={() => load()}>
+		<option value="">{tab === 'net' ? 'Select device…' : 'All devices'}</option>
 		{#each clients as c (c.id)}
 			<option value={String(c.id)}>{c.name}</option>
 		{/each}
@@ -95,12 +95,12 @@
 	{#if selected}
 		<NetActivity client={selected} />
 	{:else}
-		<div class="card"><p class="hint">Pilih perangkat untuk melihat situs dan koneksi yang sedang dibukanya.</p></div>
+		<div class="card"><p class="hint">Select a device to see the sites and connections it is opening.</p></div>
 	{/if}
 {:else}
 	<div class="card">
 		<div class="mb-3 flex flex-wrap items-center gap-3">
-			<div class="filter-tabs overflow-x-auto" aria-label="Jenis kejadian">
+			<div class="filter-tabs overflow-x-auto" aria-label="Event type">
 				{#each kinds as [v, l] (v)}
 					<button class:selected={kind === v} aria-pressed={kind === v} onclick={() => ((kind = v), load())}>{l}</button>
 				{/each}
@@ -112,12 +112,12 @@
 				<table class="w-full text-left text-xs">
 					<thead class="text-zinc-500">
 						<tr>
-							<th class="py-1 pr-3 font-medium">Waktu</th>
-							<th class="py-1 pr-3 font-medium">Perangkat</th>
-							<th class="py-1 pr-3 font-medium">Kejadian</th>
+							<th class="py-1 pr-3 font-medium">Time</th>
+							<th class="py-1 pr-3 font-medium">Device</th>
+							<th class="py-1 pr-3 font-medium">Event</th>
 							<th class="py-1 pr-3 font-medium">Endpoint</th>
-							<th class="py-1 pr-3 font-medium">Durasi</th>
-							<th class="py-1 font-medium">Trafik sesi</th>
+							<th class="py-1 pr-3 font-medium">Duration</th>
+							<th class="py-1 font-medium">Session traffic</th>
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-zinc-200 dark:divide-zinc-800">
@@ -141,8 +141,8 @@
 						{:else}
 							<tr>
 								<td colspan="6" class="hint py-3">
-									Belum ada aktivitas. Panel mengecek WireGuard tiap ±15 detik dan mencatat saat perangkat
-									terhubung, terputus, atau berganti IP. Log disimpan 90 hari.
+									No activity yet. The panel checks WireGuard every ~15 seconds and records when a device
+									connects, disconnects, or changes IP. Logs are kept for 90 days.
 								</td>
 							</tr>
 						{/each}
@@ -150,14 +150,14 @@
 				</table>
 			</div>
 			{#if more}
-				<button class="btn-ghost mt-3" disabled={busy} onclick={() => load(true)}>Muat lebih banyak</button>
+				<button class="btn-ghost mt-3" disabled={busy} onclick={() => load(true)}>Load more</button>
 			{/if}
 		{:else}
-			<p class="hint">Memuat…</p>
+			<p class="hint">Loading…</p>
 		{/if}
 		<p class="hint mt-3">
-			WireGuard tidak punya login/logout; perangkat dianggap terputus bila tidak ada handshake selama 3 menit,
-			dan waktu putusnya dicatat sebagai handshake terakhir. ↓ = diterima server dari perangkat, ↑ = dikirim ke perangkat.
+			WireGuard has no login/logout; a device counts as disconnected when there has been no handshake for 3 minutes,
+			and the disconnect time is recorded as the last handshake. ↓ = received by the server from the device, ↑ = sent to the device.
 		</p>
 	</div>
 {/if}

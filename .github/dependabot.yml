@@ -12,7 +12,7 @@ updates:
       web:
         patterns: ["*"]
     ignore:
-      # svelte-check baru menerima TypeScript 5 dan 6; hapus setelah mendukung 7.
+      # svelte-check only accepts TypeScript 5 and 6 so far; remove once it supports 7.
       - dependency-name: typescript
         update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions

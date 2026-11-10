@@ -1,5 +1,5 @@
 <script lang="ts">
-	// QR + tombol unduh profil klien. QR diambil sebagai blob karena endpoint butuh sesi.
+	// QR code and download button for a device profile. The QR is fetched as a blob because the endpoint needs a session.
 	import type { Client } from './api';
 
 	let { client, showActivity = true }: { client: Client; showActivity?: boolean } = $props();
@@ -33,13 +33,13 @@
 
 <div class="flex flex-col items-center gap-3">
 	{#if qr}
-		<img src={qr} alt="QR profil {client.name}" class="w-64 rounded bg-white p-2" />
+		<img src={qr} alt="Profile QR for {client.name}" class="w-64 rounded bg-white p-2" />
 	{:else if failed}
-		<p class="text-sm text-[var(--red)]">QR gagal dimuat.</p>
+		<p class="text-sm text-[var(--red)]">Could not load the QR code.</p>
 	{:else}
 		<div class="h-64 w-64 animate-pulse rounded bg-[var(--panel-alt)]"></div>
 	{/if}
-	<p class="hint text-center">Pindai dengan aplikasi WireGuard di HP (Tambah tunnel → Pindai QR).</p>
-	<a class="btn-ghost" href="/api/clients/{client.id}/config" download>Unduh file .conf</a>
-	{#if showActivity}<a class="btn-ghost" href="/activity?client={client.id}">Aktivitas jaringan</a>{/if}
+	<p class="hint text-center">Scan with the WireGuard app on your phone (Add tunnel → Scan QR).</p>
+	<a class="btn-ghost" href="/api/clients/{client.id}/config" download>Download .conf file</a>
+	{#if showActivity}<a class="btn-ghost" href="/activity?client={client.id}">Network activity</a>{/if}
 </div>

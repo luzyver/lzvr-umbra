@@ -33,7 +33,7 @@
 	{#if open}
 		<div class="dialog-header flex items-center justify-between border-b border-[var(--border)] px-5 py-3">
 			<h2 class="min-w-0 break-words font-bold tracking-tight">{title}</h2>
-			<button class="icon-btn" aria-label="Tutup" onclick={() => (open = false)}><Icon name="close" size={16} /></button>
+			<button class="icon-btn" aria-label="Close" onclick={() => (open = false)}><Icon name="close" size={16} /></button>
 		</div>
 		<div class="dialog-body px-5 py-4">{@render children()}</div>
 		{#if footer}

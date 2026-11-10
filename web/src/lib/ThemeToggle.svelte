@@ -2,7 +2,7 @@
  import { onMount } from 'svelte';
  import Icon from './Icon.svelte';
  const order = ['system', 'light', 'dark'];
- const labels: Record<string, string> = { system: 'Sistem', light: 'Terang', dark: 'Gelap' };
+ const labels: Record<string, string> = { system: 'System', light: 'Light', dark: 'Dark' };
  const icons: Record<string, string> = { system: 'monitor', light: 'sun', dark: 'moon' };
  let preference = $state('system');
  onMount(() => {
@@ -15,4 +15,4 @@
   window.dispatchEvent(new CustomEvent('umbra:set-theme', { detail: next }));
  }
 </script>
-<button class="icon-btn" onclick={cycle} title="Tema: {labels[preference] ?? 'Sistem'}" aria-label="Tema: {labels[preference] ?? 'Sistem'}. Klik untuk mengganti."><Icon name={icons[preference] ?? 'monitor'} size={16}/></button>
+<button class="icon-btn" onclick={cycle} title="Theme: {labels[preference] ?? 'System'}" aria-label="Theme: {labels[preference] ?? 'System'}. Click to change."><Icon name={icons[preference] ?? 'monitor'} size={16}/></button>

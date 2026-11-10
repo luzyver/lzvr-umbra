@@ -1,5 +1,5 @@
-# Cek tiap pull request dan push ke cabang selain master. Push ke master menjalankan cek yang sama
-# lewat release.yml (workflow_call) sebelum rilis diterbitkan.
+# Checks every pull request and every push to a branch other than master. A push to master runs the
+# same checks through release.yml (workflow_call) before the release is published.
 name: ci
 
 on:

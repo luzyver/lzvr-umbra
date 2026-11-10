@@ -17,24 +17,24 @@
 	import FirewallPanel from '#lib/FirewallPanel.svelte';
 	import ClientProfile from '#lib/ClientProfile.svelte';
 
-	const steps = ['Admin', 'Cek sistem', 'Server', 'Firewall', 'Perangkat pertama'];
-	let step = $state(-1); // -1 = memuat
-	let done = $state(false); // sudah disetup sebelumnya
+	const steps = ['Admin', 'System check', 'Server', 'Firewall', 'First device'];
+	let step = $state(-1); // -1 = loading
+	let done = $state(false); // already set up before
 
 	let error = $state('');
 	let busy = $state(false);
 
-	// Langkah 0: admin
+	// Step 0: admin
 	let token = $state('');
 	let username = $state('admin');
 	let password = $state('');
 	let password2 = $state('');
 
-	// Langkah 1-2
+	// Steps 1-2
 	let check = $state<SystemCheck | null>(null);
 	let server = $state<ServerConfig | null>(null);
 
-	// Langkah 4
+	// Step 4
 	let clientName = $state('');
 	let client = $state<Client | null>(null);
 
@@ -64,13 +64,13 @@
 		e.preventDefault();
 		error = '';
 		if (password !== password2) {
-			error = 'Kedua kata sandi tidak sama.';
+			error = 'The two passwords do not match.';
 			return;
 		}
 		busy = true;
 		try {
 			await post('/setup/admin', { token: token.trim(), username: username.trim(), password });
-			// Pembuatan admin tidak membuat sesi; masuk otomatis.
+			// Creating the admin does not create a session; sign in automatically.
 			await post('/auth/login', { username: username.trim(), password });
 			session.me = await get<Me>('/auth/me');
 			password = password2 = token = '';
@@ -118,21 +118,21 @@
 		}
 	}
 
-	const titles = ['Buat akun admin', 'Cek sistem', 'Pengaturan server', 'Firewall dan NAT', 'Perangkat pertama'];
-	const checkTag = { ok: '', warn: 'Peringatan', fail: 'Gagal' } as const;
-	// Pelat: satu port per langkah. Hijau sudah lewat, amber sedang dikerjakan, merah bila langkah ini gagal.
+	const titles = ['Create admin account', 'System check', 'Server settings', 'Firewall and NAT', 'First device'];
+	const checkTag = { ok: '', warn: 'Warning', fail: 'Failed' } as const;
+	// Plate: one port per step. Green = done, amber = in progress, red = this step failed.
 	const finished = $derived(done || !!client);
 	const waiting = $derived(busy || (step === 1 && !check && !error));
-	const plateLabel = $derived(finished ? 'Selesai' : step < 0 ? (error ? 'Gagal memuat' : 'Memuat') : `Langkah ${step + 1} dari ${steps.length}`);
+	const plateLabel = $derived(finished ? 'Done' : step < 0 ? (error ? 'Failed to load' : 'Loading') : `Step ${step + 1} of ${steps.length}`);
 </script>
 
-<svelte:head><title>Penyiapan · Umbra</title></svelte:head>
+<svelte:head><title>Setup · Umbra</title></svelte:head>
 
 <main class="login-screen setup-screen">
 	<div class="login-unit setup-unit">
 		<div class="ports login-plate setup-plate" data-busy={waiting}>
 			<div class="ports-caption"><Logo /><span>{plateLabel}</span></div>
-			<ol class="setup-steps" aria-label="Langkah penyiapan">
+			<ol class="setup-steps" aria-label="Setup steps">
 				{#each steps as s, i (s)}
 					<li
 						class="port"
@@ -149,48 +149,48 @@
 
 		<div class="setup-body">
 			{#if done}
-				<h1>WireGuard sudah disiapkan</h1>
-				<p class="hint">Pengaturan server bisa diubah di halaman Pengaturan.</p>
-				<div><a class="btn-primary" href="/">Ke Ringkasan</a></div>
+				<h1>WireGuard is already set up</h1>
+				<p class="hint">Server settings can be changed on the Settings page.</p>
+				<div><a class="btn-primary" href="/">Go to Overview</a></div>
 			{:else if step === -1}
-				<h1>Penyiapan</h1>
-				{#if error}<p class="login-error" role="alert">{error}</p>{:else}<p class="hint">Memuat…</p>{/if}
+				<h1>Setup</h1>
+				{#if error}<p class="login-error" role="alert">{error}</p>{:else}<p class="hint">Loading…</p>{/if}
 			{:else if step === 0}
 				<form class="setup-form" onsubmit={createAdmin} oninput={() => (error = '')}>
 					<h1>{titles[0]}</h1>
 					<div>
-						<label class="label" for="t">Token setup</label>
+						<label class="label" for="t">Setup token</label>
 						<input id="t" class="input font-mono" bind:value={token} autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="t-hint" required />
 						<p class="hint" id="t-hint">
-							Ada di file <span class="font-mono">setup-token</span> pada folder data panel, dan tercetak di log
+							Found in the <span class="font-mono">setup-token</span> file in the panel data folder, and printed in the log
 							(<span class="font-mono">journalctl -u umbra</span>).
 						</p>
 					</div>
 					<div>
-						<label class="label" for="u">Nama pengguna</label>
+						<label class="label" for="u">Username</label>
 						<input id="u" class="input" bind:value={username} autocomplete="username" autocapitalize="none" spellcheck="false" required />
 					</div>
 					<div class="grid gap-4 sm:grid-cols-2">
 						<div>
-							<label class="label" for="p">Kata sandi</label>
+							<label class="label" for="p">Password</label>
 							<input id="p" class="input" type="password" minlength="10" bind:value={password} autocomplete="new-password" aria-describedby="p-hint" required />
-							<p class="hint" id="p-hint">Minimal 10 karakter.</p>
+							<p class="hint" id="p-hint">At least 10 characters.</p>
 						</div>
 						<div>
-							<label class="label" for="p2">Ulangi kata sandi</label>
+							<label class="label" for="p2">Repeat password</label>
 							<input id="p2" class="input" type="password" bind:value={password2} autocomplete="new-password" required />
 						</div>
 					</div>
 					{#if error}<p class="login-error" role="alert">{error}</p>{/if}
-					<button class="btn-primary" disabled={busy}>{busy ? 'Menyimpan…' : 'Buat admin'}</button>
+					<button class="btn-primary" disabled={busy}>{busy ? 'Saving…' : 'Create admin'}</button>
 				</form>
 			{:else if step === 1}
 				<h1>{titles[1]}</h1>
 				{#if !check}
 					{#if error}
 						<p class="login-error" role="alert">{error}</p>
-						<div><button class="btn-ghost" onclick={gotoCheck}>Cek ulang</button></div>
-					{:else}<p class="hint">Memeriksa…</p>{/if}
+						<div><button class="btn-ghost" onclick={gotoCheck}>Check again</button></div>
+					{:else}<p class="hint">Checking…</p>{/if}
 				{:else}
 					<ul class="setup-checks">
 						{#each check.items as it (it.id)}
@@ -204,46 +204,46 @@
 						{/each}
 					</ul>
 					<div class="setup-note">
-						<p>IP publik <span class="font-mono">{check.public_ip || 'tidak terdeteksi'}</span></p>
+						<p>Public IP <span class="font-mono">{check.public_ip || 'not detected'}</span></p>
 						{#if check.behind_nat}
 							<p class="hint">
-								Server berada di balik NAT (IP lokal {check.local_ips.join(', ')}). Pastikan port UDP
-								WireGuard diteruskan (port forwarding) dari router/penyedia ke server ini.
+								The server is behind NAT (local IP {check.local_ips.join(', ')}). Make sure the WireGuard UDP
+								port is forwarded (port forwarding) from the router or provider to this server.
 							</p>
 						{/if}
 					</div>
-					{#if hasFail}<p class="login-error">Perbaiki butir bertanda Gagal dulu, lalu cek ulang.</p>{/if}
+					{#if hasFail}<p class="login-error">Fix the items marked Failed first, then check again.</p>{/if}
 					<div class="setup-actions">
-						<button class="btn-primary" disabled={hasFail} onclick={() => (step = 2)}>Lanjut</button>
-						<button class="btn-ghost" onclick={gotoCheck}>Cek ulang</button>
+						<button class="btn-primary" disabled={hasFail} onclick={() => (step = 2)}>Continue</button>
+						<button class="btn-ghost" onclick={gotoCheck}>Check again</button>
 					</div>
 				{/if}
 			{:else if step === 2 && server}
 				<h1>{titles[2]}</h1>
-				<ServerForm {server} {check} submitLabel="Aktifkan WireGuard" onsaved={serverSaved} />
+				<ServerForm {server} {check} submitLabel="Enable WireGuard" onsaved={serverSaved} />
 			{:else if step === 3}
 				<h1>{titles[3]}</h1>
 				<FirewallPanel onconfirmed={() => (step = 4)} />
-				<div><button class="btn-ghost" onclick={() => (step = 4)}>Lewati, atur firewall sendiri</button></div>
+				<div><button class="btn-ghost" onclick={() => (step = 4)}>Skip, I'll set up the firewall myself</button></div>
 			{:else if step === 4}
 				{#if !client}
 					<form class="setup-form" onsubmit={createClient} oninput={() => (error = '')}>
 						<h1>{titles[4]}</h1>
 						<div>
-							<label class="label" for="cn">Nama perangkat</label>
-							<input id="cn" class="input" bind:value={clientName} placeholder="HP Andi" required />
+							<label class="label" for="cn">Device name</label>
+							<input id="cn" class="input" bind:value={clientName} placeholder="Andi's phone" required />
 						</div>
 						{#if error}<p class="login-error" role="alert">{error}</p>{/if}
 						<div class="setup-actions">
-							<button class="btn-primary" disabled={busy}>{busy ? 'Menambahkan…' : 'Tambah perangkat'}</button>
-							<a class="btn-ghost" href="/">Lewati</a>
+							<button class="btn-primary" disabled={busy}>{busy ? 'Adding…' : 'Add device'}</button>
+							<a class="btn-ghost" href="/">Skip</a>
 						</div>
 					</form>
 				{:else}
-					<h1>Profil {client.name}</h1>
+					<h1>{client.name} profile</h1>
 					<ClientProfile {client} showActivity={false} />
-					<p class="hint">Setelah tersambung, perangkat ini tampil tersambung di Ringkasan.</p>
-					<div><a class="btn-primary" href="/">Selesai</a></div>
+					<p class="hint">Once connected, this device shows as connected in Overview.</p>
+					<div><a class="btn-primary" href="/">Done</a></div>
 				{/if}
 			{/if}
 		</div>

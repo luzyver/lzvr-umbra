@@ -7,7 +7,7 @@
 
 	let { clients, empty }: { clients: ClientStatus[]; empty: string } = $props();
 
-	// Perangkat yang statusnya baru berubah ditandai sampai disorot/difokus.
+	// Devices whose status just changed stay marked until hovered or focused.
 	let seen = new Map<number, boolean>();
 	let changed = $state(new Set<number>());
 	$effect(() => {
@@ -27,7 +27,7 @@
 		changed = next;
 	}
 
-	// Nomor label = oktet terakhir alamat VPN, seperti nomor kamar di gantungan kunci.
+	// Tag number = last octet of the VPN address, like a room number on a key tag.
 	function tagNo(address: string) {
 		const ip = address.split('/')[0];
 		const sep = ip.includes(':') ? ':' : '.';
@@ -39,7 +39,7 @@
 {#if !clients.length}
 	<div class="rack-empty">{empty}</div>
 {:else}
-	<ul class="rack" aria-label="Perangkat">
+	<ul class="rack" aria-label="Devices">
 		{#each clients as c (c.id)}
 			{@const on = c.online && c.enabled}
 			{@const t = tagNo(c.address)}
@@ -50,7 +50,7 @@
 					class:disabled={!c.enabled}
 					class:changed={changed.has(c.id)}
 					href="/activity?client={c.id}"
-					title="Lihat aktivitas {c.name} ({c.address})"
+					title="View activity for {c.name} ({c.address})"
 					onmouseenter={() => noticed(c.id)}
 					onfocus={() => noticed(c.id)}
 				>
@@ -59,11 +59,11 @@
 					<span class="key-name">{c.name}</span>
 					<span class="key-meta">
 						<i class="status-dot" aria-hidden="true"></i>
-						{!c.enabled ? 'Nonaktif' : on ? 'Online' : ago(c.last_handshake)}
+						{!c.enabled ? 'Disabled' : on ? 'Online' : ago(c.last_handshake)}
 					</span>
 					<span class="key-traffic">
-						<span><Icon name="down" size={12} /><span class="sr-only">Unduh</span>{bytes(c.tx_bytes)}</span>
-						<span><Icon name="up" size={12} /><span class="sr-only">Unggah</span>{bytes(c.rx_bytes)}</span>
+						<span><Icon name="down" size={12} /><span class="sr-only">Download</span>{bytes(c.tx_bytes)}</span>
+						<span><Icon name="up" size={12} /><span class="sr-only">Upload</span>{bytes(c.rx_bytes)}</span>
 					</span>
 				</a>
 			</li>

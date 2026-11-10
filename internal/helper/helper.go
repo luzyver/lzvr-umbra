@@ -1,9 +1,9 @@
-// Package helper adalah bagian kecil yang berjalan sebagai root (lewat
-// umbra-helper.service) untuk pekerjaan yang tidak boleh dilakukan panel
-// sendiri: memasang dan melepas AdGuard Home.
+// Package helper is a small component that runs as root (via
+// umbra-helper.service) for jobs the panel must not do itself:
+// installing and removing AdGuard Home.
 //
-// Panel menulis permintaan ke <data>/helper/request.json; systemd path unit
-// menjalankan "umbra helper", yang menulis hasilnya ke status.json.
+// The panel writes a request to <data>/helper/request.json; a systemd path unit
+// runs "umbra helper", which writes the result to status.json.
 package helper
 
 import (
@@ -31,7 +31,7 @@ import (
 const (
 	InstallDir  = "/opt/AdGuardHome"
 	ServiceName = "AdGuardHome"
-	// UnitPath dipakai panel untuk tahu apakah helper sudah dipasang installer.
+	// UnitPath is used by the panel to tell whether the installer has set up the helper.
 	UnitPath  = "/etc/systemd/system/umbra-helper.path"
 	dropInDir = "/etc/systemd/system/AdGuardHome.service.d"
 )
@@ -54,13 +54,13 @@ func Dir(dataDir string) string         { return filepath.Join(dataDir, "helper"
 func RequestPath(dataDir string) string { return filepath.Join(Dir(dataDir), "request.json") }
 func StatusPath(dataDir string) string  { return filepath.Join(Dir(dataDir), "status.json") }
 
-// Available: helper terpasang (unit systemd ada).
+// Available reports whether the helper is installed (the systemd unit exists).
 func Available() bool {
 	_, err := os.Stat(UnitPath)
 	return err == nil
 }
 
-// ReadStatus dipakai panel untuk membaca hasil terakhir helper.
+// ReadStatus is used by the panel to read the helper's latest result.
 func ReadStatus(dataDir string) (Status, bool) {
 	var st Status
 	b, err := os.ReadFile(StatusPath(dataDir))
@@ -70,7 +70,7 @@ func ReadStatus(dataDir string) (Status, bool) {
 	return st, true
 }
 
-// Main adalah isi perintah "umbra helper".
+// Main is the body of the "umbra helper" command.
 func Main() int {
 	cfg := config.Load()
 	dir := Dir(cfg.DataDir)
@@ -82,7 +82,7 @@ func Main() int {
 		writeStatus(dir, Status{State: "error", Message: err.Error()})
 		return 1
 	}
-	writeStatus(dir, Status{Action: req.Action, State: "running", Message: "sedang diproses"})
+	writeStatus(dir, Status{Action: req.Action, State: "running", Message: "processing"})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
@@ -93,10 +93,10 @@ func Main() int {
 	case "uninstall":
 		msg, err = uninstall(ctx, req.WGInterface)
 	default:
-		err = fmt.Errorf("aksi tidak dikenal: %q", req.Action)
+		err = fmt.Errorf("unknown action: %q", req.Action)
 	}
 	if err != nil {
-		slog.Error("helper gagal", "action", req.Action, "err", err)
+		slog.Error("helper failed", "action", req.Action, "err", err)
 		writeStatus(dir, Status{Action: req.Action, State: "error", Message: err.Error()})
 		return 1
 	}
@@ -104,8 +104,8 @@ func Main() int {
 	return 0
 }
 
-// readRequest membaca lalu menghapus permintaan. Folder milik user panel,
-// jadi hanya file biasa yang diterima (bukan symlink).
+// readRequest reads and then deletes the request. The folder is owned by the
+// panel user, so only regular files are accepted (not symlinks).
 func readRequest(path string) (Request, error) {
 	var req Request
 	fi, err := os.Lstat(path)
@@ -114,29 +114,29 @@ func readRequest(path string) (Request, error) {
 	}
 	defer os.Remove(path)
 	if !fi.Mode().IsRegular() || fi.Size() > 4096 {
-		return req, errors.New("request.json tidak valid")
+		return req, errors.New("invalid request.json")
 	}
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return req, err
 	}
 	if err := json.Unmarshal(b, &req); err != nil {
-		return req, fmt.Errorf("request.json tidak valid: %w", err)
+		return req, fmt.Errorf("invalid request.json: %w", err)
 	}
 	if req.WGInterface != "" && !ifaceRe.MatchString(req.WGInterface) {
-		return req, errors.New("nama interface tidak valid")
+		return req, errors.New("invalid interface name")
 	}
 	return req, nil
 }
 
-// writeStatus menulis lewat file sementara + rename supaya symlink di folder
-// milik user panel tidak bisa dipakai untuk menimpa file lain.
+// writeStatus writes via a temp file + rename so a symlink in the folder
+// owned by the panel user cannot be used to overwrite other files.
 func writeStatus(dir string, st Status) {
 	st.Time = time.Now().UTC()
 	b, _ := json.Marshal(st)
 	tmp, err := os.CreateTemp(dir, ".status-*")
 	if err != nil {
-		slog.Error("tulis status helper", "err", err)
+		slog.Error("write helper status", "err", err)
 		return
 	}
 	defer os.Remove(tmp.Name())
@@ -149,7 +149,7 @@ func writeStatus(dir string, st Status) {
 		return
 	}
 	if err := os.Rename(tmp.Name(), filepath.Join(dir, "status.json")); err != nil {
-		slog.Error("tulis status helper", "err", err)
+		slog.Error("write helper status", "err", err)
 	}
 }
 
@@ -168,7 +168,7 @@ func archName() (string, error) {
 	case "arm":
 		return "armv7", nil
 	}
-	return "", fmt.Errorf("arsitektur %s tidak didukung AdGuard Home", runtime.GOARCH)
+	return "", fmt.Errorf("architecture %s is not supported by AdGuard Home", runtime.GOARCH)
 }
 
 func install(ctx context.Context, wgIface string) (string, error) {
@@ -180,7 +180,7 @@ func install(ctx context.Context, wgIface string) (string, error) {
 		}
 		url := "https://static.adguard.com/adguardhome/release/AdGuardHome_linux_" + arch + ".tar.gz"
 		if err := downloadExtract(ctx, url, filepath.Dir(InstallDir)); err != nil {
-			return "", fmt.Errorf("unduh AdGuard Home: %w", err)
+			return "", fmt.Errorf("download AdGuard Home: %w", err)
 		}
 	}
 	if _, err := os.Stat("/etc/systemd/system/" + ServiceName + ".service"); err != nil {
@@ -190,8 +190,8 @@ func install(ctx context.Context, wgIface string) (string, error) {
 			return "", err
 		}
 	}
-	// AdGuard mendengar DNS di IP tunnel, jadi harus jalan setelah interface
-	// WireGuard dibuat panel; Restart=always mengulang bila start terlalu cepat.
+	// AdGuard listens for DNS on the tunnel IP, so it must start after the
+	// WireGuard interface is created by the panel; Restart=always retries if it starts too early.
 	if err := os.MkdirAll(dropInDir, 0o755); err != nil {
 		return "", err
 	}
@@ -208,10 +208,10 @@ func install(ctx context.Context, wgIface string) (string, error) {
 	if err := run(ctx, "systemctl", "restart", ServiceName); err != nil {
 		return "", err
 	}
-	msg := "AdGuard Home terpasang"
+	msg := "AdGuard Home installed"
 	if wgIface != "" && ufwActive(ctx) {
 		if err := run(ctx, "ufw", "allow", "in", "on", wgIface, "to", "any", "port", "53"); err != nil {
-			msg += " (peringatan: gagal membuka port 53 di UFW: " + err.Error() + ")"
+			msg += " (warning: failed to open port 53 in UFW: " + err.Error() + ")"
 		}
 	}
 	return msg, nil
@@ -221,7 +221,7 @@ func uninstall(ctx context.Context, wgIface string) (string, error) {
 	bin := filepath.Join(InstallDir, "AdGuardHome")
 	if _, err := os.Stat(bin); err == nil {
 		if err := run(ctx, bin, "-s", "uninstall"); err != nil {
-			slog.Warn("uninstall service AdGuard", "err", err)
+			slog.Warn("uninstall AdGuard service", "err", err)
 		}
 	}
 	_ = os.RemoveAll(dropInDir)
@@ -232,7 +232,7 @@ func uninstall(ctx context.Context, wgIface string) (string, error) {
 	if wgIface != "" && ufwActive(ctx) {
 		_ = run(ctx, "ufw", "delete", "allow", "in", "on", wgIface, "to", "any", "port", "53")
 	}
-	return "AdGuard Home dilepas", nil
+	return "AdGuard Home removed", nil
 }
 
 func ufwActive(ctx context.Context) bool {
@@ -240,8 +240,8 @@ func ufwActive(ctx context.Context) bool {
 	return err == nil && strings.Contains(string(out), "Status: active")
 }
 
-// downloadExtract mengunduh tar.gz dan mengekstraknya ke dest
-// (arsip AdGuard berisi folder AdGuardHome/).
+// downloadExtract downloads a tar.gz and extracts it into dest
+// (the AdGuard archive contains an AdGuardHome/ folder).
 func downloadExtract(ctx context.Context, url, dest string) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -275,7 +275,7 @@ func downloadExtract(ctx context.Context, url, dest string) error {
 		}
 		target := filepath.Join(dest, name)
 		if !strings.HasPrefix(target, root) {
-			return fmt.Errorf("isi arsip mencurigakan: %s", h.Name)
+			return fmt.Errorf("suspicious archive entry: %s", h.Name)
 		}
 		switch h.Typeflag {
 		case tar.TypeDir:

@@ -2,183 +2,136 @@
 
 # Umbra
 
-Panel web untuk WireGuard dan AdGuard Home di satu VPS Linux.
+A web panel for WireGuard and AdGuard Home on a single Linux VPS.
 
 [![release](https://github.com/luzyver/lzvr-umbra/actions/workflows/release.yml/badge.svg)](https://github.com/luzyver/lzvr-umbra/actions/workflows/release.yml)
 [![ci](https://github.com/luzyver/lzvr-umbra/actions/workflows/ci.yml/badge.svg)](https://github.com/luzyver/lzvr-umbra/actions/workflows/ci.yml)
 [![Go](https://img.shields.io/github/go-mod/go-version/luzyver/lzvr-umbra)](go.mod)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-[Pratinjau](#pratinjau) · [Pasang](#pasang-di-server) · [Cara kerja](#cara-kerja) · [Pengembangan](#pengembangan)
+[Preview](#preview) · [Install](#install-on-a-server) · [How it works](#how-it-works) · [Development](#development)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/overview-dark.png">
-  <img src="docs/screenshots/overview-light.png" alt="Halaman Ringkasan Umbra: panel alamat subnet, grafik trafik 60 detik terakhir, dan daftar perangkat" width="880">
+  <img src="docs/screenshots/overview-light.png" alt="Umbra Overview page: subnet address panel, traffic chart for the last 60 seconds, and the device list" width="880">
 </picture>
 
 </div>
 
-Umbra adalah satu binary Go (frontend sudah di-embed) yang mengurus server WireGuard dari browser:
-wizard setup, perangkat dengan QR, status dan trafik langsung, firewall nftables, log sesi, aktivitas
-jaringan per perangkat, dan AdGuard Home yang dipasang serta dikelola dari panel. Server tidak butuh
-Go, Node, atau source code.
+Umbra is a single Go binary (frontend embedded) that runs a WireGuard server from the browser:
+setup wizard, devices with QR codes, live status and traffic, nftables firewall, session log, per-device
+network activity, and AdGuard Home installed and managed from the panel. The server needs no Go, Node,
+or source code.
 
-## Daftar isi
+## Contents
 
-- [Pratinjau](#pratinjau)
-- [Fitur](#fitur)
-- [Cara kerja](#cara-kerja)
-- [Syarat](#syarat)
-- [Pasang di server](#pasang-di-server)
-- [Membuka panel](#membuka-panel)
-- [Pengaturan](#pengaturan-etcumbraumbraenv)
+- [Preview](#preview)
+- [Features](#features)
+- [How it works](#how-it-works)
+- [Requirements](#requirements)
+- [Install on a server](#install-on-a-server)
+- [Opening the panel](#opening-the-panel)
+- [Configuration](#configuration-etcumbraumbraenv)
 - [AdGuard Home](#adguard-home)
-- [Pindah dari WireGuard lama](#pindah-dari-wireguard-lama)
-- [Aktivitas jaringan & log sesi](#aktivitas-jaringan--log-sesi)
-- [Pengembangan](#pengembangan)
-- [Kontribusi](#kontribusi)
-- [Lisensi](#lisensi)
+- [Moving from an existing WireGuard](#moving-from-an-existing-wireguard)
+- [Network activity & session log](#network-activity--session-log)
+- [Development](#development)
+- [Contributing](#contributing)
+- [License](#license)
 
-## Pratinjau
+## Preview
 
-| Detail perangkat | Log sesi VPN |
+| Device details | VPN session log |
 |---|---|
-| ![Panel samping detail perangkat: data masuk dan keluar, handshake terakhir, DNS, dan Allowed IPs](docs/screenshots/device-detail.png) | ![Tab Sesi VPN di halaman Aktivitas](docs/screenshots/activity.png) |
+| ![Device details side panel: data in and out, last handshake, DNS, and Allowed IPs](docs/screenshots/device-detail.png) | ![VPN sessions tab on the Activity page](docs/screenshots/activity.png) |
 
-| Masuk | Ringkasan di HP | Detail perangkat di HP |
+| Sign in | Overview on a phone | Device details on a phone |
 |---|---|---|
-| <img src="docs/screenshots/login.png" alt="Halaman masuk" width="420"> | <img src="docs/screenshots/mobile-overview.png" alt="Ringkasan di layar HP, tema gelap" width="200"> | <img src="docs/screenshots/mobile-device.png" alt="Detail perangkat di layar HP, tema terang" width="200"> |
+| <img src="docs/screenshots/login.png" alt="Sign-in page" width="420"> | <img src="docs/screenshots/mobile-overview.png" alt="Overview on a phone screen, dark theme" width="200"> | <img src="docs/screenshots/mobile-device.png" alt="Device details on a phone screen, light theme" width="200"> |
 
-Semua gambar memakai data contoh dan dibuat ulang dengan `python web/tests/screenshots.py`
-(lihat [CONTRIBUTING.md](CONTRIBUTING.md#tangkapan-layar-readme)).
+All images use sample data and are regenerated with `python web/tests/screenshots.py`
+(see [CONTRIBUTING.md](CONTRIBUTING.md#readme-screenshots)).
 
-## Fitur
+## Features
 
-- **Wizard setup**: token setup sekali pakai, akun admin, endpoint, interface, subnet, dan DNS.
-- **Perangkat**: tambah, nonaktifkan, unduh profil, atau pindai QR dari HP.
-- **Impor** dari `wg0.conf` atau database wireguard-ui, dengan pratinjau sebelum disimpan.
-- **Ringkasan langsung** (SSE): siapa yang online, kecepatan 60 detik terakhir, total data.
-- **Firewall nftables** dengan uji 60 detik: aturan baru batal otomatis kalau tidak dikonfirmasi.
-- **Log sesi VPN**: terhubung, terputus, dan ganti IP publik, disimpan 90 hari.
-- **Aktivitas jaringan** per perangkat: koneksi saat ini (conntrack) dan situs yang dibuka (riwayat DNS AdGuard).
-- **AdGuard Home**: pasang, atur filter, DNS, layanan, klien, dan log, langsung dari panel.
-- **Aman secara bawaan**: hanya mendengar di `127.0.0.1`, sesi + CSRF, CSP ketat, aset di-host sendiri.
-- **Verifikasi dua langkah** (TOTP) untuk login admin, dengan 8 kode pemulihan sekali pakai.
-- **Tanpa modul kernel pun jalan**: bila kernel tidak mendukung WireGuard, Umbra memakai `wireguard-go`
-  (userspace) yang tertanam di binary.
-- Antarmuka berbahasa Indonesia, tema terang/gelap, ramah HP.
+- **Setup wizard**: one-time setup token, admin account, endpoint, interface, subnet, and DNS.
+- **Devices**: add, disable, download a profile, or scan a QR code from a phone.
+- **Import** from `wg0.conf` or a wireguard-ui database, with a preview before saving.
+- **Live overview** (SSE): who is online, speed over the last 60 seconds, total data.
+- **nftables firewall** with a 60-second trial: new rules roll back automatically unless confirmed.
+- **VPN session log**: connected, disconnected, and public IP changes, kept for 90 days.
+- **Network activity** per device: current connections (conntrack) and sites visited (AdGuard DNS history).
+- **AdGuard Home**: install it and manage filters, DNS, services, clients, and logs from the panel.
+- **Secure by default**: listens on `127.0.0.1` only, sessions + CSRF, strict CSP, self-hosted assets.
+- **Two-factor authentication** (TOTP) for the admin login, with 8 one-time recovery codes.
+- **Works without the kernel module**: if the kernel lacks WireGuard, Umbra uses the `wireguard-go`
+  (userspace) implementation built into the binary.
+- Light and dark themes, phone friendly.
 
-## Cara kerja
+## How it works
 
-### Arsitektur
+### Architecture
 
-Satu proses `umbra` melayani antarmuka dan API, menyimpan data di SQLite, dan mengatur WireGuard, nftables,
-serta AdGuard Home di server yang sama. Panel hanya mendengar di `127.0.0.1`; yang terbuka ke internet
-hanya port WireGuard.
+A single `umbra` process serves the interface and the API, stores data in SQLite, and controls WireGuard,
+nftables, and AdGuard Home on the same server. The panel listens on `127.0.0.1` only; the WireGuard port
+is the only one open to the internet.
 
-```mermaid
-flowchart LR
-    admin["Browser admin"]
-    device["Perangkat VPN<br/>HP, laptop, router"]
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/architecture-dark.png">
+    <img src="docs/diagrams/architecture-light.png" alt="Umbra architecture: on one Linux VPS, the panel stores data in SQLite and controls WireGuard, AdGuard Home, and nftables" width="960">
+  </picture>
+</p>
 
-    subgraph vps["VPS Linux"]
-        proxy["SSH tunnel<br/>atau nginx + HTTPS"]
-        subgraph umbra["umbra, 127.0.0.1:8967"]
-            ui["Antarmuka<br/>SvelteKit, di-embed"]
-            api["API HTTP + SSE<br/>sesi, CSRF, TOTP"]
-            db[("SQLite<br/>/var/lib/umbra")]
-        end
-        wg["WireGuard wg0<br/>kernel atau wireguard-go"]
-        nft["nftables<br/>NAT dan forward"]
-        ct["conntrack"]
-        helper["Helper root<br/>pasang/copot AdGuard"]
-        agh["AdGuard Home<br/>DNS 10.8.0.1:53"]
-    end
-    net(("Internet"))
+### From install to daily use
 
-    admin --> proxy --> ui
-    ui -->|"/api"| api
-    api --> db
-    api -->|"perangkat, status"| wg
-    api -->|"aturan, uji 60 detik"| nft
-    api -->|"koneksi aktif"| ct
-    api -->|"REST"| agh
-    api -.->|"permintaan pasang"| helper -.-> agh
-    device -->|"UDP 51820"| wg
-    wg --> nft --> net
-    device -.->|"DNS lewat terowongan"| agh
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/flow-dark.png">
+    <img src="docs/diagrams/flow-light.png" alt="Umbra flow: install, a five-step wizard with a 60-second firewall trial, then Overview; later visits only need a sign-in" width="560">
+  </picture>
+</p>
 
-### Alur dari pasang sampai dipakai
+## Requirements
 
-```mermaid
-flowchart TD
-    install["Jalankan install.sh / update.sh"] --> token["Token setup tercetak"]
-    token --> open["Buka panel"]
-    open --> hasAdmin{"Akun admin<br/>sudah ada?"}
+- Linux with systemd and root access. Kernel 5.6+ (built-in WireGuard module) is recommended; without it
+  Umbra uses `wireguard-go` and only needs `/dev/net/tun` (usually present on KVM/LXC VPSes that allow TUN).
+- UDP port 51820 open in the VPS provider's firewall.
+- amd64 or arm64. 1 GB of RAM is enough.
 
-    hasAdmin -- belum --> s1["1. Buat akun admin<br/>dengan token setup"]
-    s1 --> s2["2. Cek sistem"]
-    s2 --> s3["3. Pengaturan server<br/>endpoint, subnet, DNS"]
-    s3 --> s4["4. Firewall dan NAT"]
-    s4 --> trial{"Dikonfirmasi<br/>dalam 60 detik?"}
-    trial -- tidak --> rollback["Aturan dibatalkan otomatis"] --> s4
-    trial -- ya --> s5["5. Perangkat pertama<br/>pindai QR atau unduh profil"]
-    s5 --> home
+If another WireGuard is using `wg0` or port 51820, stop it first.
 
-    hasAdmin -- sudah --> login["Masuk dengan kata sandi"]
-    login --> totp{"Verifikasi dua<br/>langkah aktif?"}
-    totp -- ya --> code["Kode autentikator<br/>atau kode pemulihan"] --> ready
-    totp -- tidak --> ready{"WireGuard<br/>sudah diatur?"}
-    ready -- belum --> s2
-    ready -- sudah --> home["Ringkasan<br/>status langsung lewat SSE"]
+## Install on a server
 
-    home --> devices["Perangkat<br/>tambah, impor, nonaktifkan"]
-    home --> activity["Aktivitas<br/>sesi VPN, koneksi, riwayat DNS"]
-    home --> adguard["AdGuard<br/>filter, DNS, layanan"]
-    home --> settings["Pengaturan<br/>server, firewall, keamanan"]
-```
-
-## Syarat
-
-- Linux dengan systemd dan akses root. Kernel 5.6+ (modul WireGuard bawaan) disarankan; tanpa modul itu
-  Umbra memakai `wireguard-go` dan hanya butuh `/dev/net/tun` (umumnya ada di VPS KVM/LXC yang mengizinkan TUN).
-- Port UDP 51820 terbuka di firewall penyedia VPS.
-- amd64 atau arm64. RAM 1 GB cukup.
-
-Kalau ada WireGuard lain yang memakai `wg0` atau port 51820, matikan dulu.
-
-## Pasang di server
-
-Setiap push ke `master`, GitHub Actions membuild frontend dan binary (amd64 dan arm64) lalu
-menerbitkannya ke rilis [`latest`](https://github.com/luzyver/lzvr-umbra/releases/tag/latest) sebagai
+On every push to `master`, GitHub Actions builds the frontend and the binaries (amd64 and arm64) and
+publishes them to the [`latest`](https://github.com/luzyver/lzvr-umbra/releases/tag/latest) release as
 `umbra-linux-<arch>.tar.gz` (+ `.sha256`).
 
-### Cara 1: skrip update (disarankan, sekalian untuk update)
+### Option 1: update script (recommended, also used for updates)
 
-`update.sh` mengambil rilis `latest`, mengecek sha256, lalu menjalankan `install.sh`:
+`update.sh` fetches the `latest` release, checks its sha256, then runs `install.sh`:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/luzyver/lzvr-umbra/master/deploy/update.sh | sudo sh
 ```
 
-**Update** nanti: jalankan perintah yang sama. Pengaturan dan data tidak ditimpa.
+To **update** later, run the same command. Configuration and data are not overwritten.
 
 <details>
-<summary>Repo privat atau fork privat</summary>
+<summary>Private repo or private fork</summary>
 
-Server butuh token untuk mengunduh rilis.
+The server needs a token to download the release.
 
-1. Buat token **fine-grained** di GitHub (Settings → Developer settings → Fine-grained tokens), hanya untuk
-   repo itu, dengan izin **Contents: Read-only**.
-2. Simpan di server:
+1. Create a **fine-grained** token on GitHub (Settings → Developer settings → Fine-grained tokens), limited
+   to that repo, with the **Contents: Read-only** permission.
+2. Store it on the server:
 
    ```sh
    sudo install -d -m 0750 /etc/umbra
-   sudo sh -c 'umask 077; cat > /etc/umbra/github-token'   # tempel token, Enter, lalu Ctrl+D
+   sudo sh -c 'umask 077; cat > /etc/umbra/github-token'   # paste the token, Enter, then Ctrl+D
    ```
 
-3. Jalankan (ganti `OWNER/REPO`):
+3. Run (replace `OWNER/REPO`):
 
    ```sh
    curl -fsSL -H "Authorization: Bearer $(sudo cat /etc/umbra/github-token)" \
@@ -188,15 +141,15 @@ Server butuh token untuk mengunduh rilis.
 
 </details>
 
-### Cara 2: manual
+### Option 2: manual
 
-1. Unduh `umbra-linux-amd64.tar.gz` dan `.sha256` dari rilis `latest` (`arm64` untuk VPS ARM):
+1. Download `umbra-linux-amd64.tar.gz` and `.sha256` from the `latest` release (`arm64` for ARM VPSes):
 
    ```sh
    gh release download latest -R luzyver/lzvr-umbra -p 'umbra-linux-amd64.tar.gz*'
    ```
 
-2. Salin ke server, lalu:
+2. Copy them to the server, then:
 
    ```sh
    sha256sum -c umbra-linux-amd64.tar.gz.sha256
@@ -204,56 +157,56 @@ Server butuh token untuk mengunduh rilis.
    sudo sh umbra-linux-amd64/install.sh umbra-linux-amd64/umbra
    ```
 
-   Tambahkan `--with-adguard` (`install.sh --with-adguard umbra-linux-amd64/umbra`) supaya AdGuard Home
-   ikut dipasang begitu server WireGuard selesai diatur di panel.
+   Add `--with-adguard` (`install.sh --with-adguard umbra-linux-amd64/umbra`) to have AdGuard Home
+   installed as soon as the WireGuard server is set up in the panel.
 
-3. File unduhan dan folder hasil ekstrak boleh dihapus.
+3. The downloaded files and the extracted folder can be deleted.
 
-### Yang dilakukan installer
+### What the installer does
 
-Memasang nftables (wireguard-tools tidak perlu), memuat modul WireGuard dan TUN (gagal memuat modul tidak
-menghentikan instalasi), menyalakan IP forwarding,
-mengizinkan `wg0` dan 51820/udp di UFW bila aktif, membuat user `umbra`, memasang service, memasang helper
-root kecil (`umbra-helper.path`/`.service`) untuk memasang dan mencopot AdGuard Home, lalu menampilkan
-**token setup** (juga ada di `/var/lib/umbra/setup-token`). Aman dijalankan ulang.
+It installs nftables (wireguard-tools is not needed), loads the WireGuard and TUN modules (a module that
+fails to load does not stop the installation), enables IP forwarding, allows `wg0` and 51820/udp in UFW
+when it is active, creates the `umbra` user, installs the service and a small root helper
+(`umbra-helper.path`/`.service`) that installs and removes AdGuard Home, then prints the **setup token**
+(also in `/var/lib/umbra/setup-token`). It is safe to run again.
 
-Setelah terpasang, Umbra hanya memakai:
+Once installed, Umbra only uses:
 
-| Lokasi | Isi |
+| Location | Contents |
 |---|---|
 | `/usr/local/bin/umbra` | program |
-| `/etc/systemd/system/umbra.service` | service systemd |
-| `/etc/umbra/umbra.env` | pengaturan |
-| `/var/lib/umbra` | database, token setup, `wg0.conf` cadangan |
+| `/etc/systemd/system/umbra.service` | systemd service |
+| `/etc/umbra/umbra.env` | configuration |
+| `/var/lib/umbra` | database, setup token, backup `wg0.conf` |
 
-### Cek dan uninstall
+### Check and uninstall
 
 ```sh
 systemctl status umbra
 journalctl -u umbra -f
 ```
 
-Uninstall: `sudo systemctl disable --now umbra`, lalu hapus `/usr/local/bin/umbra`,
+Uninstall: `sudo systemctl disable --now umbra`, then delete `/usr/local/bin/umbra`,
 `/etc/systemd/system/umbra.service`, `/etc/umbra`, `/var/lib/umbra`, `/etc/sysctl.d/90-umbra.conf`,
-`/etc/modules-load.d/umbra.conf`, dan jalankan `sudo nft delete table inet umbra`.
+`/etc/modules-load.d/umbra.conf`, and run `sudo nft delete table inet umbra`.
 
-## Membuka panel
+## Opening the panel
 
-Panel bawaannya hanya mendengar di `127.0.0.1:8967`. Pilih salah satu:
+By default the panel listens on `127.0.0.1:8967` only. Pick one:
 
-- **SSH tunnel** (paling mudah): `ssh -L 8967:127.0.0.1:8967 user@server`, lalu buka `http://localhost:8967`.
-- **Nginx + HTTPS** (domain sendiri): set `UMBRA_TRUST_PROXY=true` di `/etc/umbra/umbra.env`,
-  `sudo systemctl restart umbra`, lalu pakai contoh berikut (sertifikat dari certbot):
+- **SSH tunnel** (easiest): `ssh -L 8967:127.0.0.1:8967 user@server`, then open `http://localhost:8967`.
+- **Nginx + HTTPS** (your own domain): set `UMBRA_TRUST_PROXY=true` in `/etc/umbra/umbra.env`,
+  `sudo systemctl restart umbra`, then use this example (certificate from certbot):
 
   ```nginx
   server {
       server_name vpn.example.com;
 
-      # opsional: hanya dari klien VPN
+      # optional: VPN devices only
       # allow 10.8.0.0/24;
       # deny all;
 
-      location /api/events {            # SSE, jangan di-buffer
+      location /api/events {            # SSE, do not buffer
           proxy_pass http://127.0.0.1:8967;
           proxy_http_version 1.1;
           proxy_set_header Connection "";
@@ -277,141 +230,144 @@ Panel bawaannya hanya mendengar di `127.0.0.1:8967`. Pilih salah satu:
   }
   ```
 
-### Setup pertama
+### First setup
 
-Buka panel, masukkan token setup, buat akun admin, lalu isi wizard: endpoint publik
-(mis. `vpn.example.com:51820`), interface internet server (cek dengan `ip route get 1.1.1.1`),
-subnet VPN (mis. `10.8.0.1/24`), dan DNS klien. Setelah itu tambah perangkat dan pindai QR-nya.
+Open the panel, enter the setup token, create the admin account, then fill in the wizard: public endpoint
+(e.g. `vpn.example.com:51820`), the server's internet interface (check with `ip route get 1.1.1.1`),
+VPN subnet (e.g. `10.8.0.1/24`), and device DNS. Then add a device and scan its QR code.
 
-Disarankan langsung menyalakan **verifikasi dua langkah** di Pengaturan → Keamanan: pindai QR dengan aplikasi
-autentikator (Google Authenticator, Aegis, 2FAS, dll.), masukkan kode 6 digit, lalu simpan 8 kode pemulihan
-yang muncul sekali saja. Tiap kode pemulihan hanya bisa dipakai sekali, sebagai ganti kode autentikator saat
-masuk atau saat mematikan 2FA (yang juga meminta kata sandi).
+Turning on **two-factor authentication** right away under Settings → Security is recommended: scan the QR
+code with an authenticator app (Google Authenticator, Aegis, 2FAS, etc.), enter the 6-digit code, then save
+the 8 recovery codes, which are shown only once. Each recovery code works once, in place of an
+authenticator code when signing in or when turning 2FA off (which also asks for the password).
 
-## Pengaturan (`/etc/umbra/umbra.env`)
+## Configuration (`/etc/umbra/umbra.env`)
 
-| Variabel | Bawaan | Arti |
+| Variable | Default | Meaning |
 |---|---|---|
-| `UMBRA_LISTEN` | `127.0.0.1:8967` | alamat web panel |
-| `UMBRA_DATA_DIR` | `/var/lib/umbra` | database, token setup, `wg0.conf` cadangan |
-| `UMBRA_SECURE_COOKIE` | `true` | cookie hanya lewat HTTPS (localhost tetap bisa) |
-| `UMBRA_TRUST_PROXY` | `false` | percayai `X-Real-IP` dari nginx |
-| `UMBRA_ADGUARD_URL` | kosong | cadangan bila koneksi AdGuard belum disimpan dari panel |
-| `UMBRA_ADGUARD_USER` / `UMBRA_ADGUARD_PASS` | kosong | login AdGuard Home (cadangan, sama seperti di atas) |
-| `UMBRA_WG_BACKEND` | `auto` | `kernel`, `userspace` (`wireguard-go`), atau `auto`: kernel bila didukung, selain itu userspace. Backend aktif tampil di Pengaturan |
-| `UMBRA_ADGUARD_AUTOINSTALL` | `false` | pasang AdGuard otomatis setelah WireGuard diatur (diisi `install.sh --with-adguard`) |
+| `UMBRA_LISTEN` | `127.0.0.1:8967` | panel web address |
+| `UMBRA_DATA_DIR` | `/var/lib/umbra` | database, setup token, backup `wg0.conf` |
+| `UMBRA_SECURE_COOKIE` | `true` | cookie over HTTPS only (localhost still works) |
+| `UMBRA_TRUST_PROXY` | `false` | trust `X-Real-IP` from nginx |
+| `UMBRA_ADGUARD_URL` | empty | fallback when no AdGuard connection has been saved from the panel |
+| `UMBRA_ADGUARD_USER` / `UMBRA_ADGUARD_PASS` | empty | AdGuard Home login (fallback, as above) |
+| `UMBRA_WG_BACKEND` | `auto` | `kernel`, `userspace` (`wireguard-go`), or `auto`: kernel when supported, otherwise userspace. The active backend is shown in Settings |
+| `UMBRA_ADGUARD_AUTOINSTALL` | `false` | install AdGuard automatically once WireGuard is set up (set by `install.sh --with-adguard`) |
 
-Setelah mengubah: `sudo systemctl restart umbra`.
+After changing it: `sudo systemctl restart umbra`.
 
 ## AdGuard Home
 
-Semuanya bisa dari menu **AdGuard** di panel:
+Everything is done from the **AdGuard** menu in the panel:
 
-- **Pasang otomatis**: tekan *Pasang AdGuard* (atau pakai `install.sh --with-adguard`). Panel mengunduh
-  AdGuard Home, menjalankan setup awal, membuat akun admin, lalu mengatur DNS supaya hanya mendengar di
-  IP server VPN (mis. `10.8.0.1:53`, bukan `0.0.0.0`, supaya tidak jadi open resolver), web UI di
-  `127.0.0.1:3000`, dan DNS bawaan perangkat diubah ke IP itu.
-- **Sudah punya AdGuard**: isi alamat web dan akun admin di panel. Koneksi disimpan di database dan
-  langsung berlaku tanpa restart; nilai `UMBRA_ADGUARD_*` di `umbra.env` hanya cadangan.
-- **Pengaturan**: tab Ringkasan (proteksi, statistik, safe browsing, kontrol orang tua, safe search),
-  Filter (blocklist, allowlist, aturan sendiri), DNS (upstream, bootstrap), Layanan (blokir
-  YouTube/TikTok/dll.), Klien (aturan khusus per perangkat), Log (query log), dan Koneksi.
-- **Copot**: di tab Koneksi, untuk AdGuard yang dipasang panel. DNS perangkat dikembalikan ke DNS bawaan server.
+- **Automatic install**: press *Install AdGuard* (or use `install.sh --with-adguard`). The panel downloads
+  AdGuard Home, runs its initial setup, creates an admin account, then configures DNS to listen only on
+  the VPN server IP (e.g. `10.8.0.1:53`, not `0.0.0.0`, so it does not become an open resolver), puts the
+  web UI on `127.0.0.1:3000`, and changes the default device DNS to that IP.
+- **Existing AdGuard**: enter its web address and admin account in the panel. The connection is stored in
+  the database and takes effect without a restart; the `UMBRA_ADGUARD_*` values in `umbra.env` are only a
+  fallback.
+- **Settings**: the tabs are Overview (protection, statistics, safe browsing, parental control, safe
+  search), Filters (blocklists, allowlists, custom rules), DNS (upstream, bootstrap), Services (block
+  YouTube/TikTok/etc.), Clients (per-device rules), Log (query log), and Connection.
+- **Remove**: on the Connection tab, for an AdGuard installed by the panel. Device DNS goes back to the
+  server's default DNS.
 
-Panel mendaftarkan setiap perangkat di AdGuard dengan nama `Nama [wg#id]` dan mengatur blokir iklan per perangkat.
+The panel registers every device in AdGuard as `Name [wg#id]` and sets ad blocking per device.
 
-## Pindah dari WireGuard lama
+## Moving from an existing WireGuard
 
-Buka **Perangkat → Impor** untuk memindahkan perangkat dari `wg0.conf` server atau dari database
-wireguard-ui (folder `db` dalam ZIP/TAR.GZ, atau beberapa berkas JSON perangkat). Periksa pratinjau sebelum
-menyimpan. Yang dilewati: perangkat dengan kunci publik atau alamat yang sudah ada, alamat di luar subnet
-server, dan kunci yang tidak valid.
+Open **Devices → Import** to move devices from the server's `wg0.conf` or from a wireguard-ui database
+(the `db` folder in a ZIP/TAR.GZ, or several device JSON files). Check the preview before saving. Skipped:
+devices whose public key or address already exists, addresses outside the server subnet, and invalid keys.
 
-- **`wg0.conf`**: centang "Gunakan kunci dan port server dari sumber" agar profil lama di perangkat tetap
-  tersambung tanpa diubah. Berkas server tidak memuat kunci privat perangkat, jadi profil/QR-nya tidak bisa
-  diunduh dari Umbra; bila perlu, pakai **Buat ulang kunci** lalu pindai profil baru di perangkat itu.
-- **wireguard-ui**: cadangan memuat kunci privat perangkat, jadi profilnya langsung bisa diunduh lagi. Rute
-  tambahan (`extra_allowed_ips`) tidak ikut diimpor.
+- **`wg0.conf`**: tick "Use the server key and port from the source" so existing profiles on the devices
+  keep working unchanged. The server file does not contain device private keys, so their profile/QR code
+  cannot be downloaded from Umbra; if needed, use **Regenerate keys** and scan the new profile on that device.
+- **wireguard-ui**: the backup contains device private keys, so profiles can be downloaded again right
+  away. Extra routes (`extra_allowed_ips`) are not imported.
 
-Matikan WireGuard lama (`systemctl disable --now wg-quick@wg0`) sebelum Umbra memakai `wg0` dan port yang sama.
+Stop the old WireGuard (`systemctl disable --now wg-quick@wg0`) before Umbra uses the same `wg0` and port.
 
-## Aktivitas jaringan & log sesi
+## Network activity & session log
 
-Menu **Aktivitas** → tab **Aktivitas jaringan** (pilih perangkat) menampilkan apa yang dibuka perangkat itu:
+The **Activity** menu → **Network activity** tab (pick a device) shows what that device is reaching:
 
-- **Koneksi saat ini**: dibaca dari tabel koneksi kernel (conntrack): IP/domain tujuan, layanan
-  (HTTPS, DNS, SSH, …), status, dan data terkirim/diterima per koneksi. Bisa disegarkan otomatis tiap 5 detik.
-  Hitungan byte butuh `net.netfilter.nf_conntrack_acct=1` (dipasang otomatis oleh `install.sh`).
-- **Situs yang dibuka (riwayat DNS)**: log query AdGuard untuk IP perangkat: domain apa saja, diblokir atau
-  tidak, plus daftar domain tersering. Butuh AdGuard aktif dan perangkat memakai DNS AdGuard (opsi blokir iklan).
+- **Current connections**: read from the kernel connection table (conntrack): destination IP/domain,
+  service (HTTPS, DNS, SSH, …), state, and data sent/received per connection. It can refresh every
+  5 seconds. Byte counts need `net.netfilter.nf_conntrack_acct=1` (set by `install.sh`).
+- **Sites visited (DNS history)**: the AdGuard query log for the device IP: which domains, blocked or not,
+  plus the most frequent domains. Needs AdGuard running and the device using AdGuard DNS (the ad blocking
+  option).
 
-Hanya metadata yang terlihat (domain, IP, port, jumlah data); isi halaman tidak bisa dilihat karena HTTPS
-terenkripsi.
+Only metadata is visible (domain, IP, port, amount of data); page contents cannot be seen because HTTPS
+is encrypted.
 
-Tab **Sesi VPN** menampilkan kapan perangkat terhubung, terputus, dan berganti IP publik (mis. pindah
-dari Wi-Fi ke data seluler), lengkap dengan endpoint, durasi sesi, dan trafik sesi. WireGuard tidak punya
-login/logout, jadi panel mengecek handshake tiap ±15 detik: perangkat dianggap terputus bila tidak
-handshake selama 3 menit. Log tersimpan di database dan otomatis dihapus setelah 90 hari; bisa disaring
-per perangkat/jenis kejadian dan dihapus manual.
+The **VPN sessions** tab shows when a device connected, disconnected, and changed public IP (e.g. moving
+from Wi-Fi to mobile data), with the endpoint, session duration, and session traffic. WireGuard has no
+login/logout, so the panel checks handshakes about every 15 seconds: a device counts as disconnected
+after 3 minutes without a handshake. The log is stored in the database and deleted automatically after
+90 days; it can be filtered by device/event type and cleared manually.
 
-## Pengembangan
+## Development
 
-Butuh Go 1.26+ dan Node 22+. Bisa di Windows/macOS juga, karena WireGuard dan firewall bisa diganti tiruan.
+Needs Go 1.26+ and Node 22+. Windows and macOS work too, because WireGuard and the firewall can be faked.
 
 ```sh
-# terminal 1: backend dengan WireGuard & firewall tiruan (make dev)
+# terminal 1: backend with fake WireGuard & firewall (make dev)
 UMBRA_DEV=1 UMBRA_FAKE_WG=1 UMBRA_FAKE_FIREWALL=1 go run ./cmd/umbra
-# terminal 2: frontend dengan hot reload (proxy /api ke :8967)
+# terminal 2: frontend with hot reload (proxies /api to :8967)
 cd web && npm ci && npm run dev
 ```
 
-Token setup tercetak di log dan tersimpan di `./data/setup-token`.
+The setup token is printed in the log and saved in `./data/setup-token`.
 
-| Perintah | Isi |
+| Command | What it does |
 |---|---|
-| `make build` | build frontend lalu binary Linux (`GOARCH=arm64 make build` untuk ARM) |
-| `make check` | cek tipe frontend (svelte-check) |
-| `make test` | `go test` dan test frontend |
+| `make build` | build the frontend, then the Linux binary (`GOARCH=arm64 make build` for ARM) |
+| `make check` | type-check the frontend (svelte-check) |
+| `make test` | `go test` and the frontend tests |
 | `make vet` | `go vet` |
 
-Build manual tanpa `make`:
+Manual build without `make`:
 
 ```sh
-cd web && npm ci && npm run build && cd ..        # hasil ke internal/ui/dist
+cd web && npm ci && npm run build && cd ..        # output in internal/ui/dist
 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o deploy/umbra ./cmd/umbra
 ```
 
-### Struktur
+### Layout
 
 ```
 cmd/umbra            main program
-internal/api         HTTP API, sesi, CSRF, CSP
-internal/auth        argon2id, token sesi, batas percobaan login, TOTP, kode pemulihan
-internal/config      baca pengaturan UMBRA_*
-internal/helper      helper root untuk pasang/copot AdGuard
-internal/wg          WireGuard: kernel (wgctrl), userspace (wireguard-go), tiruan untuk dev
-internal/firewall    nftables + uji 60 detik
-internal/importer    baca wg0.conf dan database wireguard-ui
-internal/adguard     klien REST AdGuard Home
-internal/conntrack   koneksi aktif per perangkat
-internal/store       SQLite (modernc, tanpa CGO)
-internal/system      cek sistem untuk wizard
-internal/ui          frontend hasil build (go:embed)
+internal/api         HTTP API, sessions, CSRF, CSP
+internal/auth        argon2id, session tokens, login rate limit, TOTP, recovery codes
+internal/config      reads the UMBRA_* settings
+internal/helper      root helper that installs/removes AdGuard
+internal/wg          WireGuard: kernel (wgctrl), userspace (wireguard-go), fake for dev
+internal/firewall    nftables + 60-second trial
+internal/importer    reads wg0.conf and wireguard-ui databases
+internal/adguard     AdGuard Home REST client
+internal/conntrack   active connections per device
+internal/store       SQLite (modernc, no CGO)
+internal/system      system check for the wizard
+internal/ui          built frontend (go:embed)
 web/                 SvelteKit (Svelte 5, Tailwind 4)
-deploy/              install.sh, update.sh, service systemd, file env
-docs/screenshots     tangkapan layar untuk README
+deploy/              install.sh, update.sh, systemd service, env file
+docs/screenshots     screenshots for the README
+docs/diagrams        README diagrams (HTML source + PNG)
 ```
 
-Catatan SvelteKit 3: alias `$lib` sudah tidak ada; pakai `#lib/...` (diatur di `imports` pada `web/package.json`).
+SvelteKit 3 note: the `$lib` alias is gone; use `#lib/...` (set under `imports` in `web/package.json`).
 
-## Kontribusi
+## Contributing
 
-Issue dan pull request diterima. Baca [CONTRIBUTING.md](CONTRIBUTING.md) dan
-[kode etik](CODE_OF_CONDUCT.md) dulu. Celah keamanan dilaporkan secara privat sesuai
-[SECURITY.md](SECURITY.md). Riwayat perubahan ada di [CHANGELOG.md](CHANGELOG.md).
+Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) and the
+[code of conduct](CODE_OF_CONDUCT.md) first. Report vulnerabilities privately as described in
+[SECURITY.md](SECURITY.md). Changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
-## Lisensi
+## License
 
-[MIT](LICENSE) © 2026 𝙻𝚄𝚉𝚈𝚅𝙴𝚁. Font Hanken Grotesk dan Sometype Mono memakai SIL Open Font License ([Hanken Grotesk](web/static/fonts/OFL-HankenGrotesk.txt), [Sometype Mono](web/static/fonts/OFL-SometypeMono.txt)).
-WireGuard adalah merek dagang terdaftar milik Jason A. Donenfeld; Umbra tidak berafiliasi dengan proyek WireGuard
-maupun AdGuard.
+[MIT](LICENSE) © 2026 𝙻𝚄𝚉𝚈𝚅𝙴𝚁. The Hanken Grotesk and Sometype Mono fonts are under the SIL Open Font License ([Hanken Grotesk](web/static/fonts/OFL-HankenGrotesk.txt), [Sometype Mono](web/static/fonts/OFL-SometypeMono.txt)).
+WireGuard is a registered trademark of Jason A. Donenfeld; Umbra is not affiliated with the WireGuard project
+or with AdGuard.

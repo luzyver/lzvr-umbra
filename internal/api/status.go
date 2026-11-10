@@ -48,7 +48,7 @@ func (s *Server) buildStatus(ctx context.Context) (statusReport, error) {
 	if srv.Initialized {
 		list, err := s.wg.Stats(srv.Interface)
 		if err != nil {
-			// Tetap tampilkan daftar klien; dashboard memberi tahu interface bermasalah.
+			// Still show the client list; the dashboard reports the interface problem.
 			rep.Error = "interface " + srv.Interface + ": " + err.Error()
 		}
 		for i, p := range list {
@@ -80,20 +80,20 @@ func (s *Server) buildStatus(ctx context.Context) (statusReport, error) {
 func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 	rep, err := s.buildStatus(r.Context())
 	if err != nil {
-		internalError(w, "baca status", err)
+		internalError(w, "read status", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, rep)
 }
 
-// handleEvents mengirim status setiap 3 detik lewat Server-Sent Events.
+// handleEvents sends the status every 3 seconds via Server-Sent Events.
 func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	rc := http.NewResponseController(w)
-	// Koneksi SSE berumur panjang, jadi batas waktu tulis server dimatikan untuk request ini.
+	// SSE connections are long-lived, so the server write deadline is disabled for this request.
 	_ = rc.SetWriteDeadline(time.Time{})
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-store")
-	w.Header().Set("X-Accel-Buffering", "no") // supaya nginx tidak menahan data
+	w.Header().Set("X-Accel-Buffering", "no") // so nginx does not buffer the data
 	w.WriteHeader(http.StatusOK)
 
 	send := func() error {

@@ -1,5 +1,5 @@
-// Package store menyimpan semua data panel di SQLite. Database adalah satu-satunya
-// sumber kebenaran; konfigurasi WireGuard selalu dibangun ulang dari sini.
+// Package store keeps all panel data in SQLite. The database is the single
+// source of truth; the WireGuard configuration is always rebuilt from it.
 package store
 
 import (
@@ -16,7 +16,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-var ErrNotFound = errors.New("tidak ditemukan")
+var ErrNotFound = errors.New("not found")
 
 type Store struct {
 	db *sql.DB
@@ -37,7 +37,7 @@ func Open(path string) (*Store, error) {
 		db.Close()
 		return nil, err
 	}
-	// database berisi private key: hanya pemilik yang boleh membaca
+	// the database holds private keys: only the owner may read it
 	_ = os.Chmod(path, 0o600)
 	return s, nil
 }
@@ -181,7 +181,7 @@ func (s *Store) CreateSession(ctx context.Context, tokenHash string, adminID int
 	return err
 }
 
-// SessionAdmin mengembalikan admin pemilik sesi yang masih berlaku.
+// SessionAdmin returns the admin who owns a still-valid session.
 func (s *Store) SessionAdmin(ctx context.Context, tokenHash string) (int64, error) {
 	var id int64
 	err := s.db.QueryRowContext(ctx,
@@ -270,7 +270,7 @@ func (s *Store) CreateClient(ctx context.Context, c *Client) error {
 		joinList(c.AllowedIPs), joinList(c.DNS), c.MTU, c.Keepalive,
 		boolInt(c.Enabled), boolInt(c.Adblock), now.Unix(), now.Unix())
 	if err != nil {
-		return fmt.Errorf("simpan klien: %w", err)
+		return fmt.Errorf("save client: %w", err)
 	}
 	c.ID, _ = res.LastInsertId()
 	c.CreatedAt, c.UpdatedAt = now, now

@@ -12,9 +12,9 @@
 	let code = $state('');
 
 	let ok = $state(false);
-	// Lampu pelat mengikuti langkah masuk; teks di formulir tetap menjadi sumber utama.
+	// The plate LEDs follow the sign-in step; the form text remains the primary source.
 	const plate = $derived(ok ? 'ok' : busy ? 'busy' : error ? 'error' : challenge ? 'half' : 'idle');
-	const plateLabel = $derived({ ok: 'Tersambung', busy: 'Memeriksa', error: 'Ditolak', half: 'Langkah 1 dari 2', idle: 'Belum masuk' }[plate]);
+	const plateLabel = $derived({ ok: 'Connected', busy: 'Checking', error: 'Rejected', half: 'Step 1 of 2', idle: 'Signed out' }[plate]);
 
 	async function submit(e: SubmitEvent) {
 		e.preventDefault();
@@ -43,7 +43,7 @@
 	}
 </script>
 
-<svelte:head><title>Masuk · Umbra</title></svelte:head>
+<svelte:head><title>Sign in · Umbra</title></svelte:head>
 
 <main class="login-screen">
 	<div class="login-unit">
@@ -54,27 +54,27 @@
 			</div>
 		</div>
 		<form class="login-form" onsubmit={submit} oninput={() => error = ''}>
-			<h1>{challenge ? 'Verifikasi dua langkah' : 'Masuk'}</h1>
+			<h1>{challenge ? 'Two-factor authentication' : 'Sign in'}</h1>
 			{#if challenge}
 				<div>
-					<label class="label" for="code">Kode verifikasi</label>
+					<label class="label" for="code">Verification code</label>
 					<!-- svelte-ignore a11y_autofocus -->
 					<input id="code" class="input font-mono" bind:value={code} autocomplete="one-time-code" aria-describedby="code-hint" autofocus required />
-					<p class="hint" id="code-hint">Kode dari aplikasi autentikator, atau satu kode pemulihan.</p>
+					<p class="hint" id="code-hint">Code from your authenticator app, or one recovery code.</p>
 				</div>
 			{:else}
 				<div>
-					<label class="label" for="u">Nama pengguna</label>
+					<label class="label" for="u">Username</label>
 					<input id="u" class="input" bind:value={username} autocomplete="username" autocapitalize="none" spellcheck="false" required />
 				</div>
 				<div>
-					<label class="label" for="p">Kata sandi</label>
+					<label class="label" for="p">Password</label>
 					<input id="p" class="input" type="password" bind:value={password} autocomplete="current-password" required />
 				</div>
 			{/if}
 			{#if error}<p class="login-error" role="alert">{error}</p>{/if}
-			<button class="btn-primary" disabled={busy}>{busy ? 'Memeriksa…' : challenge ? 'Verifikasi' : 'Masuk'}</button>
-			{#if challenge}<button type="button" class="btn-ghost" onclick={() => { challenge = ''; code = ''; error = ''; }}>Kembali ke masuk</button>{/if}
+			<button class="btn-primary" disabled={busy}>{busy ? 'Checking…' : challenge ? 'Verify' : 'Sign in'}</button>
+			{#if challenge}<button type="button" class="btn-ghost" onclick={() => { challenge = ''; code = ''; error = ''; }}>Back to sign in</button>{/if}
 		</form>
 	</div>
 </main>

@@ -18,7 +18,7 @@ import (
 	"github.com/luzyver/lzvr-umbra/internal/store"
 )
 
-// userspace mewarisi Sync/Stats wgctrl; perangkat diakses melalui socket UAPI.
+// userspace inherits the wgctrl Sync/Stats; the device is accessed through the UAPI socket.
 type userspace struct {
 	Kernel
 	mu     sync.Mutex
@@ -37,14 +37,14 @@ func (u *userspace) EnsureInterface(cfg store.ServerConfig) error {
 	u.mu.Lock()
 	defer u.mu.Unlock()
 	if u.closed {
-		return errors.New("backend userspace sudah ditutup")
+		return errors.New("userspace backend is already closed")
 	}
 	if !userspaceIfaceRE.MatchString(cfg.Interface) || cfg.Interface == "." || cfg.Interface == ".." {
-		return errors.New("nama interface userspace tidak valid")
+		return errors.New("invalid userspace interface name")
 	}
 	if u.dev != nil {
 		if cfg.Interface != u.iface {
-			return errors.New("nama interface userspace tidak bisa diganti selama proses berjalan")
+			return errors.New("userspace interface name cannot be changed while the process is running")
 		}
 		link, err := netlink.LinkByName(u.iface)
 		if err != nil {
@@ -52,9 +52,9 @@ func (u *userspace) EnsureInterface(cfg store.ServerConfig) error {
 		}
 		return configureLink(link, cfg)
 	}
-	// Jangan mengambil alih interface milik kernel atau proses lain.
+	// Do not take over an interface owned by the kernel or another process.
 	if _, err := netlink.LinkByName(cfg.Interface); err == nil {
-		return fmt.Errorf("interface %s sudah ada; hentikan pemiliknya sebelum memakai userspace", cfg.Interface)
+		return fmt.Errorf("interface %s already exists; stop its owner before using userspace", cfg.Interface)
 	} else {
 		var notFound netlink.LinkNotFoundError
 		if !errors.As(err, &notFound) {
@@ -67,7 +67,7 @@ func (u *userspace) EnsureInterface(cfg store.ServerConfig) error {
 	}
 	tdev, err := tun.CreateTUN(cfg.Interface, mtu)
 	if err != nil {
-		return fmt.Errorf("buat TUN %s (periksa /dev/net/tun dan CAP_NET_ADMIN): %w", cfg.Interface, err)
+		return fmt.Errorf("create TUN %s (check /dev/net/tun and CAP_NET_ADMIN): %w", cfg.Interface, err)
 	}
 	dev := device.NewDevice(tdev, conn.NewDefaultBind(), &device.Logger{
 		Errorf:   func(format string, args ...any) { slog.Error("wireguard-go: " + fmt.Sprintf(format, args...)) },
@@ -81,12 +81,12 @@ func (u *userspace) EnsureInterface(cfg store.ServerConfig) error {
 	}()
 	file, err := ipc.UAPIOpen(cfg.Interface)
 	if err != nil {
-		return fmt.Errorf("buka UAPI: %w", err)
+		return fmt.Errorf("open UAPI: %w", err)
 	}
 	listener, listenErr := ipc.UAPIListen(cfg.Interface, file)
-	closeErr := file.Close() // UAPIListen sudah menduplikasi deskriptor.
+	closeErr := file.Close() // UAPIListen has already duplicated the descriptor.
 	if listenErr != nil {
-		return fmt.Errorf("dengarkan UAPI: %w", listenErr)
+		return fmt.Errorf("listen on UAPI: %w", listenErr)
 	}
 	if closeErr != nil {
 		_ = listener.Close()
@@ -102,7 +102,7 @@ func (u *userspace) EnsureInterface(cfg store.ServerConfig) error {
 	}
 	u.dev, u.uapi, u.iface = dev, server, cfg.Interface
 	ready = true
-	slog.Info("wireguard-go userspace siap", "uapi", "/var/run/wireguard/"+cfg.Interface+".sock")
+	slog.Info("wireguard-go userspace ready", "uapi", "/var/run/wireguard/"+cfg.Interface+".sock")
 	return nil
 }
 

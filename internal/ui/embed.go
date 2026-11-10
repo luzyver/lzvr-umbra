@@ -1,4 +1,4 @@
-// Package ui menyajikan frontend SvelteKit hasil build yang di-embed ke binary.
+// Package ui serves the built SvelteKit frontend embedded in the binary.
 package ui
 
 import (
@@ -25,7 +25,7 @@ func index() []byte {
 	return b
 }
 
-// ScriptHashes mengembalikan hash CSP ('sha256-...') untuk setiap skrip inline di index.html.
+// ScriptHashes returns the CSP hash ('sha256-...') for every inline script in index.html.
 func ScriptHashes() []string {
 	var out []string
 	for _, m := range inlineScriptRe.FindAllSubmatch(index(), -1) {
@@ -38,7 +38,7 @@ func ScriptHashes() []string {
 	return out
 }
 
-// Handler menyajikan file statis; rute lain jatuh ke index.html (SPA).
+// Handler serves static files; other routes fall back to index.html (SPA).
 func Handler() http.Handler {
 	files := http.FileServerFS(dist)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -46,7 +46,7 @@ func Handler() http.Handler {
 		if page == nil {
 			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 			w.WriteHeader(http.StatusServiceUnavailable)
-			w.Write([]byte("Frontend belum di-build. Jalankan: cd web && npm install && npm run build\n"))
+			w.Write([]byte("Frontend not built yet. Run: cd web && npm install && npm run build\n"))
 			return
 		}
 		p := strings.TrimPrefix(path.Clean("/"+r.URL.Path), "/")

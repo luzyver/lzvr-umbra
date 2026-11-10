@@ -1,5 +1,5 @@
-# Build Umbra tiap push ke master, lalu terbitkan ke rilis "latest".
-# Server cukup unduh hasilnya (deploy/update.sh), tidak perlu build sendiri.
+# Builds Umbra on every push to master, then publishes it to the "latest" release.
+# Servers just download the result (deploy/update.sh); they never build it themselves.
 name: release
 
 on:
@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # check, test frontend, go vet, dan go test harus lulus sebelum rilis dibuat.
+  # check, frontend tests, go vet, and go test must pass before a release is made.
   test:
     uses: ./.github/workflows/ci.yml
 
@@ -55,7 +55,7 @@ jobs:
           CGO_ENABLED: "0"
         run: go build -trimpath -ldflags "-s -w" -o deploy/umbra ./cmd/umbra
 
-      - name: Paketkan
+      - name: Package
         run: |
           name=umbra-linux-${{ matrix.arch }}
           mkdir "$name"
@@ -82,7 +82,7 @@ jobs:
           path: out
           merge-multiple: true
 
-      - name: Terbitkan rilis latest
+      - name: Publish the latest release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -91,5 +91,5 @@ jobs:
           gh release create latest out/* \
             --target "$GITHUB_SHA" \
             --title "latest" \
-            --notes "Build otomatis dari ${GITHUB_SHA::7}" \
+            --notes "Automated build from ${GITHUB_SHA::7}" \
             --latest

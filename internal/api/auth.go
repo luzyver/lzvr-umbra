@@ -22,18 +22,18 @@ var dummyHash = sync.OnceValue(func() string {
 	return h
 })
 
-// SetupTokenPath adalah lokasi token sekali pakai untuk membuat admin pertama.
+// SetupTokenPath is the location of the one-time token for creating the first admin.
 func SetupTokenPath(dataDir string) string { return filepath.Join(dataDir, "setup-token") }
 
 func (s *Server) handleSetupStatus(w http.ResponseWriter, r *http.Request) {
 	n, err := s.st.AdminCount(r.Context())
 	if err != nil {
-		internalError(w, "baca admin", err)
+		internalError(w, "read admin", err)
 		return
 	}
 	var srv store.ServerConfig
 	if _, err := s.st.GetJSON(r.Context(), store.KeyServer, &srv); err != nil {
-		internalError(w, "baca konfigurasi server", err)
+		internalError(w, "read server config", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"needs_admin": n == 0, "initialized": srv.Initialized})
@@ -58,20 +58,20 @@ func (s *Server) handleSetupAdmin(w http.ResponseWriter, r *http.Request) {
 	defer s.setupMu.Unlock()
 	n, err := s.st.AdminCount(r.Context())
 	if err != nil {
-		internalError(w, "baca admin", err)
+		internalError(w, "read admin", err)
 		return
 	}
 	if n > 0 || s.setupToken == "" {
-		writeError(w, http.StatusConflict, "admin sudah dibuat, silakan login")
+		writeError(w, http.StatusConflict, "an admin already exists, please log in")
 		return
 	}
 	if !auth.Equal(in.Token, s.setupToken) {
 		s.limiter.Fail(ip)
-		writeError(w, http.StatusUnauthorized, "token setup salah. Lihat file setup-token di folder data atau log service")
+		writeError(w, http.StatusUnauthorized, "incorrect setup token. See the setup-token file in the data folder or the service log")
 		return
 	}
 	if !usernameRe.MatchString(in.Username) {
-		writeError(w, http.StatusBadRequest, "username 3-32 karakter: huruf, angka, titik, garis bawah, atau strip")
+		writeError(w, http.StatusBadRequest, "username must be 3-32 characters: letters, digits, dots, underscores, or hyphens")
 		return
 	}
 	if err := auth.ValidatePassword(in.Password); err != nil {
@@ -85,17 +85,17 @@ func (s *Server) handleSetupAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := s.st.CreateAdmin(r.Context(), in.Username, hash)
 	if err != nil {
-		internalError(w, "buat admin", err)
+		internalError(w, "create admin", err)
 		return
 	}
 	s.setupToken = ""
 	if err := os.Remove(SetupTokenPath(s.cfg.DataDir)); err != nil && !errors.Is(err, os.ErrNotExist) {
-		// Tidak fatal: token tidak bisa dipakai lagi karena admin sudah ada.
-		internalLog("hapus setup-token", err)
+		// Not fatal: the token can no longer be used because an admin already exists.
+		internalLog("delete setup-token", err)
 	}
 	s.limiter.Reset(ip)
 	if err := s.startSession(w, r, id); err != nil {
-		internalError(w, "buat sesi", err)
+		internalError(w, "create session", err)
 		return
 	}
 	writeJSON(w, http.StatusCreated, map[string]any{"id": id, "username": in.Username})
@@ -116,10 +116,10 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	a, err := s.st.AdminByUsername(r.Context(), in.Username)
 	if err != nil && !errors.Is(err, store.ErrNotFound) {
-		internalError(w, "baca admin", err)
+		internalError(w, "read admin", err)
 		return
 	}
-	// Bila user tidak ada, tetap cek terhadap hash palsu supaya waktu respons tidak membocorkan username.
+	// If the user does not exist, still check against a dummy hash so response time does not leak the username.
 	hash := a.PasswordHash
 	if err != nil {
 		hash = dummyHash()
@@ -127,7 +127,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	ok := auth.VerifyPassword(in.Password, hash) && err == nil
 	if !ok {
 		s.limiter.Fail(ip)
-		writeError(w, http.StatusUnauthorized, "username atau password salah")
+		writeError(w, http.StatusUnauthorized, "incorrect username or password")
 		return
 	}
 	if a.TOTPSecret != "" {
@@ -145,7 +145,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	s.limiter.Reset(ip)
 	if err := s.startSession(w, r, a.ID); err != nil {
-		internalError(w, "buat sesi", err)
+		internalError(w, "create session", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"id": a.ID, "username": a.Username})
@@ -154,7 +154,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 	if c, err := r.Cookie(sessionCookie); err == nil && c.Value != "" {
 		if err := s.st.DeleteSession(r.Context(), auth.HashToken(c.Value)); err != nil {
-			internalLog("hapus sesi", err)
+			internalLog("delete session", err)
 		}
 	}
 	s.clearCookie(w)
@@ -164,7 +164,7 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 	a, err := s.st.AdminByID(r.Context(), adminID(r))
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "sesi tidak valid")
+		writeError(w, http.StatusUnauthorized, "invalid session")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
@@ -185,11 +185,11 @@ func (s *Server) handleChangePassword(w http.ResponseWriter, r *http.Request) {
 	}
 	a, err := s.st.AdminByID(r.Context(), adminID(r))
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "sesi tidak valid")
+		writeError(w, http.StatusUnauthorized, "invalid session")
 		return
 	}
 	if !auth.VerifyPassword(in.Current, a.PasswordHash) {
-		writeError(w, http.StatusBadRequest, "password lama salah")
+		writeError(w, http.StatusBadRequest, "current password is incorrect")
 		return
 	}
 	if err := auth.ValidatePassword(in.New); err != nil {
@@ -202,13 +202,13 @@ func (s *Server) handleChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.st.UpdateAdminPassword(r.Context(), a.ID, hash); err != nil {
-		internalError(w, "simpan password", err)
+		internalError(w, "save password", err)
 		return
 	}
-	// Sesi lain (perangkat lain) dikeluarkan; sesi ini tetap.
+	// Other sessions (other devices) are logged out; this session stays.
 	c, _ := r.Cookie(sessionCookie)
 	if err := s.st.DeleteAdminSessions(r.Context(), a.ID, auth.HashToken(c.Value)); err != nil {
-		internalLog("hapus sesi lain", err)
+		internalLog("delete other sessions", err)
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -247,5 +247,5 @@ func (s *Server) clearCookie(w http.ResponseWriter) {
 func tooMany(w http.ResponseWriter, wait time.Duration) {
 	mins := int(math.Ceil(wait.Minutes()))
 	w.Header().Set("Retry-After", fmt.Sprint(int(math.Ceil(wait.Seconds()))))
-	writeError(w, http.StatusTooManyRequests, fmt.Sprintf("terlalu banyak percobaan gagal, coba lagi %d menit lagi", mins))
+	writeError(w, http.StatusTooManyRequests, fmt.Sprintf("too many failed attempts, try again in %d minutes", mins))
 }

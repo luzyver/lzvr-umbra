@@ -1,18 +1,18 @@
-name: Usulan fitur
-description: Ide untuk membuat Umbra lebih berguna
+name: Feature request
+description: An idea to make Umbra more useful
 labels: [enhancement]
 body:
   - type: textarea
     id: problem
     attributes:
-      label: Masalah yang ingin diselesaikan
+      label: The problem to solve
     validations:
       required: true
   - type: textarea
     id: idea
     attributes:
-      label: Usulan
+      label: Proposal
   - type: textarea
     id: alternatives
     attributes:
-      label: Alternatif yang sudah dicoba
+      label: Alternatives you have tried

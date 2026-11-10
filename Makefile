@@ -1,32 +1,32 @@
-# Perintah umum. Jalankan `make help` untuk daftar target.
+# Common commands. Run `make help` for the list of targets.
 GOOS ?= linux
 GOARCH ?= amd64
 BIN := deploy/umbra
 
 .PHONY: help web build dev check test vet clean
 
-help: ## tampilkan daftar target
+help: ## show the list of targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  %-8s %s\n", $$1, $$2}'
 
-web: ## build frontend ke internal/ui/dist
+web: ## build the frontend into internal/ui/dist
 	cd web && npm ci --no-audit --no-fund && npm run build
 
-build: web ## build binary Linux (GOARCH=arm64 untuk VPS ARM)
+build: web ## build the Linux binary (GOARCH=arm64 for ARM VPSes)
 	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o $(BIN) ./cmd/umbra
 
-dev: ## jalankan backend dengan WireGuard & firewall tiruan
+dev: ## run the backend with fake WireGuard & firewall
 	UMBRA_DEV=1 UMBRA_FAKE_WG=1 UMBRA_FAKE_FIREWALL=1 go run ./cmd/umbra
 
-check: ## cek tipe frontend
+check: ## type-check the frontend
 	cd web && npm run check
 
-test: ## jalankan semua test
+test: ## run all tests
 	go test ./...
 	cd web && npm test
 
 vet: ## go vet
 	go vet ./...
 
-clean: ## hapus hasil build
+clean: ## remove build output
 	rm -f $(BIN)
 	find internal/ui/dist -mindepth 1 ! -name .keep -delete

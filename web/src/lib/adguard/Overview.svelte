@@ -5,7 +5,7 @@
 
 	let { st, onchange }: { st: NonNullable<AdGuardStatus['status']>; onchange: () => void } = $props();
 
-	// Statistik mentah dari AdGuard Home; top_* berbentuk [{ "domain": jumlah }, ...].
+	// Raw statistics from AdGuard Home; top_* has the shape [{ "domain": count }, ...].
 	type Top = Record<string, number>[];
 	type Stats = {
 		num_dns_queries: number;
@@ -56,16 +56,16 @@
 		act(async () => {
 			await post('/adguard/protection', { enabled: v });
 			onchange();
-		}, v ? 'Perlindungan AdGuard aktif.' : 'Perlindungan AdGuard dimatikan.');
+		}, v ? 'AdGuard protection enabled.' : 'AdGuard protection disabled.');
 	const setSafeBrowsing = (v: boolean) =>
-		act(() => post(`/adguard/ctl/safebrowsing/${v ? 'enable' : 'disable'}`), 'Safe browsing diperbarui.');
+		act(() => post(`/adguard/ctl/safebrowsing/${v ? 'enable' : 'disable'}`), 'Safe browsing updated.');
 	const setParental = (v: boolean) =>
-		act(() => post(`/adguard/ctl/parental/${v ? 'enable' : 'disable'}`), 'Kontrol orang tua diperbarui.');
+		act(() => post(`/adguard/ctl/parental/${v ? 'enable' : 'disable'}`), 'Parental control updated.');
 	const setSafeSearch = (key: string, v: boolean) =>
-		act(() => put('/adguard/ctl/safesearch/settings', { ...safeSearch, [key]: v }), 'Safe search diperbarui.');
+		act(() => put('/adguard/ctl/safesearch/settings', { ...safeSearch, [key]: v }), 'Safe search updated.');
 	function resetStats() {
-		if (!confirm('Hapus semua statistik AdGuard?')) return;
-		act(() => post('/adguard/ctl/stats_reset'), 'Statistik direset.');
+		if (!confirm('Delete all AdGuard statistics?')) return;
+		act(() => post('/adguard/ctl/stats_reset'), 'Statistics reset.');
 	}
 
 	const engines = $derived(safeSearch ? Object.keys(safeSearch).filter((k) => k !== 'enabled') : []);
@@ -84,34 +84,34 @@
 	<div class="card space-y-3">
 		<div class="flex items-center justify-between">
 			<div>
-				<p class="font-medium">Perlindungan</p>
-				<p class="hint">Blokir iklan & pelacak untuk klien yang mengaktifkannya.</p>
+				<p class="font-medium">Protection</p>
+				<p class="hint">Blocks ads & trackers for devices that have it enabled.</p>
 			</div>
-			<Toggle checked={st.protection_enabled} disabled={busy} label="Perlindungan" onchange={setProtection} />
+			<Toggle checked={st.protection_enabled} disabled={busy} label="Protection" onchange={setProtection} />
 		</div>
 		<dl class="grid grid-cols-2 gap-y-1 text-sm">
 			<dt class="text-zinc-500">Status</dt>
-			<dd>{st.running ? 'berjalan' : 'berhenti'}</dd>
-			<dt class="text-zinc-500">Versi</dt>
+			<dd>{st.running ? 'running' : 'stopped'}</dd>
+			<dt class="text-zinc-500">Version</dt>
 			<dd class="font-mono text-xs">{st.version}</dd>
-			<dt class="text-zinc-500">Alamat DNS</dt>
+			<dt class="text-zinc-500">DNS address</dt>
 			<dd class="font-mono text-xs">{st.dns_addresses.join(', ')}:{st.dns_port}</dd>
 		</dl>
 	</div>
 
 	<div class="card space-y-3 text-sm">
-		<p class="font-medium">Perlindungan tambahan</p>
+		<p class="font-medium">Extra protection</p>
 		<div class="flex items-center justify-between gap-2">
-			<span>Safe browsing <span class="hint block">Blokir situs phishing & malware.</span></span>
+			<span>Safe browsing <span class="hint block">Blocks phishing & malware sites.</span></span>
 			<Toggle checked={safeBrowsing} disabled={busy} label="Safe browsing" onchange={setSafeBrowsing} />
 		</div>
 		<div class="flex items-center justify-between gap-2">
-			<span>Kontrol orang tua <span class="hint block">Blokir situs dewasa.</span></span>
-			<Toggle checked={parental} disabled={busy} label="Kontrol orang tua" onchange={setParental} />
+			<span>Parental control <span class="hint block">Blocks adult sites.</span></span>
+			<Toggle checked={parental} disabled={busy} label="Parental control" onchange={setParental} />
 		</div>
 		{#if safeSearch}
 			<div class="flex items-center justify-between gap-2">
-				<span>Safe search <span class="hint block">Paksa mode aman di mesin pencari.</span></span>
+				<span>Safe search <span class="hint block">Forces safe mode on search engines.</span></span>
 				<Toggle checked={safeSearch.enabled} disabled={busy} label="Safe search" onchange={(v) => setSafeSearch('enabled', v)} />
 			</div>
 			{#if safeSearch.enabled}
@@ -125,23 +125,23 @@
 				</div>
 			{/if}
 		{/if}
-		<p class="hint">Berlaku untuk semua klien, kecuali yang punya pengaturan sendiri di tab Klien.</p>
+		<p class="hint">Applies to all devices, except those with their own settings in the Clients tab.</p>
 	</div>
 
 	{#if stats}
 		<div class="card grid grid-cols-2 gap-4">
 			<div>
-				<p class="hint">Query DNS</p>
-				<p class="mt-1 text-2xl font-semibold tabular-nums">{stats.num_dns_queries.toLocaleString('id-ID')}</p>
+				<p class="hint">DNS queries</p>
+				<p class="mt-1 text-2xl font-semibold tabular-nums">{stats.num_dns_queries.toLocaleString('en-GB')}</p>
 			</div>
 			<div>
-				<p class="hint">Diblokir</p>
-				<p class="mt-1 text-2xl font-semibold tabular-nums">{stats.num_blocked_filtering.toLocaleString('id-ID')}</p>
+				<p class="hint">Blocked</p>
+				<p class="mt-1 text-2xl font-semibold tabular-nums">{stats.num_blocked_filtering.toLocaleString('en-GB')}</p>
 				<p class="hint">{pct}%</p>
 			</div>
 			<div class="col-span-2 flex items-center justify-between gap-2">
-				<p class="hint">Rata-rata proses: {(stats.avg_processing_time * 1000).toFixed(1)} ms</p>
-				<button class="btn-ghost text-xs" disabled={busy} onclick={resetStats}>Reset statistik</button>
+				<p class="hint">Average processing time: {(stats.avg_processing_time * 1000).toFixed(1)} ms</p>
+				<button class="btn-ghost text-xs" disabled={busy} onclick={resetStats}>Reset statistics</button>
 			</div>
 		</div>
 	{/if}
@@ -149,7 +149,7 @@
 
 {#if stats}
 	<div class="grid gap-4 md:grid-cols-3">
-		{#each [['Domain terbanyak', stats.top_queried_domains], ['Paling sering diblokir', stats.top_blocked_domains], ['Klien teraktif', stats.top_clients]] as [title, list] (title)}
+		{#each [['Top queried domains', stats.top_queried_domains], ['Top blocked domains', stats.top_blocked_domains], ['Most active devices', stats.top_clients]] as [title, list] (title)}
 			<div class="card">
 				<p class="mb-2 font-medium">{title}</p>
 				<ul class="space-y-1 text-sm">
@@ -159,7 +159,7 @@
 							<span class="tabular-nums text-zinc-500">{n}</span>
 						</li>
 					{:else}
-						<li class="hint">Belum ada data.</li>
+						<li class="hint">No data yet.</li>
 					{/each}
 				</ul>
 			</div>

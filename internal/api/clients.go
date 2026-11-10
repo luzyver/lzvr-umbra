@@ -24,10 +24,10 @@ func cleanName(name string) (string, error) {
 	name = strings.TrimSpace(name)
 	n := len([]rune(name))
 	if n < 1 || n > 64 {
-		return "", errors.New("nama klien 1 sampai 64 karakter")
+		return "", errors.New("client name must be 1 to 64 characters")
 	}
 	if strings.IndexFunc(name, unicode.IsControl) >= 0 || strings.ContainsAny(name, "[]") {
-		return "", errors.New("nama klien tidak boleh berisi karakter kontrol atau tanda [ ]")
+		return "", errors.New("client name must not contain control characters or [ ]")
 	}
 	return name, nil
 }
@@ -35,7 +35,7 @@ func cleanName(name string) (string, error) {
 func pathID(w http.ResponseWriter, r *http.Request) (int64, bool) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil || id < 1 {
-		writeError(w, http.StatusBadRequest, "id klien tidak valid")
+		writeError(w, http.StatusBadRequest, "invalid client id")
 		return 0, false
 	}
 	return id, true
@@ -48,21 +48,21 @@ func (s *Server) clientOr404(w http.ResponseWriter, r *http.Request) (store.Clie
 	}
 	c, err := s.st.GetClient(r.Context(), id)
 	if errors.Is(err, store.ErrNotFound) {
-		writeError(w, http.StatusNotFound, "klien tidak ditemukan")
+		writeError(w, http.StatusNotFound, "client not found")
 		return c, false
 	}
 	if err != nil {
-		internalError(w, "baca klien", err)
+		internalError(w, "read client", err)
 		return c, false
 	}
 	return c, true
 }
 
-// nextAddress mencari IP kosong pertama di subnet server.
+// nextAddress finds the first free IP in the server subnet.
 func nextAddress(srv store.ServerConfig, clients []store.Client) (string, error) {
 	p, err := netip.ParsePrefix(srv.Address)
 	if err != nil {
-		return "", fmt.Errorf("alamat server tidak valid: %w", err)
+		return "", fmt.Errorf("invalid server address: %w", err)
 	}
 	used := map[netip.Addr]bool{p.Addr(): true}
 	for _, c := range clients {
@@ -73,17 +73,17 @@ func nextAddress(srv store.ServerConfig, clients []store.Client) (string, error)
 	net := p.Masked()
 	for a := net.Addr().Next(); net.Contains(a); a = a.Next() {
 		if !net.Contains(a.Next()) {
-			break // alamat broadcast
+			break // broadcast address
 		}
 		if !used[a] {
 			return a.String(), nil
 		}
 	}
-	return "", errors.New("subnet penuh, tidak ada IP kosong untuk klien baru")
+	return "", errors.New("subnet is full, no free IP for a new client")
 }
 
-// agSync mendaftarkan klien ke AdGuard. Kegagalan tidak membatalkan perubahan,
-// hanya dikembalikan sebagai peringatan.
+// agSync registers the client with AdGuard. A failure does not roll back the
+// change; it is only returned as a warning.
 func (s *Server) agSync(ctx context.Context, c store.Client, warnings *[]string) {
 	if !s.ag.Enabled() {
 		return
@@ -97,7 +97,7 @@ func (s *Server) agSync(ctx context.Context, c store.Client, warnings *[]string)
 func (s *Server) handleListClients(w http.ResponseWriter, r *http.Request) {
 	clients, err := s.st.ListClients(r.Context())
 	if err != nil {
-		internalError(w, "baca klien", err)
+		internalError(w, "read client", err)
 		return
 	}
 	if clients == nil {
@@ -122,8 +122,8 @@ type clientInput struct {
 	Adblock    *bool    `json:"adblock"`
 }
 
-// apply mengisi c dari input; hanya field yang dikirim yang diubah.
-// Mengembalikan true bila isi profil klien berubah (perlu unduh ulang).
+// apply fills c from the input; only fields that were sent are changed.
+// It returns true if the client profile content changed (needs a re-download).
 func (in clientInput) apply(c *store.Client) (bool, error) {
 	changed := false
 	if in.Name != nil {
@@ -175,7 +175,7 @@ func (s *Server) handleCreateClient(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if in.Name == nil {
-		writeError(w, http.StatusBadRequest, "nama klien wajib diisi")
+		writeError(w, http.StatusBadRequest, "client name is required")
 		return
 	}
 	ctx := r.Context()
@@ -184,16 +184,16 @@ func (s *Server) handleCreateClient(w http.ResponseWriter, r *http.Request) {
 
 	srv, err := s.loadServer(ctx)
 	if err != nil {
-		internalError(w, "baca server", err)
+		internalError(w, "read server", err)
 		return
 	}
 	if !srv.Initialized {
-		writeError(w, http.StatusConflict, "atur WireGuard dulu lewat wizard setup")
+		writeError(w, http.StatusConflict, "set up WireGuard first via the setup wizard")
 		return
 	}
 	d, err := s.loadDefaults(ctx, srv)
 	if err != nil {
-		internalError(w, "baca bawaan klien", err)
+		internalError(w, "read client defaults", err)
 		return
 	}
 	c := store.Client{
@@ -210,7 +210,7 @@ func (s *Server) handleCreateClient(w http.ResponseWriter, r *http.Request) {
 	}
 	clients, err := s.st.ListClients(ctx)
 	if err != nil {
-		internalError(w, "baca klien", err)
+		internalError(w, "read client", err)
 		return
 	}
 	if c.Address, err = nextAddress(srv, clients); err != nil {
@@ -219,22 +219,22 @@ func (s *Server) handleCreateClient(w http.ResponseWriter, r *http.Request) {
 	}
 	kp, err := wg.NewKeyPair()
 	if err != nil {
-		internalError(w, "buat kunci klien", err)
+		internalError(w, "generate client key", err)
 		return
 	}
 	c.PrivateKey, c.PublicKey = kp.Private, kp.Public
 	c.HasPrivateKey = true
 	if c.PresharedKey, err = wg.NewPresharedKey(); err != nil {
-		internalError(w, "buat preshared key", err)
+		internalError(w, "generate preshared key", err)
 		return
 	}
 	if err := s.st.CreateClient(ctx, &c); err != nil {
-		internalError(w, "simpan klien", err)
+		internalError(w, "save client", err)
 		return
 	}
 	if err := s.syncLocked(ctx); err != nil {
-		// Data sudah tersimpan; sinkron akan dicoba lagi pada perubahan berikutnya atau saat restart.
-		internalError(w, "klien tersimpan tetapi gagal diterapkan", err)
+		// The data is already saved; sync will be retried on the next change or on restart.
+		internalError(w, "client saved but failed to apply", err)
 		return
 	}
 	warnings := []string{}
@@ -261,11 +261,11 @@ func (s *Server) handleUpdateClient(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.st.UpdateClient(ctx, &c); err != nil {
-		internalError(w, "simpan klien", err)
+		internalError(w, "save client", err)
 		return
 	}
 	if err := s.syncLocked(ctx); err != nil {
-		internalError(w, "klien tersimpan tetapi gagal diterapkan", err)
+		internalError(w, "client saved but failed to apply", err)
 		return
 	}
 	warnings := []string{}
@@ -283,14 +283,14 @@ func (s *Server) handleDeleteClient(w http.ResponseWriter, r *http.Request) {
 	defer s.mu.Unlock()
 
 	if err := s.st.DeleteClient(ctx, id); errors.Is(err, store.ErrNotFound) {
-		writeError(w, http.StatusNotFound, "klien tidak ditemukan")
+		writeError(w, http.StatusNotFound, "client not found")
 		return
 	} else if err != nil {
-		internalError(w, "hapus klien", err)
+		internalError(w, "delete client", err)
 		return
 	}
 	if err := s.syncLocked(ctx); err != nil {
-		internalError(w, "klien terhapus tetapi gagal diterapkan", err)
+		internalError(w, "client deleted but failed to apply", err)
 		return
 	}
 	warnings := []string{}
@@ -309,12 +309,12 @@ func (s *Server) clientProfile(w http.ResponseWriter, r *http.Request) (store.Cl
 		return c, "", false
 	}
 	if c.PrivateKey == "" {
-		writeError(w, http.StatusConflict, "kunci privat tidak tersedia; buat ulang kunci (perangkat harus memindai profil baru)")
+		writeError(w, http.StatusConflict, "private key is not available; regenerate the key (the device must scan the new profile)")
 		return c, "", false
 	}
 	srv, err := s.loadServer(r.Context())
 	if err != nil {
-		internalError(w, "baca server", err)
+		internalError(w, "read server", err)
 		return c, "", false
 	}
 	return c, wg.RenderClientConfig(srv, c), true
@@ -325,7 +325,7 @@ func (s *Server) handleClientConfig(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	// Nama file dipakai aplikasi WireGuard sebagai nama tunnel (maks. 15 karakter).
+	// The WireGuard app uses the file name as the tunnel name (max. 15 characters).
 	name := strings.Trim(unsafeFileRe.ReplaceAllString(c.Name, "-"), "-.")
 	if name == "" {
 		name = "wg" + strconv.FormatInt(c.ID, 10)
@@ -345,7 +345,7 @@ func (s *Server) handleClientQR(w http.ResponseWriter, r *http.Request) {
 	}
 	png, err := qrcode.Encode(conf, qrcode.Medium, 512)
 	if err != nil {
-		internalError(w, "buat QR", err)
+		internalError(w, "generate QR", err)
 		return
 	}
 	w.Header().Set("Content-Type", "image/png")

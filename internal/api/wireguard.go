@@ -19,7 +19,7 @@ import (
 
 var ifaceRe = regexp.MustCompile(`^[a-zA-Z0-9_.-]{1,15}$`)
 
-// ---- nilai bawaan ----
+// ---- defaults ----
 
 func defaultServer() store.ServerConfig {
 	return store.ServerConfig{
@@ -67,8 +67,8 @@ func firewallRules(srv store.ServerConfig, mss bool) firewall.Rules {
 	return firewall.Rules{WGInterface: srv.Interface, OutInterface: srv.OutInterface, Subnet: subnet, MSSClamp: mss}
 }
 
-// syncLocked menyamakan kernel dengan database dan menulis cadangan conf.
-// Pemanggil wajib memegang s.mu.
+// syncLocked brings the kernel in line with the database and writes the conf backup.
+// The caller must hold s.mu.
 func (s *Server) syncLocked(ctx context.Context) error {
 	srv, err := s.loadServer(ctx)
 	if err != nil {
@@ -82,7 +82,7 @@ func (s *Server) syncLocked(ctx context.Context) error {
 		return err
 	}
 	if err := s.wg.Sync(srv, wg.PeersFromClients(clients)); err != nil {
-		return fmt.Errorf("sinkron ke WireGuard: %w", err)
+		return fmt.Errorf("sync to WireGuard: %w", err)
 	}
 	return s.writeBackup(srv, clients)
 }
@@ -90,24 +90,24 @@ func (s *Server) syncLocked(ctx context.Context) error {
 func (s *Server) writeBackup(srv store.ServerConfig, clients []store.Client) error {
 	path := filepath.Join(s.cfg.DataDir, srv.Interface+".conf")
 	if err := writeFileAtomic(path, []byte(wg.RenderServerConfig(srv, clients)), 0o600); err != nil {
-		return fmt.Errorf("tulis cadangan conf: %w", err)
+		return fmt.Errorf("write conf backup: %w", err)
 	}
 	return nil
 }
 
-// Bootstrap dijalankan saat start: memasang lagi interface, peer, dan firewall
-// dari database (kernel kosong setelah reboot). Kesalahan hanya dicatat.
+// Bootstrap runs at startup: it restores the interface, peers, and firewall
+// from the database (the kernel is empty after a reboot). Errors are only logged.
 func (s *Server) Bootstrap(ctx context.Context) {
 	s.loadAdGuardConn(ctx)
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	srv, err := s.loadServer(ctx)
 	if err != nil {
-		slog.Error("bootstrap: baca server", "err", err)
+		slog.Error("bootstrap: read server", "err", err)
 		return
 	}
 	if !srv.Initialized {
-		slog.Info("WireGuard belum diatur, buka panel untuk menjalankan wizard setup")
+		slog.Info("WireGuard is not set up yet, open the panel to run the setup wizard")
 		return
 	}
 	if err := s.wg.EnsureInterface(srv); err != nil {
@@ -115,11 +115,11 @@ func (s *Server) Bootstrap(ctx context.Context) {
 		return
 	}
 	if err := s.syncLocked(ctx); err != nil {
-		slog.Error("bootstrap: sinkron", "err", err)
+		slog.Error("bootstrap: sync", "err", err)
 	}
 	fw, err := s.loadFirewall(ctx)
 	if err != nil {
-		slog.Error("bootstrap: baca firewall", "err", err)
+		slog.Error("bootstrap: read firewall", "err", err)
 		return
 	}
 	if fw.Applied {
@@ -127,21 +127,21 @@ func (s *Server) Bootstrap(ctx context.Context) {
 			slog.Error("bootstrap: firewall", "err", err)
 		}
 	}
-	slog.Info("WireGuard aktif", "interface", srv.Interface)
+	slog.Info("WireGuard active", "interface", srv.Interface)
 	s.maybeAutoInstallAdGuard()
 }
 
-// ---- cek sistem ----
+// ---- system check ----
 
 func (s *Server) handleSystemCheck(w http.ResponseWriter, r *http.Request) {
 	srv, err := s.loadServer(r.Context())
 	if err != nil {
-		internalError(w, "baca server", err)
+		internalError(w, "read server", err)
 		return
 	}
 	port := srv.ListenPort
 	if srv.Initialized {
-		port = 0 // port sudah dipakai interface kita sendiri, tidak perlu dicek
+		port = 0 // the port is already used by our own interface, no need to check it
 	}
 	writeJSON(w, http.StatusOK, system.Check(r.Context(), port))
 }
@@ -151,7 +151,7 @@ func (s *Server) handleSystemCheck(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleGetServer(w http.ResponseWriter, r *http.Request) {
 	srv, err := s.loadServer(r.Context())
 	if err != nil {
-		internalError(w, "baca server", err)
+		internalError(w, "read server", err)
 		return
 	}
 	srv.PrivateKey = ""
@@ -171,32 +171,32 @@ type serverInput struct {
 func (in *serverInput) validate() error {
 	in.EndpointHost = strings.TrimSpace(in.EndpointHost)
 	if !ifaceRe.MatchString(in.Interface) {
-		return fmt.Errorf("nama interface tidak valid (maks. 15 karakter: huruf, angka, titik, garis bawah, strip)")
+		return fmt.Errorf("invalid interface name (max. 15 characters: letters, digits, dot, underscore, hyphen)")
 	}
 	p, err := netip.ParsePrefix(in.Address)
 	if err != nil || !p.Addr().Is4() || p.Bits() < 16 || p.Bits() > 30 {
-		return fmt.Errorf("alamat server harus IPv4 dengan prefix /16 sampai /30, mis. 10.8.0.1/24")
+		return fmt.Errorf("server address must be IPv4 with a /16 to /30 prefix, e.g. 10.8.0.1/24")
 	}
 	if p.Addr() == p.Masked().Addr() {
-		return fmt.Errorf("alamat server tidak boleh alamat network (pakai mis. %s)", p.Masked().Addr().Next())
+		return fmt.Errorf("server address must not be the network address (use e.g. %s)", p.Masked().Addr().Next())
 	}
 	if in.ListenPort < 1 || in.ListenPort > 65535 {
-		return fmt.Errorf("port harus 1 sampai 65535")
+		return fmt.Errorf("port must be 1 to 65535")
 	}
 	if in.EndpointPort < 0 || in.EndpointPort > 65535 {
-		return fmt.Errorf("port publik harus 0 (sama dengan port) sampai 65535")
+		return fmt.Errorf("public port must be 0 (same as the port) to 65535")
 	}
 	badHost := in.EndpointHost == "" || len(in.EndpointHost) > 253 ||
 		strings.ContainsAny(in.EndpointHost, " \t\r\n/[]") ||
 		(strings.Contains(in.EndpointHost, ":") && net.ParseIP(in.EndpointHost) == nil)
 	if badHost {
-		return fmt.Errorf("endpoint harus domain atau IP publik tanpa port, mis. vpn.contoh.id")
+		return fmt.Errorf("endpoint must be a domain or public IP without a port, e.g. vpn.example.com")
 	}
 	if in.MTU != 0 && (in.MTU < 1280 || in.MTU > 1500) {
-		return fmt.Errorf("MTU harus 0 (otomatis) atau 1280 sampai 1500")
+		return fmt.Errorf("MTU must be 0 (automatic) or 1280 to 1500")
 	}
 	if !ifaceRe.MatchString(in.OutInterface) {
-		return fmt.Errorf("interface internet tidak valid, mis. eth0")
+		return fmt.Errorf("invalid internet interface, e.g. eth0")
 	}
 	return nil
 }
@@ -216,27 +216,27 @@ func (s *Server) handlePutServer(w http.ResponseWriter, r *http.Request) {
 
 	old, err := s.loadServer(ctx)
 	if err != nil {
-		internalError(w, "baca server", err)
+		internalError(w, "read server", err)
 		return
 	}
 	clients, err := s.st.ListClients(ctx)
 	if err != nil {
-		internalError(w, "baca klien", err)
+		internalError(w, "read clients", err)
 		return
 	}
 	if old.Initialized && in.Interface != old.Interface {
-		writeError(w, http.StatusConflict, "nama interface tidak bisa diganti setelah setup")
+		writeError(w, http.StatusConflict, "interface name cannot be changed after setup")
 		return
 	}
 	oldP, _ := netip.ParsePrefix(old.Address)
 	newP, _ := netip.ParsePrefix(in.Address)
 	if len(clients) > 0 && oldP.Masked() != newP.Masked() {
-		writeError(w, http.StatusConflict, "subnet tidak bisa diganti selama masih ada klien")
+		writeError(w, http.StatusConflict, "subnet cannot be changed while devices exist")
 		return
 	}
 	for _, c := range clients {
 		if c.Address == newP.Addr().String() {
-			writeError(w, http.StatusConflict, "alamat server bentrok dengan klien "+c.Name)
+			writeError(w, http.StatusConflict, "server address conflicts with device "+c.Name)
 			return
 		}
 	}
@@ -252,22 +252,22 @@ func (s *Server) handlePutServer(w http.ResponseWriter, r *http.Request) {
 	if srv.PrivateKey == "" {
 		kp, err := wg.NewKeyPair()
 		if err != nil {
-			internalError(w, "buat kunci server", err)
+			internalError(w, "generate server key", err)
 			return
 		}
 		srv.PrivateKey, srv.PublicKey = kp.Private, kp.Public
 	}
 	if err := s.wg.EnsureInterface(srv); err != nil {
-		writeError(w, http.StatusBadGateway, "gagal menyiapkan interface: "+err.Error())
+		writeError(w, http.StatusBadGateway, "failed to set up interface: "+err.Error())
 		return
 	}
 	if err := s.wg.Sync(srv, wg.PeersFromClients(clients)); err != nil {
-		writeError(w, http.StatusBadGateway, "gagal menerapkan ke WireGuard: "+err.Error())
+		writeError(w, http.StatusBadGateway, "failed to apply to WireGuard: "+err.Error())
 		return
 	}
 	srv.Initialized = true
 	if err := s.st.SetJSON(ctx, store.KeyServer, srv); err != nil {
-		internalError(w, "simpan server", err)
+		internalError(w, "save server", err)
 		return
 	}
 	warnings := []string{}
@@ -279,7 +279,7 @@ func (s *Server) handlePutServer(w http.ResponseWriter, r *http.Request) {
 			warnings = append(warnings, "firewall: "+err.Error())
 		}
 	}
-	// Profil klien memuat endpoint dan MTU server; bila berubah, klien harus unduh ulang.
+	// Client profiles contain the server endpoint and MTU; if they change, clients must re-download.
 	profileChanged := old.Initialized && len(clients) > 0 &&
 		(old.EndpointHost != srv.EndpointHost || endpointOf(old) != endpointOf(srv))
 	if !old.Initialized {
@@ -296,17 +296,17 @@ func endpointOf(srv store.ServerConfig) int {
 	return srv.ListenPort
 }
 
-// ---- bawaan klien ----
+// ---- client defaults ----
 
 func (s *Server) handleGetDefaults(w http.ResponseWriter, r *http.Request) {
 	srv, err := s.loadServer(r.Context())
 	if err != nil {
-		internalError(w, "baca server", err)
+		internalError(w, "read server", err)
 		return
 	}
 	d, err := s.loadDefaults(r.Context(), srv)
 	if err != nil {
-		internalError(w, "baca bawaan klien", err)
+		internalError(w, "read client defaults", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, d)
@@ -331,7 +331,7 @@ func (s *Server) handlePutDefaults(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.st.SetJSON(r.Context(), store.KeyDefaults, d); err != nil {
-		internalError(w, "simpan bawaan klien", err)
+		internalError(w, "save client defaults", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, d)
@@ -346,12 +346,12 @@ func cleanIPs(in []string) ([]string, error) {
 		}
 		ip, err := netip.ParseAddr(v)
 		if err != nil {
-			return nil, fmt.Errorf("DNS %q bukan alamat IP", v)
+			return nil, fmt.Errorf("DNS %q is not an IP address", v)
 		}
 		out = append(out, ip.String())
 	}
 	if len(out) > 4 {
-		return nil, fmt.Errorf("DNS maksimal 4 alamat")
+		return nil, fmt.Errorf("DNS allows at most 4 addresses")
 	}
 	return out, nil
 }
@@ -365,22 +365,22 @@ func cleanCIDRs(in []string) ([]string, error) {
 		}
 		p, err := netip.ParsePrefix(v)
 		if err != nil {
-			return nil, fmt.Errorf("AllowedIPs %q bukan CIDR, mis. 0.0.0.0/0", v)
+			return nil, fmt.Errorf("AllowedIPs %q is not a CIDR, e.g. 0.0.0.0/0", v)
 		}
 		out = append(out, p.Masked().String())
 	}
 	if len(out) == 0 {
-		return nil, fmt.Errorf("AllowedIPs tidak boleh kosong")
+		return nil, fmt.Errorf("AllowedIPs must not be empty")
 	}
 	return out, nil
 }
 
 func checkKeepaliveMTU(keepalive, mtu int) error {
 	if keepalive < 0 || keepalive > 3600 {
-		return fmt.Errorf("keepalive harus 0 sampai 3600 detik")
+		return fmt.Errorf("keepalive must be 0 to 3600 seconds")
 	}
 	if mtu != 0 && (mtu < 1280 || mtu > 1500) {
-		return fmt.Errorf("MTU harus 0 (otomatis) atau 1280 sampai 1500")
+		return fmt.Errorf("MTU must be 0 (automatic) or 1280 to 1500")
 	}
 	return nil
 }
@@ -390,12 +390,12 @@ func checkKeepaliveMTU(keepalive, mtu int) error {
 func (s *Server) handleGetFirewall(w http.ResponseWriter, r *http.Request) {
 	srv, err := s.loadServer(r.Context())
 	if err != nil {
-		internalError(w, "baca server", err)
+		internalError(w, "read server", err)
 		return
 	}
 	state, err := s.loadFirewall(r.Context())
 	if err != nil {
-		internalError(w, "baca firewall", err)
+		internalError(w, "read firewall", err)
 		return
 	}
 	rules := firewallRules(srv, state.MSSClamp)
@@ -416,16 +416,16 @@ func (s *Server) handleApplyFirewall(w http.ResponseWriter, r *http.Request) {
 	}
 	srv, err := s.loadServer(r.Context())
 	if err != nil {
-		internalError(w, "baca server", err)
+		internalError(w, "read server", err)
 		return
 	}
 	if !srv.Initialized {
-		writeError(w, http.StatusConflict, "atur WireGuard dulu sebelum firewall")
+		writeError(w, http.StatusConflict, "set up WireGuard before the firewall")
 		return
 	}
 	state, err := s.loadFirewall(r.Context())
 	if err != nil {
-		internalError(w, "baca firewall", err)
+		internalError(w, "read firewall", err)
 		return
 	}
 	var prev *firewall.Rules
@@ -448,7 +448,7 @@ func (s *Server) handleConfirmFirewall(w http.ResponseWriter, r *http.Request) {
 	}
 	state := store.FirewallState{Applied: true, MSSClamp: rules.MSSClamp}
 	if err := s.st.SetJSON(r.Context(), store.KeyFirewall, state); err != nil {
-		internalError(w, "simpan firewall", err)
+		internalError(w, "save firewall", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"state": state})
@@ -462,7 +462,7 @@ func (s *Server) handleRemoveFirewall(w http.ResponseWriter, r *http.Request) {
 	state, _ := s.loadFirewall(r.Context())
 	state.Applied = false
 	if err := s.st.SetJSON(r.Context(), store.KeyFirewall, state); err != nil {
-		internalError(w, "simpan firewall", err)
+		internalError(w, "save firewall", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"state": state})

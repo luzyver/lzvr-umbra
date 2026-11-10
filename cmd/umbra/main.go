@@ -1,4 +1,4 @@
-// Command umbra menjalankan panel web WireGuard + AdGuard Home.
+// Command umbra runs the WireGuard + AdGuard Home web panel.
 package main
 
 import (
@@ -24,12 +24,12 @@ import (
 )
 
 func main() {
-	// "umbra helper" dijalankan root oleh umbra-helper.service (pasang/lepas AdGuard).
+	// "umbra helper" runs as root under umbra-helper.service (installs/removes AdGuard).
 	if len(os.Args) > 1 && os.Args[1] == "helper" {
 		os.Exit(helper.Main())
 	}
 	if err := run(); err != nil {
-		slog.Error("umbra berhenti", "err", err)
+		slog.Error("umbra stopped", "err", err)
 		os.Exit(1)
 	}
 }
@@ -47,14 +47,14 @@ func run() error {
 
 	var backend wg.Backend
 	if cfg.FakeWG {
-		slog.Warn("memakai WireGuard tiruan (UMBRA_FAKE_WG): tidak ada perubahan ke sistem")
+		slog.Warn("using fake WireGuard (UMBRA_FAKE_WG): no changes are made to the system")
 		backend = wg.NewFake()
 	} else if backend, err = wg.New(cfg.WGBackend); err != nil {
 		return err
 	}
 	defer func() {
 		if err := backend.Close(); err != nil {
-			slog.Error("tutup backend WireGuard", "err", err)
+			slog.Error("close WireGuard backend", "err", err)
 		}
 	}()
 	fw := firewall.NewManager(cfg.FakeFirewall)
@@ -81,7 +81,7 @@ func run() error {
 				return
 			case <-t.C:
 				if err := st.PurgeExpiredSessions(ctx); err != nil {
-					slog.Warn("bersihkan sesi", "err", err)
+					slog.Warn("purge sessions", "err", err)
 				}
 			}
 		}
@@ -92,12 +92,12 @@ func run() error {
 		Handler:           srv.Handler(ui.Handler(), ui.ScriptHashes()),
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       30 * time.Second,
-		WriteTimeout:      60 * time.Second, // SSE mematikan batas ini per request
+		WriteTimeout:      60 * time.Second, // SSE disables this limit per request
 		IdleTimeout:       2 * time.Minute,
 	}
 	errc := make(chan error, 1)
 	go func() {
-		slog.Info("panel berjalan", "alamat", "http://"+cfg.Listen)
+		slog.Info("panel running", "address", "http://"+cfg.Listen)
 		errc <- hs.ListenAndServe()
 	}()
 
@@ -107,7 +107,7 @@ func run() error {
 			return err
 		}
 	case <-ctx.Done():
-		slog.Info("mematikan panel...")
+		slog.Info("shutting down panel...")
 		sctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		if err := hs.Shutdown(sctx); err != nil {
@@ -117,8 +117,8 @@ func run() error {
 	return nil
 }
 
-// prepareSetupToken membuat token sekali pakai bila admin belum ada.
-// Token disimpan di file (0600) dan ditulis ke log supaya bisa dilihat lewat journalctl.
+// prepareSetupToken creates a one-time token when no admin exists yet.
+// The token is stored in a file (0600) and written to the log so it can be read via journalctl.
 func prepareSetupToken(ctx context.Context, cfg config.Config, st *store.Store) (string, error) {
 	n, err := st.AdminCount(ctx)
 	if err != nil {
@@ -133,6 +133,6 @@ func prepareSetupToken(ctx context.Context, cfg config.Config, st *store.Store) 
 	if err := os.WriteFile(path, []byte(token+"\n"), 0o600); err != nil {
 		return "", err
 	}
-	slog.Info("admin belum ada, buka panel dan masukkan token setup", "token", token, "file", path)
+	slog.Info("no admin yet, open the panel and enter the setup token", "token", token, "file", path)
 	return token, nil
 }

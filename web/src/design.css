@@ -1,5 +1,5 @@
-/* Umbra: rak jaringan. Latar abu-abu cat bubuk, satu panel port arang dengan lampu link,
-   dan pita label cetak untuk nama perangkat serta pilihan aktif. Kuning hanya untuk tindakan utama. */
+/* Umbra: network rack. Powder-coat gray background, one charcoal port panel with link LEDs,
+   and printed label strips for device names and the active choice. Yellow is only for primary actions. */
 :root {
 	--bg: #dcdfdd;
 	--panel: #e9ebea;
@@ -100,7 +100,7 @@ a { text-underline-offset: 3px; }
 .hint { color: var(--muted); }
 .label { color: var(--text); }
 [data-theme='dark'] .text-zinc-500 { color: var(--muted); }
-/* Teks galat Tailwind ikut token merah agar terbaca di kedua tema. */
+/* Tailwind error text follows the red token so it stays readable in both themes. */
 .text-red-600 { color: var(--red); }
 dialog { background: var(--panel); color: var(--text); border-color: var(--border); border-radius: 6px; box-shadow: 0 24px 64px -16px #0000004d; }
 dialog::backdrop { background: color-mix(in srgb, #1b1b1a 55%, transparent); }
@@ -117,16 +117,16 @@ dialog[open] { animation: rise 220ms var(--ease-out); }
 .umbra-logo { display: inline-flex; align-items: center; gap: 9px; font-family: var(--font-mono); font-size: 21px; font-weight: 700; color: inherit; }
 .umbra-mark { width: 24px; height: 24px; fill: currentColor; }
 
-/* Pita label: nama perangkat dan pilihan aktif */
+/* Label strip: device name and active choice */
 .tape { display: inline-block; max-width: 100%; overflow: hidden; padding: 4px 11px; border-radius: 2px; background: var(--tape); color: var(--tape-ink); font: 600 13px/1.4 var(--font-mono); letter-spacing: .4px; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
 .tape.offline, .tape.unknown { background: var(--tape-pale); color: var(--tape-pale-ink); }
 .tape.disabled { background: var(--red-solid); color: #fff; text-decoration: line-through; }
 
-/* Tombol ikon kecil (tema, keluar, menu) */
+/* Small icon buttons (theme, sign out, menu) */
 .icon-btn { display: inline-grid; flex-shrink: 0; place-items: center; width: 36px; height: 36px; border-radius: 3px; color: var(--muted); }
 .icon-btn:hover { background: var(--panel-alt); color: var(--text); }
 
-/* Kerangka aplikasi: sisi rak di kiri */
+/* App frame: rack sidebar on the left */
 .app-shell { display: grid; grid-template-columns: 216px minmax(0, 1fr); min-height: 100dvh; }
 .app-sidebar { position: sticky; top: 0; height: 100dvh; display: flex; flex-direction: column; gap: 30px; padding: 28px 16px 18px; background: var(--rail); border-right: 1px solid var(--rail-border); color: var(--rail-text); }
 .app-sidebar .icon-btn { color: var(--rail-muted); }
@@ -146,7 +146,7 @@ dialog[open] { animation: rise 220ms var(--ease-out); }
 .sidebar-links .ext { display: inline-flex; margin-left: auto; }
 .test-badge { justify-self: start; margin-left: 10px; border: 1px solid var(--border-strong); color: var(--rail-muted); }
 .main-nav svg { display: none; }
-/* Sisi rak diciutkan: hanya ikon, label tetap terbaca pembaca layar. */
+/* Collapsed sidebar: icons only, labels stay readable to screen readers. */
 .app-shell { transition: grid-template-columns 180ms var(--ease-out); }
 .app-shell.collapsed { grid-template-columns: 60px minmax(0, 1fr); }
 .collapsed .app-sidebar { padding: 28px 8px 18px; }
@@ -164,12 +164,12 @@ dialog[open] { animation: rise 220ms var(--ease-out); }
 	.app-shell { transition: none; }
 }
 .page-content { min-width: 0; width: 100%; max-width: 1480px; margin: 0 auto; padding: 28px 36px 48px; }
-/* Kaki halaman: hak cipta, selalu di dasar kolom konten */
+/* Page footer: copyright, always at the bottom of the content column */
 .app-content { display: flex; flex-direction: column; min-width: 0; min-height: 100dvh; }
 .app-content .page-content { flex: 1; }
 .app-footer { display: flex; flex-wrap: wrap; gap: 2px 16px; width: 100%; max-width: 1480px; margin: 0 auto; padding: 0 36px 20px; color: var(--muted); font: 12px/1.5 var(--font-mono); }
 
-/* HP: bilah atas + tab bawah yang terjangkau jempol */
+/* Phone: top bar + thumb-reachable bottom tabs */
 .mobile-bar, .tab-bar { display: none; }
 @media (max-width: 767px) {
 	.app-shell { display: block; }
@@ -179,7 +179,7 @@ dialog[open] { animation: rise 220ms var(--ease-out); }
 	.mobile-bar .test-badge { margin: 0 6px 0 0; white-space: nowrap; }
 	.mobile-bar .icon-btn { width: 36px; height: 36px; color: var(--rail-muted); }
 	.mobile-bar .icon-btn:hover { background: var(--rail-hover); color: var(--rail-text); }
-	/* 320px: bilah tetap muat saat lencana mode uji tampil. */
+	/* 320px: the bar still fits when the test mode badge is shown. */
 	@media (max-width: 359px) {
 		.mobile-bar { padding: 0 4px 0 12px; }
 		.mobile-bar .test-badge { margin-right: 2px; }
@@ -200,7 +200,7 @@ dialog[open] { animation: rise 220ms var(--ease-out); }
 .public-shell .app-footer { justify-content: center; padding-inline: 16px; }
 .public-theme { position: absolute; top: 16px; right: 16px; }
 
-/* Judul halaman */
+/* Page heading */
 .page-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; margin-bottom: 20px; }
 .page-heading h1 { margin-right: auto; font-size: 28px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.2; }
 .page-heading p { margin-top: 4px; font-size: 13px; color: var(--muted); }
@@ -238,7 +238,7 @@ dialog[open] { animation: rise 220ms var(--ease-out); }
 .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .status.online .status-dot { background: var(--green); }
 
-/* Panel port: tiap alamat di subnet VPN adalah satu port bernomor */
+/* Port panel: each address in the VPN subnet is one numbered port */
 .ports { margin-bottom: 20px; padding: 16px 20px 18px; border-radius: 6px; background: var(--port-bg); color: var(--port-text); }
 .ports :focus-visible { outline-color: var(--led-busy); }
 .ports-caption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 20px; margin-bottom: 12px; font-size: 13px; }
@@ -255,12 +255,12 @@ button.port.selected { border-color: var(--led-busy); }
 .port.disabled { border-color: var(--led-cut); color: var(--port-cut-text); }
 .port.disabled i { background: var(--led-cut); }
 .ports-more { margin-top: 12px; font-size: 13px; }
-/* Satu gerak: lampu menyala berurutan saat panel muncul, lalu hanya lampu yang berubah yang berkedip sekali. */
+/* One motion: LEDs light up in sequence when the panel appears, then only changed LEDs blink once. */
 button.port i { animation: led-on 420ms var(--ease-out) both; }
 .ports-row.sweep button.port i { animation-delay: calc(var(--i) * 40ms + 120ms); }
 @keyframes led-on { 0% { background: var(--led-off); } 45% { background: var(--port-bright); } }
 
-/* Daftar perangkat: tabel tanpa kartu */
+/* Device list: a table without cards */
 .inline-notice { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; margin: 0 0 20px; padding: 12px 16px; border: 1px solid var(--border-strong); border-radius: 4px; background: var(--panel); font-size: 13px; overflow-wrap: anywhere; }
 .inline-notice > span { color: var(--muted); }
 .text-action { display: inline-flex; align-items: center; gap: 8px; color: var(--accent-ink); font-size: 13px; font-weight: 600; }
@@ -350,7 +350,7 @@ dialog.device-drawer[open] { display: flex; flex-direction: column; animation: d
 	.device-table td { display: block; height: auto; padding: 0; border: 0; }
 	.device-table .num { text-align: left; }
 	.device-identity { grid-column: 1 / span 2; min-width: 0; max-width: none; }
-	/* Alamat IPv6 panjang dilipat agar baris tidak melebar melewati layar. */
+	/* Long IPv6 addresses wrap so the row does not stretch past the screen. */
 	.device-address.long { grid-column: 1 / -1; white-space: normal; overflow-wrap: anywhere; }
 	.device-state { justify-self: start; }
 	.device-table .device-handshake { grid-column: 1 / -1; }
@@ -372,7 +372,7 @@ dialog.device-drawer[open] { display: flex; flex-direction: column; animation: d
 .chart-empty { display: grid; place-items: center; height: 132px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--muted); text-align: center; }
 .chart-axis { display: flex; justify-content: space-between; gap: 12px; margin-top: 6px; font-size: 12.5px; color: var(--muted); }
 
-/* Papan kunci: tiap perangkat satu label kunci yang digantung */
+/* Key board: one hanging key tag per device */
 .rack { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 14px; }
 .key-tag {
 	position: relative; display: grid; gap: 2px; padding: 26px 14px 12px; border: 1px solid var(--border); border-radius: 6px;
@@ -401,8 +401,8 @@ dialog.device-drawer[open] { display: flex; flex-direction: column; animation: d
 	dialog[open], dialog.device-drawer[open], button.port i { animation: none; }
 }
 
-/* Masuk: satu pelat rak kosong. Lampunya menguji diri saat halaman dibuka, lalu mengikuti langkah masuk. */
-/* Jarak atas tetap, supaya pelat tidak bergeser saat pesan galat muncul. */
+/* Sign in: one empty rack plate. Its LEDs self-test when the page opens, then follow the sign-in step. */
+/* Fixed top spacing so the plate does not shift when an error message appears. */
 .login-screen { display: grid; justify-items: center; align-content: start; min-height: 100dvh; padding: clamp(56px, 21dvh, 220px) 16px 24px; }
 .login-unit { width: 100%; max-width: 400px; }
 .login-plate { margin-bottom: 28px; }
@@ -425,7 +425,7 @@ dialog.device-drawer[open] { display: flex; flex-direction: column; animation: d
 .login-form .btn-primary, .login-form .btn-ghost { min-height: 44px; font-size: 15px; }
 .login-form .btn-primary { margin-top: 4px; }
 .login-error { color: var(--red); font-size: 14px; }
-/* Penyiapan: pelat yang sama, satu port per langkah. */
+/* Setup: the same plate, one port per step. */
 .setup-screen { padding-top: clamp(32px, 9dvh, 96px); }
 .setup-unit { max-width: 560px; }
 .setup-steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }

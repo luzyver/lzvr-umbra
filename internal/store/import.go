@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// ImportClients menyimpan server dan perangkat dalam satu transaksi.
+// ImportClients saves the server and devices in a single transaction.
 func (s *Store) ImportClients(ctx context.Context, clients []Client, server *ServerConfig) ([]Client, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {

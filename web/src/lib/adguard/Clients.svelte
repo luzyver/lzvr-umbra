@@ -72,7 +72,7 @@
 				blocked_services: form.services,
 				upstreams: form.upstreams.split('\n').map((l) => l.trim()).filter(Boolean)
 			});
-			toast(`Pengaturan AdGuard ${cur.name} disimpan.`);
+			toast(`AdGuard settings for ${cur.name} saved.`);
 			open = false;
 		} catch (e) {
 			toast(errMsg(e), 'error');
@@ -83,10 +83,10 @@
 </script>
 
 <div class="card">
-	<p class="font-medium">Pengaturan per klien</p>
+	<p class="font-medium">Per-device settings</p>
 	<p class="hint mb-3">
-		Klien dengan "Blokir iklan" aktif didaftarkan ke AdGuard memakai IP WireGuard-nya. Di sini kamu
-		bisa memberi aturan khusus, mis. kontrol orang tua hanya untuk HP anak.
+		Devices with "Ad blocking" enabled are registered in AdGuard using their WireGuard IP. Here you
+		can set custom rules, for example parental control only for a child's phone.
 	</p>
 	{#if clients}
 		<ul class="divide-y divide-zinc-200 text-sm dark:divide-zinc-800">
@@ -97,38 +97,38 @@
 						<p class="hint font-mono">{c.address}</p>
 					</div>
 					{#if c.adblock}
-						<button class="btn-ghost text-xs" onclick={() => edit(c)}>Atur</button>
+						<button class="btn-ghost text-xs" onclick={() => edit(c)}>Configure</button>
 					{:else}
-						<span class="hint">blokir iklan mati</span>
+						<span class="hint">ad blocking off</span>
 					{/if}
 				</li>
 			{:else}
-				<li class="hint py-2">Belum ada klien.</li>
+				<li class="hint py-2">No devices yet.</li>
 			{/each}
 		</ul>
 	{:else}
-		<p class="hint">Memuat…</p>
+		<p class="hint">Loading…</p>
 	{/if}
 </div>
 
 <Modal bind:open title="AdGuard · {cur?.name ?? ''}" wide>
 	{#if loading}
-		<p class="hint">Memuat…</p>
+		<p class="hint">Loading…</p>
 	{:else if missing}
 		<p class="text-sm">
-			Klien ini belum terdaftar di AdGuard. Tekan "Sinkron klien" di atas halaman, lalu coba lagi.
+			This device is not registered in AdGuard yet. Press "Sync devices" at the top of the page, then try again.
 		</p>
 	{:else}
 		<div class="space-y-4 text-sm">
-			<p class="hint">Menyimpan akan membuat klien ini memakai pengaturannya sendiri, bukan pengaturan global.</p>
+			<p class="hint">Saving makes this device use its own settings instead of the global ones.</p>
 			<div class="grid gap-3 sm:grid-cols-3">
 				<div class="flex items-center justify-between gap-2">
 					<span>Safe browsing</span>
 					<Toggle checked={form.safebrowsing} disabled={busy} label="Safe browsing" onchange={(v) => (form.safebrowsing = v)} />
 				</div>
 				<div class="flex items-center justify-between gap-2">
-					<span>Kontrol orang tua</span>
-					<Toggle checked={form.parental} disabled={busy} label="Kontrol orang tua" onchange={(v) => (form.parental = v)} />
+					<span>Parental control</span>
+					<Toggle checked={form.parental} disabled={busy} label="Parental control" onchange={(v) => (form.parental = v)} />
 				</div>
 				<div class="flex items-center justify-between gap-2">
 					<span>Safe search</span>
@@ -139,7 +139,7 @@
 			<div class="space-y-2">
 				<label class="flex items-center gap-2">
 					<input type="checkbox" bind:checked={form.globalServices} disabled={busy} />
-					Pakai daftar layanan diblokir global
+					Use the global blocked services list
 				</label>
 				{#if !form.globalServices}
 					<ServicePicker bind:selected={form.services} disabled={busy} />
@@ -147,15 +147,15 @@
 			</div>
 
 			<div>
-				<label class="label" for="ag-cl-up">Upstream DNS khusus</label>
-				<textarea id="ag-cl-up" class="input h-20 w-full font-mono text-xs" bind:value={form.upstreams} spellcheck="false" placeholder="Kosongkan untuk memakai upstream global"></textarea>
+				<label class="label" for="ag-cl-up">Custom upstream DNS</label>
+				<textarea id="ag-cl-up" class="input h-20 w-full font-mono text-xs" bind:value={form.upstreams} spellcheck="false" placeholder="Leave empty to use the global upstreams"></textarea>
 			</div>
 		</div>
 	{/if}
 	{#snippet footer()}
-		<button class="btn-ghost" onclick={() => (open = false)}>Batal</button>
+		<button class="btn-ghost" onclick={() => (open = false)}>Cancel</button>
 		{#if !missing}
-			<button class="btn-primary" disabled={busy || loading} onclick={save}>Simpan</button>
+			<button class="btn-primary" disabled={busy || loading} onclick={save}>Save</button>
 		{/if}
 	{/snippet}
 </Modal>

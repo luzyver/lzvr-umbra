@@ -19,9 +19,9 @@
 	async function save() {
 		busy = true;
 		try {
-			// Jadwal yang sudah ada dikirim balik apa adanya agar tidak terhapus.
+			// Send the existing schedule back unchanged so it is not wiped.
 			await put('/adguard/ctl/blocked_services/update', { ids, schedule });
-			toast('Layanan diblokir diperbarui.');
+			toast('Blocked services updated.');
 		} catch (e) {
 			toast(errMsg(e), 'error');
 		} finally {
@@ -32,18 +32,18 @@
 
 <div class="card space-y-3">
 	<div>
-		<p class="font-medium">Blokir layanan</p>
+		<p class="font-medium">Block services</p>
 		<p class="hint">
-			Berlaku untuk semua klien yang memakai AdGuard, kecuali klien dengan daftar layanan sendiri
-			(atur di tab Klien).
+			Applies to all devices that use AdGuard, except devices with their own services list
+			(set in the Clients tab).
 		</p>
 	</div>
 	{#if loaded}
 		<ServicePicker bind:selected={ids} disabled={busy} />
 		<div class="flex justify-end">
-			<button class="btn-primary" disabled={busy} onclick={save}>Simpan</button>
+			<button class="btn-primary" disabled={busy} onclick={save}>Save</button>
 		</div>
 	{:else}
-		<p class="hint">Memuat…</p>
+		<p class="hint">Loading…</p>
 	{/if}
 </div>

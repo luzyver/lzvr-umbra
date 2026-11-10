@@ -13,14 +13,14 @@
 		.then((r) => (conn = r))
 		.catch((e) => toast(errMsg(e), 'error'));
 
-	const sources = { db: 'disimpan di panel', env: 'dari umbra.env', none: '-' };
+	const sources = { db: 'stored in the panel', env: 'from umbra.env', none: '-' };
 
 	async function disconnect() {
-		if (!confirm('Putuskan panel dari AdGuard? AdGuard Home tetap berjalan, DNS klien tidak diubah.')) return;
+		if (!confirm('Disconnect the panel from AdGuard? AdGuard Home keeps running and device DNS is not changed.')) return;
 		busy = true;
 		try {
 			const r = await del<{ enabled: boolean }>('/adguard/connection');
-			toast(r?.enabled ? 'Koneksi panel dihapus, tapi umbra.env masih berisi AdGuard.' : 'AdGuard diputuskan.');
+			toast(r?.enabled ? 'Panel connection removed, but umbra.env still contains AdGuard settings.' : 'AdGuard disconnected.');
 			onchange();
 		} catch (e) {
 			toast(errMsg(e), 'error');
@@ -30,11 +30,11 @@
 	}
 
 	async function uninstall() {
-		if (!confirm('Copot AdGuard Home dari server? DNS klien dikembalikan ke DNS default server.')) return;
+		if (!confirm('Uninstall AdGuard Home from the server? Device DNS is reset to the server default DNS.')) return;
 		busy = true;
 		try {
 			await post('/adguard/uninstall');
-			toast('Mencopot AdGuard…');
+			toast('Uninstalling AdGuard…');
 			onchange();
 		} catch (e) {
 			toast(errMsg(e), 'error');
@@ -47,43 +47,43 @@
 {#if conn}
 	<div class="grid gap-4 md:grid-cols-2">
 		<div class="card space-y-3 text-sm">
-			<p class="font-medium">Koneksi</p>
+			<p class="font-medium">Connection</p>
 			<dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
-				<dt class="text-zinc-500">Alamat</dt>
+				<dt class="text-zinc-500">Address</dt>
 				<dd class="font-mono text-xs">{conn.url}</dd>
 				<dt class="text-zinc-500">Username</dt>
 				<dd>{conn.user || '-'}</dd>
-				<dt class="text-zinc-500">Sumber</dt>
+				<dt class="text-zinc-500">Source</dt>
 				<dd>{sources[conn.source]}</dd>
-				<dt class="text-zinc-500">Dipasang panel</dt>
-				<dd>{conn.managed ? 'ya' : 'tidak'}</dd>
+				<dt class="text-zinc-500">Installed by panel</dt>
+				<dd>{conn.managed ? 'yes' : 'no'}</dd>
 			</dl>
 			{#if editing}
 				<ConnForm url={conn.url} user={conn.user} hasPassword={conn.has_password} onsaved={onchange} />
 			{:else}
 				<div class="flex flex-wrap gap-2">
-					<button class="btn-ghost" onclick={() => (editing = true)}>Ubah koneksi</button>
+					<button class="btn-ghost" onclick={() => (editing = true)}>Edit connection</button>
 					{#if conn.source === 'db'}
-						<button class="btn-ghost" disabled={busy} onclick={disconnect}>Putuskan</button>
+						<button class="btn-ghost" disabled={busy} onclick={disconnect}>Disconnect</button>
 					{/if}
 				</div>
 			{/if}
 			{#if conn.source === 'env'}
-				<p class="hint">Menyimpan dari sini akan menimpa nilai di umbra.env tanpa restart.</p>
+				<p class="hint">Saving here overrides the values in umbra.env without a restart.</p>
 			{/if}
 		</div>
 
 		{#if conn.managed}
 			<div class="card space-y-3 text-sm">
-				<p class="font-medium">Copot AdGuard Home</p>
+				<p class="font-medium">Uninstall AdGuard Home</p>
 				<p class="hint">
-					Menghentikan dan menghapus AdGuard Home yang dipasang panel, lalu mengembalikan DNS klien
-					ke DNS default server.
+					Stops and removes the AdGuard Home installed by the panel, then resets device DNS
+					to the server default DNS.
 				</p>
-				<button class="btn-danger" disabled={busy} onclick={uninstall}>Copot AdGuard</button>
+				<button class="btn-danger" disabled={busy} onclick={uninstall}>Uninstall AdGuard</button>
 			</div>
 		{/if}
 	</div>
 {:else}
-	<p class="hint">Memuat…</p>
+	<p class="hint">Loading…</p>
 {/if}

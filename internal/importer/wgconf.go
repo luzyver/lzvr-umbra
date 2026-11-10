@@ -19,7 +19,7 @@ func ParseWGConf(data []byte) (Source, error) {
 		}
 		pub := strings.TrimSpace(fields["publickey"])
 		if pub == "" {
-			return fmt.Errorf("peer tanpa PublicKey")
+			return fmt.Errorf("peer without PublicKey")
 		}
 		addr := ""
 		for _, v := range strings.Split(fields["allowedips"], ",") {
@@ -30,11 +30,11 @@ func ParseWGConf(data []byte) (Source, error) {
 			}
 		}
 		if addr == "" {
-			return fmt.Errorf("peer %s tidak punya alamat IPv4 /32", pub)
+			return fmt.Errorf("peer %s has no IPv4 /32 address", pub)
 		}
 		ka, _ := strconv.Atoi(fields["persistentkeepalive"])
 		if name == "" {
-			name = fmt.Sprintf("Impor %d", len(out.Clients)+1)
+			name = fmt.Sprintf("Import %d", len(out.Clients)+1)
 		}
 		out.Clients = append(out.Clients, Candidate{Name: name, PublicKey: pub, PresharedKey: fields["presharedkey"], Address: addr, Keepalive: ka, Enabled: true})
 		return nil
@@ -74,7 +74,7 @@ func ParseWGConf(data []byte) (Source, error) {
 				section = "peer"
 				name = pending
 			default:
-				return out, fmt.Errorf("bagian %s tidak dikenal", line)
+				return out, fmt.Errorf("unknown section %s", line)
 			}
 			pending = ""
 			fields = map[string]string{}
@@ -117,7 +117,7 @@ func ParseWGConf(data []byte) (Source, error) {
 		return out, err
 	}
 	if out.Server.Address == "" || out.Server.PrivateKey == "" {
-		return out, fmt.Errorf("Interface perlu Address dan PrivateKey")
+		return out, fmt.Errorf("Interface requires Address and PrivateKey")
 	}
 	return out, nil
 }
