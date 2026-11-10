@@ -9,6 +9,13 @@ Panel web untuk WireGuard dan AdGuard Home di satu VPS Linux.
 [![Go](https://img.shields.io/github/go-mod/go-version/luzyver/lzvr-umbra)](go.mod)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
+[Pratinjau](#pratinjau) · [Pasang](#pasang-di-server) · [Cara kerja](#cara-kerja) · [Pengembangan](#pengembangan)
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/overview-dark.png">
+  <img src="docs/screenshots/overview-light.png" alt="Halaman Ringkasan Umbra: panel alamat subnet, grafik trafik 60 detik terakhir, dan daftar perangkat" width="880">
+</picture>
+
 </div>
 
 Umbra adalah satu binary Go (frontend sudah di-embed) yang mengurus server WireGuard dari browser:
@@ -18,7 +25,9 @@ Go, Node, atau source code.
 
 ## Daftar isi
 
+- [Pratinjau](#pratinjau)
 - [Fitur](#fitur)
+- [Cara kerja](#cara-kerja)
 - [Syarat](#syarat)
 - [Pasang di server](#pasang-di-server)
 - [Membuka panel](#membuka-panel)
@@ -29,6 +38,19 @@ Go, Node, atau source code.
 - [Pengembangan](#pengembangan)
 - [Kontribusi](#kontribusi)
 - [Lisensi](#lisensi)
+
+## Pratinjau
+
+| Detail perangkat | Log sesi VPN |
+|---|---|
+| ![Panel samping detail perangkat: data masuk dan keluar, handshake terakhir, DNS, dan Allowed IPs](docs/screenshots/device-detail.png) | ![Tab Sesi VPN di halaman Aktivitas](docs/screenshots/activity.png) |
+
+| Masuk | Ringkasan di HP | Detail perangkat di HP |
+|---|---|---|
+| <img src="docs/screenshots/login.png" alt="Halaman masuk" width="420"> | <img src="docs/screenshots/mobile-overview.png" alt="Ringkasan di layar HP, tema gelap" width="200"> | <img src="docs/screenshots/mobile-device.png" alt="Detail perangkat di layar HP, tema terang" width="200"> |
+
+Semua gambar memakai data contoh dan dibuat ulang dengan `python web/tests/screenshots.py`
+(lihat [CONTRIBUTING.md](CONTRIBUTING.md#tangkapan-layar-readme)).
 
 ## Fitur
 
@@ -45,6 +67,77 @@ Go, Node, atau source code.
 - **Tanpa modul kernel pun jalan**: bila kernel tidak mendukung WireGuard, Umbra memakai `wireguard-go`
   (userspace) yang tertanam di binary.
 - Antarmuka berbahasa Indonesia, tema terang/gelap, ramah HP.
+
+## Cara kerja
+
+### Arsitektur
+
+Satu proses `umbra` melayani antarmuka dan API, menyimpan data di SQLite, dan mengatur WireGuard, nftables,
+serta AdGuard Home di server yang sama. Panel hanya mendengar di `127.0.0.1`; yang terbuka ke internet
+hanya port WireGuard.
+
+```mermaid
+flowchart LR
+    admin["Browser admin"]
+    device["Perangkat VPN<br/>HP, laptop, router"]
+
+    subgraph vps["VPS Linux"]
+        proxy["SSH tunnel<br/>atau nginx + HTTPS"]
+        subgraph umbra["umbra, 127.0.0.1:8967"]
+            ui["Antarmuka<br/>SvelteKit, di-embed"]
+            api["API HTTP + SSE<br/>sesi, CSRF, TOTP"]
+            db[("SQLite<br/>/var/lib/umbra")]
+        end
+        wg["WireGuard wg0<br/>kernel atau wireguard-go"]
+        nft["nftables<br/>NAT dan forward"]
+        ct["conntrack"]
+        helper["Helper root<br/>pasang/copot AdGuard"]
+        agh["AdGuard Home<br/>DNS 10.8.0.1:53"]
+    end
+    net(("Internet"))
+
+    admin --> proxy --> ui
+    ui -->|"/api"| api
+    api --> db
+    api -->|"perangkat, status"| wg
+    api -->|"aturan, uji 60 detik"| nft
+    api -->|"koneksi aktif"| ct
+    api -->|"REST"| agh
+    api -.->|"permintaan pasang"| helper -.-> agh
+    device -->|"UDP 51820"| wg
+    wg --> nft --> net
+    device -.->|"DNS lewat terowongan"| agh
+```
+
+### Alur dari pasang sampai dipakai
+
+```mermaid
+flowchart TD
+    install["Jalankan install.sh / update.sh"] --> token["Token setup tercetak"]
+    token --> open["Buka panel"]
+    open --> hasAdmin{"Akun admin<br/>sudah ada?"}
+
+    hasAdmin -- belum --> s1["1. Buat akun admin<br/>dengan token setup"]
+    s1 --> s2["2. Cek sistem"]
+    s2 --> s3["3. Pengaturan server<br/>endpoint, subnet, DNS"]
+    s3 --> s4["4. Firewall dan NAT"]
+    s4 --> trial{"Dikonfirmasi<br/>dalam 60 detik?"}
+    trial -- tidak --> rollback["Aturan dibatalkan otomatis"] --> s4
+    trial -- ya --> s5["5. Perangkat pertama<br/>pindai QR atau unduh profil"]
+    s5 --> home
+
+    hasAdmin -- sudah --> login["Masuk dengan kata sandi"]
+    login --> totp{"Verifikasi dua<br/>langkah aktif?"}
+    totp -- ya --> code["Kode autentikator<br/>atau kode pemulihan"] --> ready
+    totp -- tidak --> ready{"WireGuard<br/>sudah diatur?"}
+    ready -- belum --> s2
+    ready -- sudah --> home["Ringkasan<br/>status langsung lewat SSE"]
+
+    home --> devices["Perangkat<br/>tambah, impor, nonaktifkan"]
+    home --> activity["Aktivitas<br/>sesi VPN, koneksi, riwayat DNS"]
+    home --> adguard["AdGuard<br/>filter, DNS, layanan"]
+    home --> settings["Pengaturan<br/>server, firewall, keamanan"]
+```
 
 ## Syarat
 
@@ -306,14 +399,16 @@ internal/system      cek sistem untuk wizard
 internal/ui          frontend hasil build (go:embed)
 web/                 SvelteKit (Svelte 5, Tailwind 4)
 deploy/              install.sh, update.sh, service systemd, file env
+docs/screenshots     tangkapan layar untuk README
 ```
 
 Catatan SvelteKit 3: alias `$lib` sudah tidak ada; pakai `#lib/...` (diatur di `imports` pada `web/package.json`).
 
 ## Kontribusi
 
-Issue dan pull request diterima. Baca [CONTRIBUTING.md](CONTRIBUTING.md) dulu. Celah keamanan dilaporkan
-secara privat sesuai [SECURITY.md](SECURITY.md).
+Issue dan pull request diterima. Baca [CONTRIBUTING.md](CONTRIBUTING.md) dan
+[kode etik](CODE_OF_CONDUCT.md) dulu. Celah keamanan dilaporkan secara privat sesuai
+[SECURITY.md](SECURITY.md). Riwayat perubahan ada di [CHANGELOG.md](CHANGELOG.md).
 
 ## Lisensi
 
