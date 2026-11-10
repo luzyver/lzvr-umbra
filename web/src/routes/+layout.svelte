@@ -73,6 +73,17 @@
 		}
 	}
 
+	// Sisi rak bisa diciutkan menjadi deretan ikon; pilihan disimpan di peramban ini.
+	const railKey = 'umbra-sidebar';
+	let collapsed = $state(readRail());
+	function readRail() {
+		try { return localStorage.getItem(railKey) === 'collapsed'; } catch { return false; }
+	}
+	function toggleRail() {
+		collapsed = !collapsed;
+		try { localStorage.setItem(railKey, collapsed ? 'collapsed' : 'open'); } catch { /* Tanpa penyimpanan, pilihan hanya berlaku sampai halaman dimuat ulang. */ }
+	}
+
 	const isActive = (href: string) => (href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(href));
 	const bare = $derived(publicPaths.includes(page.url.pathname) || !session.me);
 </script>
@@ -93,22 +104,23 @@
 		<main id="main-content">{@render children()}</main>
 	</div>
 {:else}
-	<div class="app-shell">
-		<aside class="app-sidebar">
+	<div class="app-shell" class:collapsed>
+		<aside class="app-sidebar" id="app-sidebar">
 			<div class="sidebar-top">
-				<a href="/" aria-label="Umbra — ringkasan"><Logo /></a>
+				<a href="/" aria-label="Umbra — ringkasan"><Logo wordmark={!collapsed} /></a>
+				<button class="icon-btn" onclick={toggleRail} aria-expanded={!collapsed} aria-controls="app-sidebar" aria-label={collapsed ? 'Lebarkan menu' : 'Ciutkan menu'} title={collapsed ? 'Lebarkan menu' : 'Ciutkan menu'}><Icon name="panel" size={16} /></button>
 			</div>
 			<nav class="main-nav" aria-label="Navigasi utama">
 				{#each nav as n (n.href)}
-					<a href={n.href} class:active={isActive(n.href)} aria-current={isActive(n.href) ? 'page' : undefined}>{n.label}</a>
+					<a href={n.href} class:active={isActive(n.href)} aria-current={isActive(n.href) ? 'page' : undefined} title={collapsed ? n.label : undefined}><Icon name={n.icon} size={18} /><span>{n.label}</span></a>
 				{/each}
 			</nav>
 			<div class="sidebar-foot">
 				<div class="sidebar-links">
-					<a href={docsUrl} target="_blank" rel="noopener noreferrer"><Icon name="book" size={14} />Dokumentasi<span class="ext"><Icon name="external" size={12} /></span></a>
-					<a href={repoUrl} target="_blank" rel="noopener noreferrer"><Icon name="github" size={14} />GitHub<span class="ext"><Icon name="external" size={12} /></span></a>
+					<a href={docsUrl} target="_blank" rel="noopener noreferrer" title={collapsed ? 'Dokumentasi' : undefined}><Icon name="book" size={14} /><span>Dokumentasi</span><span class="ext"><Icon name="external" size={12} /></span></a>
+					<a href={repoUrl} target="_blank" rel="noopener noreferrer" title={collapsed ? 'GitHub' : undefined}><Icon name="github" size={14} /><span>GitHub</span><span class="ext"><Icon name="external" size={12} /></span></a>
 				</div>
-				{#if session.me?.fake_wg}<span class="badge test-badge" title="UMBRA_FAKE_WG aktif, tidak ada perubahan ke sistem">Mode uji</span>{/if}
+				{#if session.me?.fake_wg}<span class="badge test-badge" title="UMBRA_FAKE_WG aktif, tidak ada perubahan ke sistem">{collapsed ? 'Uji' : 'Mode uji'}</span>{/if}
 				<div class="sidebar-user">
 					<span>{session.me?.username}</span>
 					<ThemeToggle />

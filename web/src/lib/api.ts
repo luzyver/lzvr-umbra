@@ -32,7 +32,9 @@ export async function api<T = unknown>(path: string, opts: Opts = {}): Promise<T
 	} catch {
 		throw new ApiError(0, 'Tidak bisa menghubungi panel. Periksa koneksi.');
 	}
-	if (res.status === 401 && !opts.noRedirect) {
+	// 401 dari langkah masuk adalah jawaban (sandi atau kode salah), bukan sesi yang habis.
+	const signingIn = path === '/auth/login' || path === '/auth/verify';
+	if (res.status === 401 && !opts.noRedirect && !signingIn) {
 		if (!location.pathname.startsWith('/login')) goto('/login');
 		throw new ApiError(401, 'Sesi habis, silakan masuk lagi.');
 	}

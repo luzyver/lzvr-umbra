@@ -35,9 +35,9 @@
 	{#if qr}
 		<img src={qr} alt="QR profil {client.name}" class="w-64 rounded bg-white p-2" />
 	{:else if failed}
-		<p class="text-sm text-red-600">QR gagal dimuat.</p>
+		<p class="text-sm text-[var(--red)]">QR gagal dimuat.</p>
 	{:else}
-		<div class="h-64 w-64 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800"></div>
+		<div class="h-64 w-64 animate-pulse rounded bg-[var(--panel-alt)]"></div>
 	{/if}
 	<p class="hint text-center">Pindai dengan aplikasi WireGuard di HP (Tambah tunnel → Pindai QR).</p>
 	<a class="btn-ghost" href="/api/clients/{client.id}/config" download>Unduh file .conf</a>

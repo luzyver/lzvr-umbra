@@ -57,10 +57,10 @@
 </script>
 
 {#if !info}
-	<p class="text-sm text-zinc-500">Memuat…</p>
+	<p class="hint">Memuat…</p>
 {:else}
 	<div class="space-y-4">
-		<p class="text-sm text-zinc-600 dark:text-zinc-400">
+		<p class="text-sm text-[var(--muted)]">
 			Panel membuat tabel nftables sendiri (<span class="font-mono">inet umbra</span>) untuk NAT dan
 			meneruskan trafik <span class="font-mono">{info.rules.wg_interface}</span> →
 			<span class="font-mono">{info.rules.out_interface}</span> (subnet
@@ -68,24 +68,18 @@
 		</p>
 
 		<div class="flex items-center gap-2 text-sm">
-			Status:
-			{#if info.pending}
-				<span class="badge bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200">masa uji</span>
-			{:else if info.state.applied}
-				<span class="badge border border-[var(--border)] text-[var(--muted)]">aktif</span>
-			{:else}
-				<span class="badge bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">belum dipasang</span>
-			{/if}
+			<i class="check-led {info.pending ? 'warn' : info.state.applied ? 'ok' : 'off'}" style="margin-top:0" aria-hidden="true"></i>
+			{info.pending ? 'Masa uji' : info.state.applied ? 'Aktif' : 'Belum dipasang'}
 		</div>
 
 		{#if info.pending}
-			<div class="rounded border border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/40">
-				<p class="font-medium">Aturan sedang diuji — sisa {left} detik</p>
+			<div class="rounded border border-[var(--busy)] bg-[var(--accent-soft)] p-4">
+				<p class="font-medium">Aturan sedang diuji, sisa {left} detik</p>
 				<p class="hint mt-1">
-					Coba sambungkan klien atau pastikan panel ini masih bisa dibuka. Bila tidak dikonfirmasi,
+					Coba sambungkan perangkat atau pastikan panel ini masih bisa dibuka. Bila tidak dikonfirmasi,
 					aturan dibatalkan otomatis supaya Anda tidak terkunci.
 				</p>
-				<div class="mt-3 flex gap-2">
+				<div class="mt-3 flex flex-wrap gap-2">
 					<button class="btn-primary" disabled={busy} onclick={confirm}>Semua aman, konfirmasi</button>
 					<button class="btn-ghost" disabled={busy} onclick={remove}>Batalkan</button>
 				</div>
@@ -113,12 +107,12 @@
 
 		{#if showPreview}
 			{#if info.preview_error}
-				<p class="text-sm text-red-600">{info.preview_error}</p>
+				<p class="text-sm text-[var(--red)]">{info.preview_error}</p>
 			{:else}
-				<pre class="overflow-x-auto rounded bg-zinc-100 p-3 font-mono text-xs dark:bg-zinc-950">{info.preview}</pre>
+				<pre class="overflow-x-auto rounded border border-[var(--border)] bg-[var(--panel)] p-3 font-mono text-xs">{info.preview}</pre>
 			{/if}
 		{/if}
 
-		{#if error}<p class="text-sm text-red-600">{error}</p>{/if}
+		{#if error}<p class="text-sm text-[var(--red)]" role="alert">{error}</p>{/if}
 	</div>
 {/if}

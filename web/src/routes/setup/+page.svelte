@@ -17,7 +17,7 @@
 	import FirewallPanel from '#lib/FirewallPanel.svelte';
 	import ClientProfile from '#lib/ClientProfile.svelte';
 
-	const steps = ['Admin', 'Cek sistem', 'Server', 'Firewall', 'Klien pertama'];
+	const steps = ['Admin', 'Cek sistem', 'Server', 'Firewall', 'Perangkat pertama'];
 	let step = $state(-1); // -1 = memuat
 	let done = $state(false); // sudah disetup sebelumnya
 
@@ -118,141 +118,134 @@
 		}
 	}
 
-	const icon = { ok: '✓', warn: '!', fail: '✕' } as const;
-	const iconCls = {
-		ok: 'bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300',
-		warn: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
-		fail: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
-	} as const;
+	const titles = ['Buat akun admin', 'Cek sistem', 'Pengaturan server', 'Firewall dan NAT', 'Perangkat pertama'];
+	const checkTag = { ok: '', warn: 'Peringatan', fail: 'Gagal' } as const;
+	// Pelat: satu port per langkah. Hijau sudah lewat, amber sedang dikerjakan, merah bila langkah ini gagal.
+	const finished = $derived(done || !!client);
+	const waiting = $derived(busy || (step === 1 && !check && !error));
+	const plateLabel = $derived(finished ? 'Selesai' : step < 0 ? (error ? 'Gagal memuat' : 'Memuat') : `Langkah ${step + 1} dari ${steps.length}`);
 </script>
 
-<svelte:head><title>Setup · Umbra</title></svelte:head>
+<svelte:head><title>Penyiapan · Umbra</title></svelte:head>
 
-<div class="mx-auto max-w-2xl px-4 pt-24 pb-10">
-	<div class="mb-6 flex items-center gap-2">
-		<Logo wordmark={false}/>
-		<h1 class="text-xl font-semibold">Setup Umbra</h1>
-	</div>
-
-	{#if done}
-		<div class="card space-y-3">
-			<p class="font-medium">WireGuard sudah disetup.</p>
-			<p class="hint">Pengaturan server bisa diubah di halaman Pengaturan.</p>
-			<a class="btn-primary inline-block" href="/">Ke dasbor</a>
+<main class="login-screen setup-screen">
+	<div class="login-unit setup-unit">
+		<div class="ports login-plate setup-plate" data-busy={waiting}>
+			<div class="ports-caption"><Logo /><span>{plateLabel}</span></div>
+			<ol class="setup-steps" aria-label="Langkah penyiapan">
+				{#each steps as s, i (s)}
+					<li
+						class="port"
+						class:online={finished || i < step}
+						class:busy={!finished && i === step && !error}
+						class:disabled={!finished && i === step && !!error}
+						aria-current={!finished && i === step ? 'step' : undefined}
+					>
+						<span aria-hidden="true">{i + 1}</span><span class="sr-only">{s}</span><i></i>
+					</li>
+				{/each}
+			</ol>
 		</div>
-	{:else if step === -1}
-		{#if error}<p class="text-sm text-red-600">{error}</p>{:else}<p class="text-sm text-zinc-500">Memuat…</p>{/if}
-	{:else}
-		<ol class="mb-6 flex flex-wrap gap-2 text-xs">
-			{#each steps as s, i (s)}
-				<li
-					class="rounded-sm px-3 py-1 {i === step
-						? 'bg-[var(--accent)] text-[var(--accent-text)]'
-						: i < step
-							? 'bg-[var(--panel-alt)] text-[var(--text)]'
-							: 'text-[var(--muted)]'}"
-				>
-					{i + 1}. {s}
-				</li>
-			{/each}
-		</ol>
 
-		<div class="card">
-			{#if step === 0}
-				<form class="space-y-4" onsubmit={createAdmin}>
+		<div class="setup-body">
+			{#if done}
+				<h1>WireGuard sudah disiapkan</h1>
+				<p class="hint">Pengaturan server bisa diubah di halaman Pengaturan.</p>
+				<div><a class="btn-primary" href="/">Ke Ringkasan</a></div>
+			{:else if step === -1}
+				<h1>Penyiapan</h1>
+				{#if error}<p class="login-error" role="alert">{error}</p>{:else}<p class="hint">Memuat…</p>{/if}
+			{:else if step === 0}
+				<form class="setup-form" onsubmit={createAdmin} oninput={() => (error = '')}>
+					<h1>{titles[0]}</h1>
 					<div>
-						<h2 class="font-semibold">Buat akun admin</h2>
-						<p class="hint mt-1">
-							Token setup ada di file <span class="font-mono">setup-token</span> pada folder data panel, dan
-							juga tercetak di log (<span class="font-mono">journalctl -u umbra</span>).
+						<label class="label" for="t">Token setup</label>
+						<input id="t" class="input font-mono" bind:value={token} autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="t-hint" required />
+						<p class="hint" id="t-hint">
+							Ada di file <span class="font-mono">setup-token</span> pada folder data panel, dan tercetak di log
+							(<span class="font-mono">journalctl -u umbra</span>).
 						</p>
 					</div>
 					<div>
-						<label class="label" for="t">Token setup</label>
-						<input id="t" class="input font-mono" bind:value={token} autocomplete="off" required />
-					</div>
-					<div>
 						<label class="label" for="u">Nama pengguna</label>
-						<input id="u" class="input" bind:value={username} autocomplete="username" required />
+						<input id="u" class="input" bind:value={username} autocomplete="username" autocapitalize="none" spellcheck="false" required />
 					</div>
 					<div class="grid gap-4 sm:grid-cols-2">
 						<div>
 							<label class="label" for="p">Kata sandi</label>
-							<input id="p" class="input" type="password" minlength="10" bind:value={password} autocomplete="new-password" required />
-							<p class="hint">Minimal 10 karakter.</p>
+							<input id="p" class="input" type="password" minlength="10" bind:value={password} autocomplete="new-password" aria-describedby="p-hint" required />
+							<p class="hint" id="p-hint">Minimal 10 karakter.</p>
 						</div>
 						<div>
 							<label class="label" for="p2">Ulangi kata sandi</label>
 							<input id="p2" class="input" type="password" bind:value={password2} autocomplete="new-password" required />
 						</div>
 					</div>
-					{#if error}<p class="text-sm text-red-600">{error}</p>{/if}
+					{#if error}<p class="login-error" role="alert">{error}</p>{/if}
 					<button class="btn-primary" disabled={busy}>{busy ? 'Menyimpan…' : 'Buat admin'}</button>
 				</form>
 			{:else if step === 1}
-				<h2 class="font-semibold">Cek sistem</h2>
-				<p class="hint mt-1">Memastikan server siap menjalankan WireGuard.</p>
+				<h1>{titles[1]}</h1>
 				{#if !check}
-					{#if error}<p class="mt-4 text-sm text-red-600">{error}</p>{:else}<p class="mt-4 text-sm text-zinc-500">Memeriksa…</p>{/if}
+					{#if error}
+						<p class="login-error" role="alert">{error}</p>
+						<div><button class="btn-ghost" onclick={gotoCheck}>Cek ulang</button></div>
+					{:else}<p class="hint">Memeriksa…</p>{/if}
 				{:else}
-					<ul class="mt-4 space-y-2">
+					<ul class="setup-checks">
 						{#each check.items as it (it.id)}
-							<li class="flex gap-3">
-								<span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold {iconCls[it.status]}">{icon[it.status]}</span>
+							<li>
+								<i class="check-led {it.status}" aria-hidden="true"></i>
 								<div>
-									<p class="text-sm font-medium">{it.label}</p>
+									<p>{it.label}{#if checkTag[it.status]}<span class="check-tag {it.status}">{checkTag[it.status]}</span>{/if}</p>
 									{#if it.detail}<p class="hint">{it.detail}</p>{/if}
 								</div>
 							</li>
 						{/each}
 					</ul>
-					<div class="mt-4 rounded bg-zinc-100 p-3 text-sm dark:bg-zinc-950">
-						<p>IP publik: <span class="font-mono">{check.public_ip || 'tidak terdeteksi'}</span></p>
+					<div class="setup-note">
+						<p>IP publik <span class="font-mono">{check.public_ip || 'tidak terdeteksi'}</span></p>
 						{#if check.behind_nat}
-							<p class="hint mt-1">
+							<p class="hint">
 								Server berada di balik NAT (IP lokal {check.local_ips.join(', ')}). Pastikan port UDP
 								WireGuard diteruskan (port forwarding) dari router/penyedia ke server ini.
 							</p>
 						{/if}
 					</div>
-					<div class="mt-4 flex gap-2">
+					{#if hasFail}<p class="login-error">Perbaiki butir bertanda Gagal dulu, lalu cek ulang.</p>{/if}
+					<div class="setup-actions">
 						<button class="btn-primary" disabled={hasFail} onclick={() => (step = 2)}>Lanjut</button>
 						<button class="btn-ghost" onclick={gotoCheck}>Cek ulang</button>
 					</div>
-					{#if hasFail}<p class="hint mt-2 text-red-600">Perbaiki item bertanda ✕ dulu, lalu cek ulang.</p>{/if}
 				{/if}
 			{:else if step === 2 && server}
-				<h2 class="font-semibold">Pengaturan server</h2>
-				<p class="hint mb-4 mt-1">Nilai sudah diisi otomatis. Biasanya cukup langsung diterapkan.</p>
+				<h1>{titles[2]}</h1>
 				<ServerForm {server} {check} submitLabel="Aktifkan WireGuard" onsaved={serverSaved} />
 			{:else if step === 3}
-				<h2 class="mb-1 font-semibold">Firewall & NAT</h2>
-				<p class="hint mb-4">Supaya klien bisa mengakses internet lewat server ini.</p>
+				<h1>{titles[3]}</h1>
 				<FirewallPanel onconfirmed={() => (step = 4)} />
-				<button class="btn-ghost mt-4 text-xs" onclick={() => (step = 4)}>Lewati (atur firewall sendiri)</button>
+				<div><button class="btn-ghost" onclick={() => (step = 4)}>Lewati, atur firewall sendiri</button></div>
 			{:else if step === 4}
 				{#if !client}
-					<form class="space-y-4" onsubmit={createClient}>
-						<h2 class="font-semibold">Klien pertama</h2>
+					<form class="setup-form" onsubmit={createClient} oninput={() => (error = '')}>
+						<h1>{titles[4]}</h1>
 						<div>
 							<label class="label" for="cn">Nama perangkat</label>
 							<input id="cn" class="input" bind:value={clientName} placeholder="HP Andi" required />
 						</div>
-						{#if error}<p class="text-sm text-red-600">{error}</p>{/if}
-						<div class="flex gap-2">
-							<button class="btn-primary" disabled={busy}>{busy ? 'Membuat…' : 'Buat klien'}</button>
+						{#if error}<p class="login-error" role="alert">{error}</p>{/if}
+						<div class="setup-actions">
+							<button class="btn-primary" disabled={busy}>{busy ? 'Menambahkan…' : 'Tambah perangkat'}</button>
 							<a class="btn-ghost" href="/">Lewati</a>
 						</div>
 					</form>
 				{:else}
-					<h2 class="mb-4 font-semibold">Profil {client.name}</h2>
-					<ClientProfile {client} />
-					<p class="hint mt-4 text-center">
-						Setelah tersambung, klien akan tampil “online” di dasbor.
-					</p>
-					<div class="mt-4 text-center"><a class="btn-primary" href="/">Selesai</a></div>
+					<h1>Profil {client.name}</h1>
+					<ClientProfile {client} showActivity={false} />
+					<p class="hint">Setelah tersambung, perangkat ini tampil tersambung di Ringkasan.</p>
+					<div><a class="btn-primary" href="/">Selesai</a></div>
 				{/if}
 			{/if}
 		</div>
-	{/if}
-</div>
+	</div>
+</main>

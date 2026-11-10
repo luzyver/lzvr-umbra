@@ -73,7 +73,7 @@
 	<div>
 		<label class="label" for="sf-addr">Alamat server di VPN</label>
 		<input id="sf-addr" class="input font-mono" bind:value={f.address} placeholder="10.8.0.1/24" required />
-		<p class="hint">Klien akan mendapat IP dari subnet ini (10.8.0.2, 10.8.0.3, …).</p>
+		<p class="hint">Perangkat akan mendapat IP dari subnet ini (10.8.0.2, 10.8.0.3, …).</p>
 	</div>
 	<div>
 		<label class="label" for="sf-out">Interface internet</label>
@@ -83,7 +83,7 @@
 		{/if}
 	</div>
 	<details class="sm:col-span-2">
-		<summary class="cursor-pointer text-sm text-zinc-500">Pengaturan lanjutan</summary>
+		<summary class="cursor-pointer text-sm text-[var(--muted)]">Pengaturan lanjutan</summary>
 		<div class="mt-3 grid gap-4 sm:grid-cols-3">
 			<div>
 				<label class="label" for="sf-if">Nama interface</label>
@@ -103,7 +103,7 @@
 		</div>
 	</details>
 	{#if error}
-		<p class="text-sm text-red-600 sm:col-span-2">{error}</p>
+		<p class="text-sm text-[var(--red)] sm:col-span-2" role="alert">{error}</p>
 	{/if}
 	<div class="sm:col-span-2">
 		<button class="btn-primary" disabled={busy}>{busy ? 'Menerapkan…' : submitLabel}</button>

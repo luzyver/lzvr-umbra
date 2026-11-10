@@ -137,7 +137,7 @@ dialog[open] { animation: rise 220ms var(--ease-out); }
 .main-nav a:hover { background: var(--rail-hover); color: var(--rail-text); }
 .main-nav a.active { background: var(--tape); color: var(--tape-ink); font: 600 13.5px var(--font-mono); }
 
-.sidebar-foot { margin-top: auto; display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--rail-border); }
+.sidebar-foot { margin-top: auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; padding-top: 12px; border-top: 1px solid var(--rail-border); }
 .sidebar-user { display: flex; align-items: center; gap: 2px; padding-left: 10px; }
 .sidebar-user span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--rail-text); font-size: 13px; }
 .sidebar-links { display: grid; gap: 1px; }
@@ -145,6 +145,24 @@ dialog[open] { animation: rise 220ms var(--ease-out); }
 .sidebar-links a:hover { background: var(--rail-hover); color: var(--rail-text); }
 .sidebar-links .ext { display: inline-flex; margin-left: auto; }
 .test-badge { justify-self: start; margin-left: 10px; border: 1px solid var(--border-strong); color: var(--rail-muted); }
+.main-nav svg { display: none; }
+/* Sisi rak diciutkan: hanya ikon, label tetap terbaca pembaca layar. */
+.app-shell { transition: grid-template-columns 180ms var(--ease-out); }
+.app-shell.collapsed { grid-template-columns: 60px minmax(0, 1fr); }
+.collapsed .app-sidebar { padding: 28px 8px 18px; }
+.collapsed .sidebar-top { flex-direction: column; gap: 14px; padding: 0; }
+.collapsed .main-nav a, .collapsed .sidebar-links a { justify-content: center; padding: 0; }
+.collapsed .sidebar-links a { height: 32px; }
+.collapsed .main-nav svg { display: block; }
+.collapsed .main-nav span, .collapsed .sidebar-links span:not(.ext), .collapsed .sidebar-user span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.collapsed .sidebar-links .ext { display: none; }
+.collapsed .sidebar-foot { justify-items: center; }
+.collapsed .sidebar-links { justify-self: stretch; }
+.collapsed .test-badge { justify-self: center; margin-left: 0; padding-inline: 5px; }
+.collapsed .sidebar-user { flex-direction: column; padding-left: 0; }
+@media (prefers-reduced-motion: reduce) {
+	.app-shell { transition: none; }
+}
 .page-content { min-width: 0; width: 100%; max-width: 1480px; margin: 0 auto; padding: 28px 36px 48px; }
 
 /* HP: bilah atas + tab bawah yang terjangkau jempol */
@@ -375,15 +393,54 @@ dialog.device-drawer[open] { display: flex; flex-direction: column; animation: d
 	dialog[open], dialog.device-drawer[open], button.port i { animation: none; }
 }
 
-/* Masuk */
-.login-screen { display: grid; grid-template-columns: minmax(320px, 5fr) minmax(0, 7fr); min-height: 100dvh; }
-.login-side { display: flex; flex-direction: column; justify-content: space-between; padding: 32px 40px; background: var(--port-bg); color: var(--port-bright); }
-.login-side p { max-width: 30ch; font-size: 22px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.3; }
-.login-side small { font-size: 13px; color: var(--port-text); }
-.login-main { display: grid; place-items: center; padding: 24px; }
-.login-card { width: 100%; max-width: 340px; }
-.login-card h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.4px; }
-@media (max-width: 767px) {
-	.login-screen { grid-template-columns: 1fr; }
-	.login-side { display: none; }
+/* Masuk: satu pelat rak kosong. Lampunya menguji diri saat halaman dibuka, lalu mengikuti langkah masuk. */
+/* Jarak atas tetap, supaya pelat tidak bergeser saat pesan galat muncul. */
+.login-screen { display: grid; justify-items: center; align-content: start; min-height: 100dvh; padding: clamp(56px, 21dvh, 220px) 16px 24px; }
+.login-unit { width: 100%; max-width: 400px; }
+.login-plate { margin-bottom: 28px; }
+.login-plate .ports-caption { align-items: center; margin-bottom: 14px; font: 500 12.5px var(--font-mono); }
+.login-plate .umbra-logo { color: var(--port-bright); font-size: 19px; }
+.login-plate .umbra-mark { width: 21px; height: 21px; }
+.login-leds { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 6px; }
+.login-leds .port { height: 26px; justify-content: center; padding: 0; }
+.login-leds .port i { width: min(14px, 60%); animation: led-test 620ms var(--ease-out) calc(var(--i) * 45ms + 200ms) backwards; }
+@keyframes led-test { 40% { background: var(--port-bright); } }
+[data-state='busy'] .port i { background: var(--led-busy); animation: led-chase 1080ms linear calc(var(--i) * 90ms) infinite backwards; }
+@keyframes led-chase { 0%, 30% { background: var(--led-busy); } 31%, 100% { background: var(--led-off); } }
+[data-state='error'] .port { border-color: var(--led-cut); }
+[data-state='error'] .port i { background: var(--led-cut); animation: none; }
+[data-state='half'] .port:nth-child(-n + 6), [data-state='ok'] .port { border-color: var(--port-line-on); }
+[data-state='half'] .port:nth-child(-n + 6) i, [data-state='ok'] .port i { background: var(--led); animation: led-on 420ms var(--ease-out) calc(var(--i) * 30ms) backwards; }
+.login-form { display: grid; gap: 16px; }
+.login-form h1 { margin-bottom: 4px; font-size: 28px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.2; }
+.login-form .input { padding: 9px 12px; font-size: 16px; }
+.login-form .btn-primary, .login-form .btn-ghost { min-height: 44px; font-size: 15px; }
+.login-form .btn-primary { margin-top: 4px; }
+.login-error { color: var(--red); font-size: 14px; }
+/* Penyiapan: pelat yang sama, satu port per langkah. */
+.setup-screen { padding-top: clamp(32px, 9dvh, 96px); }
+.setup-unit { max-width: 560px; }
+.setup-steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.setup-steps .port.online { border-color: var(--port-line-on); }
+.setup-steps .port.online i { animation: led-on 420ms var(--ease-out) backwards; }
+.setup-plate[data-busy='true'] .port.busy i { animation: led-blink 900ms steps(2, jump-none) infinite; }
+@keyframes led-blink { to { background: var(--led-off); } }
+.setup-body, .setup-form { display: grid; gap: 16px; }
+.setup-body h1 { margin-bottom: 4px; font-size: 28px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.2; overflow-wrap: anywhere; }
+.setup-body .input { padding: 9px 12px; font-size: 16px; }
+.setup-body .btn-primary, .setup-body .btn-ghost { min-height: 44px; font-size: 15px; }
+.setup-body a.btn-primary, .setup-body a.btn-ghost { display: inline-flex; align-items: center; justify-content: center; }
+.setup-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.setup-checks { display: grid; border-top: 1px solid var(--border); }
+.setup-checks li { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 15px; }
+.check-led { flex-shrink: 0; width: 14px; height: 5px; margin-top: 8px; border-radius: 1px; background: var(--green); }
+.check-led.warn { background: var(--busy); }
+.check-led.fail { background: var(--red); }
+.check-led.off { background: var(--border-strong); }
+.check-tag { margin-left: 8px; font: 500 12px var(--font-mono); }
+.check-tag.warn { color: var(--accent-ink); }
+.check-tag.fail { color: var(--red); }
+.setup-note { display: grid; gap: 4px; font-size: 15px; }
+@media (prefers-reduced-motion: reduce) {
+	.login-plate .login-leds .port i, .setup-plate .port i { animation: none; }
 }
