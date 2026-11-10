@@ -17,6 +17,10 @@ Umbra dirilis bergulir: setiap push ke `master` menerbitkan ulang rilis `latest`
 - Lisensi MIT, panduan kontribusi, kebijakan keamanan, template issue/PR, CI untuk pull request,
   Dependabot, `Makefile`, `.editorconfig`, dan `.gitattributes`.
 - `npm test` untuk test frontend.
+- Kaki halaman berisi hak cipta dan lisensi di panel serta halaman masuk dan setup.
+- README menampilkan pratinjau aplikasi (`docs/screenshots/`, dibuat ulang dengan
+  `web/tests/screenshots.py`) serta diagram arsitektur dan alur pemakaian.
+- Kode etik (`CODE_OF_CONDUCT.md`) dan `.github/CODEOWNERS`.
 - Konfigurasi ruleset cabang `master` siap pasang (`.github/rulesets/master.json`): wajib pull request dan
   CI lulus, tanpa push langsung atau force push. Belum aktif di GitHub; butuh repo publik atau paket berbayar.
 

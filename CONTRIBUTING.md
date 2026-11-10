@@ -6,6 +6,7 @@ Terima kasih sudah mau membantu Umbra.
 
 - Untuk perubahan besar, buka issue dulu supaya arahnya disepakati.
 - Celah keamanan jangan lewat issue publik; lihat [SECURITY.md](SECURITY.md).
+- Semua yang ikut serta diharapkan mengikuti [kode etik](CODE_OF_CONDUCT.md).
 
 ## Menyiapkan lingkungan
 
@@ -36,6 +37,17 @@ Tes browser ini membutuhkan Python, Playwright, dan Chromium yang sudah terpasan
 diganti dengan data uji, termasuk tambah, ubah, dan hapus perangkat. Backend tidak perlu dijalankan.
 Tes mencakup filter, panel detail, navigasi keyboard, status langsung/terputus, dan layar HP;
 tangkapan layar disimpan lokal di `.impeccable/review/`. Gunakan `--url` jika port frontend berbeda.
+
+## Tangkapan layar README
+
+Kalau perubahanmu mengubah tampilan Ringkasan, detail perangkat, Aktivitas, atau halaman masuk, buat ulang
+gambar di `docs/screenshots/` (frontend berjalan dengan `npm run dev`, syaratnya sama dengan tes browser):
+
+```sh
+python web/tests/screenshots.py
+```
+
+Gambar memakai data contoh, jadi tidak ada alamat atau nama perangkat asli yang ikut terekam.
 
 ## Aturan cabang `master`
 
