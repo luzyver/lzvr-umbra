@@ -28,7 +28,7 @@ STATUS = dict(wg_backend='fake', initialized=True, interface='wg0', online=3, to
         last_handshake=(now-timedelta(seconds=c['id']*20 if c['id'] < 4 else 7200)).isoformat(),
         endpoint='203.0.113.12:51820') for c in CLIENTS])
 
-def setup(page, empty=False, fail=False, long_name=False):
+def setup(page, empty=False, fail=False, long_name=False, feed_error=False):
     clients = [] if empty else copy.deepcopy(CLIENTS)
     status = copy.deepcopy(STATUS)
     if empty:
@@ -43,7 +43,7 @@ def setup(page, empty=False, fail=False, long_name=False):
         path = route.request.url.split('/api', 1)[1].split('?')[0]
         method = route.request.method
         requests.append((method, path))
-        if fail and path in ['/status', '/clients']:
+        if (fail or feed_error) and path in ['/status', '/clients']:
             route.fulfill(status=503, json={'error': 'Layanan sedang tidak tersedia.'})
             return
         data = {'/setup/status': dict(needs_admin=False, initialized=True),
@@ -79,15 +79,17 @@ def setup(page, empty=False, fail=False, long_name=False):
           const s=window.__status; const old=Date.parse(s.time);
           const t=n<30 ? old+2000 : Math.max(old+1,Date.now());n++;
           const delta=(t-old)/1000;s.time=new Date(t).toISOString();
-          s.clients.forEach(c=>{if(c.online && c.enabled){
+          s.clients.forEach(c=>{if(c.online && c.enabled && !window.__idleFeed){
             const rx=Math.round((200000+Math.sin(n*.6+c.id)*100000)*delta);
             const tx=Math.round((60000+Math.sin(n*.3)*20000)*delta);
             c.rx_bytes+=rx;c.tx_bytes+=tx;s.rx_bytes+=rx;s.tx_bytes+=tx;
           }});
-          this.listeners.status?.({data:JSON.stringify(s)});
+          // A failed client read reaches the page as an event with an error and no clients.
+          const out=window.__feedError ? {...s,clients:[],online:0,total:0,error:'baca klien gagal'} : s;
+          this.listeners.status?.({data:JSON.stringify(out)});
         },50)}
       addEventListener(n,fn){this.listeners[n]=fn}close(){clearInterval(this.timer);this.closed=true}
-    }; window.__status=''' + json.dumps(status) + ';window.__pauseFeed=' + json.dumps(fail))
+    }; window.__status=''' + json.dumps(status) + ';window.__pauseFeed=' + json.dumps(fail) + ';window.__feedError=' + json.dumps(feed_error))
     return requests
 
 def no_overflow(page):
@@ -110,11 +112,22 @@ with sync_playwright() as p:
     page.get_by_role('heading', name='Ringkasan', exact=True).wait_for()
     page.wait_for_timeout(1800)
     capture(page, 'desktop.png')
-    page.get_by_role('button', name='Offline', exact=True).click()
+    # Online with traffic keeps the online class and adds busy; without traffic it is plain online.
+    expect(page.locator('.device-status.online.busy')).to_have_count(3)
+    expect(page.locator('.device-status.online').first).to_contain_text('Online')
+    expect(page.locator('.port.online.busy')).to_have_count(3)
+    page.evaluate('window.__idleFeed=true')
+    expect(page.locator('.device-status.busy')).to_have_count(0)
+    expect(page.locator('.port.busy')).to_have_count(0)
+    expect(page.locator('.device-status.online')).to_have_count(3)
+    expect(page.locator('.port.online')).to_have_count(3)
+    page.evaluate('window.__idleFeed=false')
+    expect(page.locator('.device-status.online.busy')).to_have_count(3)
+    page.locator('.device-filters').get_by_role('button', name='Offline').click()
     expect(page.locator('.device-table tbody tr')).to_have_count(2)
-    page.get_by_role('button', name='Nonaktif', exact=True).click()
+    page.locator('.device-filters').get_by_role('button', name='Nonaktif').click()
     expect(page.locator('.device-table tbody tr')).to_have_count(1)
-    page.get_by_role('button', name='Semua', exact=True).click()
+    page.locator('.device-filters').get_by_role('button', name='Semua').click()
     page.get_by_role('textbox', name='Cari perangkat').fill('  LAPTOP  ')
     expect(page.locator('.device-table tbody tr')).to_have_count(2)
     page.get_by_role('textbox', name='Cari perangkat').fill('no-match')
@@ -142,7 +155,7 @@ with sync_playwright() as p:
     expect(page.locator('.device-status.online')).to_have_count(3)
     page.evaluate("window.__pauseFeed=true;window.__feeds.forEach(f=>f.onerror?.())")
     expect(page.locator('.device-status').filter(has_text='Belum diketahui')).to_have_count(5)
-    page.get_by_role('button', name='Offline', exact=True).click()
+    page.locator('.device-filters').get_by_role('button', name='Offline').click()
     expect(page.get_by_text('Tidak ada perangkat yang sesuai.')).to_be_visible()
     page.get_by_role('button', name='Hapus filter').click()
     page.evaluate('window.__pauseFeed=false')
@@ -157,7 +170,8 @@ with sync_playwright() as p:
     capture(page, 'mobile.png')
     accessible_table = page.locator('.device-table').aria_snapshot()
     assert 'columnheader "Perangkat"' in accessible_table
-    assert 'Masuk ke server:' in accessible_table and 'Keluar dari server:' in accessible_table
+    assert 'columnheader "Masuk"' in accessible_table and 'columnheader "Keluar"' in accessible_table
+    assert 'Online, ada trafik' in accessible_table
     assert 'Detail Laptop kantor, 10.8.0.2/32' in accessible_table
     page.get_by_role('button', name='Detail Laptop kantor, 10.8.0.2/32', exact=True).click()
     capture(page, 'mobile-drawer.png', False)
@@ -193,6 +207,21 @@ with sync_playwright() as p:
     page.get_by_role('button', name='Impor', exact=True).click()
     expect(page.get_by_role('dialog')).to_be_visible()
     page.keyboard.press('Escape')
+    # An error event before the first valid snapshot must not be read as an empty subnet.
+    early = browser.new_page(viewport=dict(width=1280, height=900))
+    early.on('pageerror', lambda error: errors.append(str(error)))
+    setup(early, feed_error=True)
+    early.goto(BASE)
+    caption = early.locator('.ports-caption')
+    expect(caption).to_contain_text('Pemakaian alamat belum diketahui')
+    early.wait_for_timeout(400)
+    expect(caption).not_to_contain_text('terpakai')
+    early.evaluate('window.__feedError=false')
+    expect(caption).to_contain_text('6 terpakai')
+    early.evaluate('window.__feedError=true')
+    expect(early.locator('.inline-notice')).to_be_visible()
+    expect(caption).to_contain_text('6 terpakai')
+    early.close()
     for mode in ['empty', 'fail', 'long_name']:
         other = browser.new_page(viewport=dict(width=390, height=844))
         other.on('pageerror', lambda error: errors.append(str(error)))

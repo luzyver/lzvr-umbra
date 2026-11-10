@@ -1,10 +1,11 @@
 import { onMount } from 'svelte';
 import { get, type Status } from './api';
-import { appendSample, sampleTraffic, type TrafficSample } from './traffic';
+import { appendSample, clientRates, sampleTraffic, type TrafficSample } from './traffic';
 
 // One feed per mounted page; no sessions or timers survive navigation.
 export function createLiveStatus() {
-	const feed = $state({ status: null as Status | null, live: false, current: false, error: '', samples: [] as TrafficSample[] });
+	// inventory: daftar perangkat pernah diterima utuh; snapshot galat tanpa klien tidak dihitung.
+	const feed = $state({ status: null as Status | null, inventory: false, live: false, current: false, error: '', samples: [] as TrafficSample[], rates: {} as Record<number, number> });
 	onMount(() => {
 		let active = true;
 		let previous: Status | null = null;
@@ -13,6 +14,7 @@ export function createLiveStatus() {
 			feed.live = false;
 			feed.current = false;
 			feed.error = 'Pembaruan terputus. Mencoba menyambungkan kembali…';
+			feed.rates = {};
 			previous = null;
 		};
 		const update = (s: Status, streaming: boolean) => {
@@ -23,10 +25,12 @@ export function createLiveStatus() {
 			stale = setTimeout(disconnect, 15000);
 			const sample = !s.error && previous ? sampleTraffic(previous, s) : null;
 			feed.samples = sample ? appendSample(feed.samples, sample) : [];
+			feed.rates = s.error ? {} : clientRates(previous, s);
 			previous = s.error ? null : s;
 			feed.status = s.error && !s.clients.length && feed.status
 				? { ...s, clients: feed.status.clients, total: feed.status.total }
 				: s;
+			if ((!s.error || s.clients.length) && s.clients.length === s.total) feed.inventory = true;
 			feed.current = !s.error && s.initialized;
 			feed.live = streaming;
 			feed.error = s.error ?? '';

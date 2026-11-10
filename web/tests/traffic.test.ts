@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {sampleTraffic, appendSample} from '../src/lib/traffic.ts';
+import {sampleTraffic, appendSample, clientRates} from '../src/lib/traffic.ts';
 import type {Status} from '../src/lib/api.ts';
 const snapshot=(time:number,rx=0,tx=0):Status=>({time:new Date(time).toISOString(),initialized:true,interface:'wg0',online:1,total:1,rx_bytes:rx,tx_bytes:tx,clients:[{id:1,name:'Laptop',address:'10.0.0.2',enabled:true,online:true,rx_bytes:rx,tx_bytes:tx,last_handshake:null}]});
 test('first sample has no invented rate',()=>assert.equal(sampleTraffic(null,snapshot(1000)),null));
@@ -8,3 +8,4 @@ test('rates retain server rx/tx direction',()=>assert.deepEqual(sampleTraffic(sn
 test('duplicate, old, and invalid timestamps are ignored',()=>{for(const t of [1000,0,NaN]){const s=snapshot(1000);s.time=Number.isNaN(t)?'bad':new Date(t).toISOString();assert.equal(sampleTraffic(snapshot(1000),s),null);}});
 test('reset counters and newly added peers do not spike',()=>{assert.deepEqual(sampleTraffic(snapshot(1000,500,600),snapshot(2000,10,10)),{t:2000,rx:0,tx:0});const s=snapshot(2000,100,100);s.clients[0].id=2;assert.deepEqual(sampleTraffic(snapshot(1000),s),{t:2000,rx:0,tx:0});});
 test('history retains only last 60 seconds',()=>{const points=appendSample([{t:1000,rx:1,tx:1},{t:2000,rx:2,tx:2}],{t:62000,rx:3,tx:3});assert.equal(points.length,2);assert.equal(points[0].t,2000);});
+test('device rates combine both directions and skip unseen devices',()=>{assert.deepEqual(clientRates(snapshot(1000,10,20),snapshot(3000,210,620)),{1:400});assert.deepEqual(clientRates(null,snapshot(1000)),{});const s=snapshot(2000,100,100);s.clients[0].id=2;assert.deepEqual(clientRates(snapshot(1000),s),{});});

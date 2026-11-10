@@ -126,7 +126,7 @@
 								<td class="whitespace-nowrap py-1.5 pr-3 tabular-nums" title={ago(a.at)}>{date(a.at)}</td>
 								<td class="py-1.5 pr-3">{a.client_name}</td>
 								<td class="py-1.5 pr-3">
-									<span class="rounded-full px-2 py-0.5 {badge[a.kind]}">{label[a.kind]}</span>
+									<span class="rounded-sm px-2 py-0.5 {badge[a.kind]}">{label[a.kind]}</span>
 									{#if a.detail && a.kind !== 'roam'}<span class="ml-1 text-zinc-500">{a.detail}</span>{/if}
 								</td>
 								<td class="whitespace-nowrap py-1.5 pr-3 font-mono">

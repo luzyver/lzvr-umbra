@@ -1,0 +1,12 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {parseIPv4, formatIPv4, portPanel} from '../src/lib/network.ts';
+const dev=(...hosts:number[])=>hosts.map(h=>({address:`10.8.0.${h}/32`}));
+test('addresses round-trip and reject invalid input',()=>{assert.equal(formatIPv4(parseIPv4('10.8.0.2/32')!),'10.8.0.2');for(const bad of ['','10.8.0','10.8.0.256','fd00::1','a.b.c.d'])assert.equal(parseIPv4(bad),null);});
+test('/24 counts hosts without network, broadcast and server',()=>{const p=portPanel('10.8.0.1/24',dev(2,3,4,5,6,7))!;assert.equal(p.network,'10.8.0.0/24');assert.equal(p.used,6);assert.equal(p.free,247);assert.equal(p.next,'10.8.0.8');assert.equal(p.ports.length,24);assert.equal(p.ports[0].label,'.2');assert.equal(p.ports[23].label,'.25');assert.equal(p.hidden,0);});
+test('next is the first gap, like the server allocator',()=>assert.equal(portPanel('10.8.0.1/24',dev(2,4))!.next,'10.8.0.3'));
+test('rows grow to the last used address and cap at the limit',()=>{assert.equal(portPanel('10.8.0.1/24',dev(2,40))!.ports.length,48);const p=portPanel('10.8.0.1/24',dev(2,200))!;assert.equal(p.ports.length,96);assert.equal(p.hidden,1);});
+test('server address in the middle is skipped',()=>{const p=portPanel('10.8.0.5/29',dev(1,2))!;assert.deepEqual(p.ports.map(x=>x.label),['.1','.2','.3','.4','.6']);assert.equal(p.free,3);assert.equal(p.next,'10.8.0.3');});
+test('full subnet has no next address',()=>{const p=portPanel('10.8.0.1/30',dev(2))!;assert.equal(p.free,0);assert.equal(p.next,null);});
+test('devices outside the subnet and duplicates are not ports',()=>{const p=portPanel('10.8.0.1/24',[...dev(2,2),{address:'192.168.1.9'}])!;assert.equal(p.used,1);});
+test('wide subnets label two octets; unusable input hides the panel',()=>{assert.equal(portPanel('10.8.0.1/16',[])!.ports[0].label,'.0.2');for(const bad of ['','fd00::1/64','10.8.0.1','10.8.0.1/31'])assert.equal(portPanel(bad,[]),null);});

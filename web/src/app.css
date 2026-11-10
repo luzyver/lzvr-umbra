@@ -3,24 +3,26 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme {
-	--font-sans: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-	--font-mono: ui-monospace, 'Cascadia Code', 'JetBrains Mono', Menlo, monospace;
-	/* Abu-abu "zinc" diganti abu-abu linen hangat agar selaras dengan design.css. */
-	--color-zinc-50: #f5f3ee;
-	--color-zinc-100: #efece5;
-	--color-zinc-200: #e3dfd5;
-	--color-zinc-300: #cfc9bc;
-	--color-zinc-400: #a69e8c;
-	--color-zinc-500: #686256;
-	--color-zinc-600: #5a5449;
-	--color-zinc-700: #3d372e;
-	--color-zinc-800: #2c2822;
-	--color-zinc-900: #1b1916;
-	--color-zinc-950: #141210;
+	--font-sans: 'Hanken Grotesk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+	--font-mono: 'Sometype Mono', ui-monospace, 'Cascadia Code', Menlo, monospace;
+	/* Abu-abu "zinc" diganti abu-abu cat bubuk rak agar selaras dengan design.css. */
+	--color-zinc-50: #e9ebea;
+	--color-zinc-100: #dcdfdd;
+	--color-zinc-200: #cdd1ce;
+	--color-zinc-300: #adb2ae;
+	--color-zinc-400: #8b918d;
+	--color-zinc-500: #555a57;
+	--color-zinc-600: #454947;
+	--color-zinc-700: #343836;
+	--color-zinc-800: #232524;
+	--color-zinc-900: #1b1b1a;
+	--color-zinc-950: #151716;
 }
 
-@font-face { font-family: Manrope; src: url('/fonts/manrope-regular.ttf'); font-weight: 400; font-display: swap; }
-@font-face { font-family: Manrope; src: url('/fonts/manrope-bold.ttf'); font-weight: 600 800; font-display: swap; }
+@font-face { font-family: 'Hanken Grotesk'; src: url('/fonts/hanken-grotesk-latin-ext.woff2') format('woff2'); font-weight: 400 700; font-display: swap; unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Hanken Grotesk'; src: url('/fonts/hanken-grotesk-latin.woff2') format('woff2'); font-weight: 400 700; font-display: swap; unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Sometype Mono'; src: url('/fonts/sometype-mono-latin-ext.woff2') format('woff2'); font-weight: 400 700; font-display: swap; unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Sometype Mono'; src: url('/fonts/sometype-mono-latin.woff2') format('woff2'); font-weight: 400 700; font-display: swap; unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 @layer base {
 	body {
 		@apply bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100;
@@ -29,13 +31,13 @@
 
 @layer components {
 	.card {
-		@apply rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900;
+		@apply rounded-md border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900;
 	}
 	.btn,
 	.btn-primary,
 	.btn-ghost,
 	.btn-danger {
-		@apply inline-flex items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition
+		@apply inline-flex items-center justify-center gap-2 rounded px-3 py-1.5 text-sm font-semibold transition
 			disabled:cursor-not-allowed disabled:opacity-50;
 	}
 	.btn-primary {
@@ -49,7 +51,7 @@
 		@apply bg-red-600 text-white hover:bg-red-700;
 	}
 	.input {
-		@apply w-full rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm outline-none dark:border-zinc-700 dark:bg-zinc-950;
+		@apply w-full rounded border border-zinc-300 bg-white px-3 py-1.5 text-sm outline-none dark:border-zinc-700 dark:bg-zinc-950;
 	}
 	.label {
 		@apply mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300;
@@ -58,6 +60,6 @@
 		@apply mt-1 text-xs text-zinc-500 dark:text-zinc-400;
 	}
 	.badge {
-		@apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium;
+		@apply inline-flex items-center gap-1 rounded-sm px-2 py-0.5 text-xs font-medium;
 	}
 }

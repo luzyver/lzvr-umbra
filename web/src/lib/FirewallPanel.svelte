@@ -79,7 +79,7 @@
 		</div>
 
 		{#if info.pending}
-			<div class="rounded-lg border border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/40">
+			<div class="rounded border border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/40">
 				<p class="font-medium">Aturan sedang diuji — sisa {left} detik</p>
 				<p class="hint mt-1">
 					Coba sambungkan klien atau pastikan panel ini masih bisa dibuka. Bila tidak dikonfirmasi,
@@ -115,7 +115,7 @@
 			{#if info.preview_error}
 				<p class="text-sm text-red-600">{info.preview_error}</p>
 			{:else}
-				<pre class="overflow-x-auto rounded-lg bg-zinc-100 p-3 font-mono text-xs dark:bg-zinc-950">{info.preview}</pre>
+				<pre class="overflow-x-auto rounded bg-zinc-100 p-3 font-mono text-xs dark:bg-zinc-950">{info.preview}</pre>
 			{/if}
 		{/if}
 

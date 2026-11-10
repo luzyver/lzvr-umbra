@@ -202,7 +202,7 @@
 				<div class="mb-4 flex flex-wrap gap-2">
 					{#each top as [d, v] (d)}
 						<button
-							class="rounded-full border border-zinc-200 px-2.5 py-0.5 text-xs dark:border-zinc-700"
+							class="rounded-sm border border-zinc-200 px-2.5 py-0.5 text-xs dark:border-zinc-700"
 							class:text-red-600={v.blocked === v.n}
 							title="Terakhir {date(v.last)}"
 							onclick={() => (search = d)}>{d} <span class="text-zinc-500">{v.n}×</span></button

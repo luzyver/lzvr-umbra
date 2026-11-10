@@ -62,6 +62,8 @@ jobs:
           cp deploy/umbra deploy/install.sh deploy/update.sh deploy/umbra.service deploy/umbra.env "$name/"
           cp LICENSE "$name/"
           cp web/static/fonts/OFL-Manrope.txt "$name/LICENSE-Manrope.txt"
+          cp web/static/fonts/OFL-HankenGrotesk.txt "$name/LICENSE-HankenGrotesk.txt"
+          cp web/static/fonts/OFL-SometypeMono.txt "$name/LICENSE-SometypeMono.txt"
           tar -czf "$name.tar.gz" "$name"
           sha256sum "$name.tar.gz" > "$name.tar.gz.sha256"
 

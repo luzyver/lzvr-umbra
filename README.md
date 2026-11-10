@@ -317,6 +317,6 @@ secara privat sesuai [SECURITY.md](SECURITY.md).
 
 ## Lisensi
 
-[MIT](LICENSE) © 2026 𝙻𝚄𝚉𝚈𝚅𝙴𝚁. Font Manrope memakai [SIL Open Font License](web/static/fonts/OFL-Manrope.txt).
+[MIT](LICENSE) © 2026 𝙻𝚄𝚉𝚈𝚅𝙴𝚁. Font Hanken Grotesk dan Sometype Mono memakai SIL Open Font License ([Hanken Grotesk](web/static/fonts/OFL-HankenGrotesk.txt), [Sometype Mono](web/static/fonts/OFL-SometypeMono.txt)).
 WireGuard adalah merek dagang terdaftar milik Jason A. Donenfeld; Umbra tidak berafiliasi dengan proyek WireGuard
 maupun AdGuard.

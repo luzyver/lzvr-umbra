@@ -26,7 +26,7 @@
 	aria-label={title}
 	onclose={() => (open = false)}
 	class:device-drawer={drawer}
-	class="m-auto w-full rounded-xl border p-0 {wide
+	class="m-auto w-full rounded-md border p-0 {wide
 		? 'max-w-2xl'
 		: 'max-w-md'}"
 >

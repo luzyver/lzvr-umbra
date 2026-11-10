@@ -27,10 +27,14 @@ Umbra dirilis bergulir: setiap push ke `master` menerbitkan ulang rilis `latest`
   `/dev/net/tun`.
 - `update.sh` tidak lagi mewajibkan token GitHub; token hanya dipakai bila ada (repo privat/fork).
 - Rilis `latest` baru diterbitkan setelah check dan semua test lulus; arsip rilis kini memuat `LICENSE`
-  dan lisensi font Manrope.
+  dan lisensi font.
 - Ringkasan menampilkan status layanan, grafik trafik, dan daftar perangkat dengan filter status.
   Detail koneksi, QR, dan pengaturan perangkat dibuka dalam panel samping; di HP, panel memenuhi layar.
-  Palet linen dan kuningan, rel gelap, serta navigasi bawah tetap digunakan.
+- Tampilan dirombak menjadi "label rak": dasar abu-abu, nama perangkat dan pilihan aktif berupa pita label,
+  serta font Hanken Grotesk dan Sometype Mono (keduanya tertanam, lisensinya ikut di arsip rilis).
+  Ringkasan kini dibuka dengan panel port yang memetakan alamat subnet: lampu menyala untuk perangkat
+  online, kuning saat ada trafik, dan alamat kosong berikutnya tertulis di atasnya.
+  Daftar perangkat menampilkan data masuk dan keluar per perangkat.
 - Pembaruan yang terputus atau berhenti mengirim data ditampilkan sebagai status belum diketahui,
   agar perangkat tidak keliru terlihat offline. Urutan perangkat tetap berdasarkan alamat IP.
 

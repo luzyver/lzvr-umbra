@@ -29,7 +29,7 @@
 	</div>
 	<div class="grid max-h-80 gap-1 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3">
 		{#each shown as s (s.id)}
-			<label class="flex items-center gap-2 rounded-lg px-2 py-1 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800">
+			<label class="flex items-center gap-2 rounded px-2 py-1 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800">
 				<input type="checkbox" checked={selected.includes(s.id)} {disabled} onchange={(e) => set(s.id, e.currentTarget.checked)} />
 				{#if s.icon_svg}
 					<img src="data:image/svg+xml;base64,{s.icon_svg}" alt="" class="h-4 w-4 dark:invert" />

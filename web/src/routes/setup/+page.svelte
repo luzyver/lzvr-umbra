@@ -146,7 +146,7 @@
 		<ol class="mb-6 flex flex-wrap gap-2 text-xs">
 			{#each steps as s, i (s)}
 				<li
-					class="rounded-full px-3 py-1 {i === step
+					class="rounded-sm px-3 py-1 {i === step
 						? 'bg-[var(--accent)] text-[var(--accent-text)]'
 						: i < step
 							? 'bg-[var(--panel-alt)] text-[var(--text)]'
@@ -206,7 +206,7 @@
 							</li>
 						{/each}
 					</ul>
-					<div class="mt-4 rounded-lg bg-zinc-100 p-3 text-sm dark:bg-zinc-950">
+					<div class="mt-4 rounded bg-zinc-100 p-3 text-sm dark:bg-zinc-950">
 						<p>IP publik: <span class="font-mono">{check.public_ip || 'tidak terdeteksi'}</span></p>
 						{#if check.behind_nat}
 							<p class="hint mt-1">

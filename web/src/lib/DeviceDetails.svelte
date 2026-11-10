@@ -31,7 +31,7 @@
 <Modal bind:open title={device?.name ?? 'Detail perangkat'} drawer>
 	{#if device}
 		{@const state = deviceState(device, current)}
-		<div class="device-detail-summary"><span class="table-mono">{device.address}</span><span class="device-status" class:online={state === 'online'}><i class="status-dot"></i>{stateLabels[state]}</span></div>
+		<div class="device-detail-summary"><span class="table-mono">{device.address}</span><span class="device-status {state}"><i class="status-led"></i>{stateLabels[state]}</span></div>
 		<div class="detail-tabs" aria-label="Bagian detail perangkat">
 			<button class:selected={tab === 'connection'} aria-pressed={tab === 'connection'} onclick={() => tab = 'connection'}>Koneksi</button>
 			<button class:selected={tab === 'profile'} aria-pressed={tab === 'profile'} onclick={() => tab = 'profile'}>Profil & QR</button>

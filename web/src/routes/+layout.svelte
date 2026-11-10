@@ -100,7 +100,7 @@
 			</div>
 			<nav class="main-nav" aria-label="Navigasi utama">
 				{#each nav as n (n.href)}
-					<a href={n.href} class:active={isActive(n.href)} aria-current={isActive(n.href) ? 'page' : undefined}><Icon name={n.icon} size={16} /><span>{n.label}</span></a>
+					<a href={n.href} class:active={isActive(n.href)} aria-current={isActive(n.href) ? 'page' : undefined}>{n.label}</a>
 				{/each}
 			</nav>
 			<div class="sidebar-foot">

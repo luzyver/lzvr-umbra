@@ -197,7 +197,7 @@
 	<div class="inline-notice" role="alert">{error}<button class="text-action" onclick={load}>Coba lagi</button></div>
 {/if}
 {#if feed.error}<div class="inline-notice" role="status">{feed.error}</div>{/if}
-<DeviceList devices={rows} current={feed.current} loading={!clients && !error} unavailable={!clients && !!error} selected={detailOpen ? selected ?? undefined : undefined} {now} heading="Daftar perangkat" oncreate={openNew} onselect={id => { selected = id; detailOpen = true; }} />
+<DeviceList devices={rows} current={feed.current} loading={!clients && !error} unavailable={!clients && !!error} selected={detailOpen ? selected ?? undefined : undefined} {now} rates={feed.rates} heading="Daftar perangkat" oncreate={openNew} onselect={id => { selected = id; detailOpen = true; }} />
 
 <DeviceDetails bind:open={detailOpen} device={selectedRow} client={selectedClient} current={feed.current} {now}
 	onedit={c => { detailOpen = false; openEdit(c); }}

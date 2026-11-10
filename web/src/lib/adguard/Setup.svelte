@@ -36,7 +36,7 @@
 			<p class="text-red-600">Gagal: {job.message}</p>
 		{/if}
 		{#if job.detected}
-			<p class="rounded-lg bg-amber-50 p-2 text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+			<p class="rounded bg-amber-50 p-2 text-amber-800 dark:bg-amber-950 dark:text-amber-200">
 				AdGuard Home terdeteksi di 127.0.0.1:3000. Bila belum disiapkan, tombol di bawah
 				menjalankan setup awalnya; bila sudah, hubungkan manual.
 			</p>
@@ -50,7 +50,7 @@
 				Pemasangan otomatis butuh helper root yang dipasang installer versi terbaru. Perbarui Umbra
 				(jalankan update.sh) atau jalankan ulang installer dari folder rilis:
 			</p>
-			<pre class="overflow-x-auto rounded-lg bg-zinc-100 p-3 font-mono text-xs dark:bg-zinc-950">sudo sh umbra-linux-amd64/install.sh --with-adguard umbra-linux-amd64/umbra</pre>
+			<pre class="overflow-x-auto rounded bg-zinc-100 p-3 font-mono text-xs dark:bg-zinc-950">sudo sh umbra-linux-amd64/install.sh --with-adguard umbra-linux-amd64/umbra</pre>
 		{/if}
 	</div>
 

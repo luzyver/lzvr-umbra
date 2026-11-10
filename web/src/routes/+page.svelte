@@ -9,6 +9,7 @@
 	import DeviceDetails from '#lib/DeviceDetails.svelte';
 	import Icon from '#lib/Icon.svelte';
 	import OverviewContext from '#lib/OverviewContext.svelte';
+	import PortPanel from '#lib/PortPanel.svelte';
 	import '#lib/overview.css';
 
 	const feed = createLiveStatus();
@@ -18,9 +19,15 @@
 	let adguardError = $state(false);
 	let selected = $state<number | null>(null);
 	let detailOpen = $state(false);
-	const device = $derived(feed.status?.clients.find(c => c.id === selected) ?? null);
+	const devices = $derived(feed.status?.clients ?? []);
+	const device = $derived(devices.find(c => c.id === selected) ?? null);
 	const latest = $derived(feed.samples.at(-1));
+	const streaming = $derived(feed.live && feed.current);
+	// "1.7 MB/s" dipisah agar satuan bisa ditulis lebih kecil dari angkanya.
+	const rxRate = $derived(streaming && latest ? rate(latest.rx).split(' ') : ['—']);
+	const txRate = $derived(streaming && latest ? rate(latest.tx).split(' ') : ['—']);
 	const now = $derived(feed.status ? Date.parse(feed.status.time) : Date.now());
+	const open = (id: number) => { selected = id; detailOpen = true; };
 	onMount(() => {
 		let active = true;
 		get<ServerConfig>('/server').then(s => { if (active) server = s; }).catch(() => { if (active) serverError = 'Konfigurasi server belum tersedia.'; });
@@ -38,27 +45,31 @@
 
 <svelte:head><title>Ringkasan · Umbra</title></svelte:head>
 
-<div class="page-heading"><h1>Ringkasan</h1><a class="btn-primary ml-auto" href="/clients?new=1"><Icon name="plus" size={16} />Tambah perangkat</a></div>
-
-<div class="overview-summary" aria-label="Status layanan">
-	<a href="/settings" class="service-item"><Icon name="server" size={22} /><div><strong>WireGuard</strong><span class="status" class:online={feed.current}><i class="status-dot"></i>{feed.error ? 'Perlu diperiksa' : feed.current ? 'Tersedia' : 'Memeriksa…'}</span></div></a>
-	{#if session.me?.adguard}<a href="/adguard" class="service-item"><Icon name="shield" size={22} /><div><strong>AdGuard</strong><span class="status" class:online={dnsHealthy}><i class="status-dot"></i>{dnsLabel}</span></div></a>{/if}
-	<div class="summary-devices"><Icon name="laptop" size={22} /><div><span>Perangkat online</span><strong>{feed.current ? feed.status?.online : '—'} <small>/ {feed.status?.total ?? '—'}</small></strong></div></div>
+<div class="page-heading">
+	<h1>Ringkasan</h1>
+	<div class="service-inline" aria-label="Status layanan">
+		<a href="/settings" class:ok={feed.current}><i></i><strong>WireGuard</strong>{feed.error ? 'Perlu diperiksa' : feed.current ? 'Tersedia' : 'Memeriksa…'}</a>
+		{#if session.me?.adguard}<a href="/adguard" class:ok={dnsHealthy}><i></i><strong>AdGuard</strong>{dnsLabel}</a>{/if}
+	</div>
+	<a class="btn-primary" href="/clients?new=1"><Icon name="plus" size={16} />Tambah perangkat</a>
 </div>
 
 {#if feed.error}<div class="inline-notice" role="status">{feed.error}<span>Status dan trafik perangkat ditampilkan kembali setelah koneksi pulih.</span></div>{/if}
 
+{#if server}<PortPanel address={server.address} name={server.interface} {devices} known={feed.inventory} current={feed.current} rates={feed.rates} selected={detailOpen ? selected ?? undefined : undefined} onselect={open} />{/if}
+
 <div class="monitoring-grid">
 	<section class="monitoring-main" aria-label="Trafik server">
 		<dl class="monitoring-rates">
-			<div><dt><Icon name="down" size={16} />Masuk ke server</dt><dd>{feed.live && feed.current && latest ? rate(latest.rx) : '—'}</dd></div>
-			<div><dt><Icon name="up" size={16} />Keluar dari server</dt><dd>{feed.live && feed.current && latest ? rate(latest.tx) : '—'}</dd></div>
+			<div><dt>Masuk ke server</dt><dd>{rxRate[0]}{#if rxRate[1]}<small>{rxRate[1]}</small>{/if}</dd></div>
+			<div><dt>Keluar dari server</dt><dd>{txRate[0]}{#if txRate[1]}<small>{txRate[1]}</small>{/if}</dd></div>
+			<div class="summary-devices"><dt>Perangkat online</dt><dd>{feed.current ? feed.status?.online : '—'}<small>/ {feed.status?.total ?? '—'}</small></dd></div>
 		</dl>
-		<TrafficChart samples={feed.samples} live={feed.live && feed.current} />
-		<div class="monitoring-totals"><span>Total masuk <strong>{feed.current ? bytes(feed.status?.rx_bytes ?? 0) : '—'}</strong></span><span>Total keluar <strong>{feed.current ? bytes(feed.status?.tx_bytes ?? 0) : '—'}</strong></span></div>
+		<p class="monitoring-live">{streaming ? 'Langsung · 60 detik terakhir' : 'Pembaruan terhenti'}</p>
+		<TrafficChart samples={feed.samples} live={streaming} />
 	</section>
-	<OverviewContext {server} {serverError} adguard={adguardError ? null : adguard} {dnsLabel} showDns={!!session.me?.adguard} />
+	<OverviewContext {server} {serverError} adguard={adguardError ? null : adguard} showDns={!!session.me?.adguard} totals={feed.current ? `${bytes(feed.status?.rx_bytes ?? 0)} / ${bytes(feed.status?.tx_bytes ?? 0)}` : '—'} />
 </div>
 
-<DeviceList devices={feed.status?.clients ?? []} current={feed.current} loading={!feed.status && !feed.error} unavailable={!!feed.error && !feed.status?.clients.length} selected={detailOpen ? selected ?? undefined : undefined} {now} onselect={id => { selected = id; detailOpen = true; }} />
+<DeviceList {devices} current={feed.current} loading={!feed.status && !feed.error} unavailable={!!feed.error && !feed.status?.clients.length} selected={detailOpen ? selected ?? undefined : undefined} {now} rates={feed.rates} onselect={open} />
 <DeviceDetails bind:open={detailOpen} {device} current={feed.current} {now} />
