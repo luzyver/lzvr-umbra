@@ -90,6 +90,10 @@
 
 <a class="skip-link" href="#main-content">Lewati ke konten</a>
 
+{#snippet copyright()}
+	<footer class="app-footer"><span>© 2026 LUZYVER</span><span>Lisensi MIT</span></footer>
+{/snippet}
+
 {#if fatal}
 	<div class="mx-auto mt-24 max-w-md card text-center">
 		<p class="font-semibold text-red-600">Panel tidak bisa dimuat</p>
@@ -102,6 +106,7 @@
 	<div class="public-shell">
 		<div class="public-theme"><ThemeToggle /></div>
 		<main id="main-content">{@render children()}</main>
+		{@render copyright()}
 	</div>
 {:else}
 	<div class="app-shell" class:collapsed>
@@ -136,7 +141,10 @@
 			<ThemeToggle />
 			<button class="icon-btn" onclick={logout} aria-label="Keluar" title="Keluar"><Icon name="logout" size={17} /></button>
 		</header>
-		<main id="main-content" class="page-content">{@render children()}</main>
+		<div class="app-content">
+			<main id="main-content" class="page-content">{@render children()}</main>
+			{@render copyright()}
+		</div>
 		<nav class="tab-bar" aria-label="Navigasi utama">
 			{#each nav as n (n.href)}
 				<a href={n.href} class:active={isActive(n.href)} aria-current={isActive(n.href) ? 'page' : undefined}><Icon name={n.icon} size={20} /><span>{n.label}</span></a>

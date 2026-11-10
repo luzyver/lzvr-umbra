@@ -164,6 +164,10 @@ dialog[open] { animation: rise 220ms var(--ease-out); }
 	.app-shell { transition: none; }
 }
 .page-content { min-width: 0; width: 100%; max-width: 1480px; margin: 0 auto; padding: 28px 36px 48px; }
+/* Kaki halaman: hak cipta, selalu di dasar kolom konten */
+.app-content { display: flex; flex-direction: column; min-width: 0; min-height: 100dvh; }
+.app-content .page-content { flex: 1; }
+.app-footer { display: flex; flex-wrap: wrap; gap: 2px 16px; width: 100%; max-width: 1480px; margin: 0 auto; padding: 0 36px 20px; color: var(--muted); font: 12px/1.5 var(--font-mono); }
 
 /* HP: bilah atas + tab bawah yang terjangkau jempol */
 .mobile-bar, .tab-bar { display: none; }
@@ -184,12 +188,16 @@ dialog[open] { animation: rise 220ms var(--ease-out); }
 	.tab-bar { position: fixed; inset: auto 0 0 0; z-index: 30; display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); background: var(--rail); border-top: 1px solid var(--rail-border); }
 	.tab-bar a { display: grid; justify-items: center; gap: 3px; padding: 6px 0; border-radius: 3px; color: var(--rail-muted); font-size: 11.5px; font-weight: 500; }
 	.tab-bar a.active { background: var(--tape); color: var(--tape-ink); font-weight: 600; }
-	.page-content { padding: 20px 16px calc(88px + env(safe-area-inset-bottom)); }
+	.app-content { min-height: calc(100dvh - 52px); }
+	.page-content { padding: 20px 16px 32px; }
+	.app-footer { padding: 0 16px calc(80px + env(safe-area-inset-bottom)); }
 	.desktop-column { display: none; }
 	.toast-stack { bottom: calc(76px + env(safe-area-inset-bottom)) !important; }
 }
 
-.public-shell { min-height: 100dvh; }
+.public-shell { display: grid; grid-template-rows: 1fr auto; min-height: 100dvh; }
+.public-shell .login-screen { min-height: 0; }
+.public-shell .app-footer { justify-content: center; padding-inline: 16px; }
 .public-theme { position: absolute; top: 16px; right: 16px; }
 
 /* Judul halaman */
@@ -321,7 +329,7 @@ dialog.device-drawer[open] { display: flex; flex-direction: column; animation: d
 	.ports-row { grid-template-columns: repeat(12, minmax(0, 1fr)); }
 }
 @media (min-width: 768px) and (max-width: 1100px) {
-	.page-content { padding-left: 24px; padding-right: 24px; }
+	.page-content, .app-footer { padding-left: 24px; padding-right: 24px; }
 	.device-table th, .device-table td { padding-left: 8px; padding-right: 8px; }
 }
 @media (max-width: 767px) {
